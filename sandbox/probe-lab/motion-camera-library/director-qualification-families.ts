@@ -812,6 +812,241 @@ function capabilityProfile(
     }
   }
 
+
+  if (
+    familyCategory === "transition_continuity" &&
+    familyGroup === "Transitions"
+  ) {
+    if (capabilityId === "hard_cut") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.63 final Transitions closeout keeps Hard cut frozen as a qualified atomic edit primitive from clean cross-asset evidence. A hard cut is the instantaneous boundary between two complete deliberate shot states; the closed family now preserves Hard cut and Crossfade as the two foundational edit transitions.",
+      };
+    }
+    if (capabilityId === "crossfade") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.63 freezes Crossfade as the second qualified atomic edit primitive after the repaired Baseline + Diversity confirmation reel proved a true deterministic image-space dissolve. Two complete camera states coexist through the blend window and are alpha-composited on the captured WebGL canvas; preserve the shared two-render-target compositor and do not regress Crossfade to camera interpolation.",
+      };
+    }
+    if (capabilityId === "smooth_blend") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.62 closes Smooth blend out of independent edit-primitive Qualification. The reel shows continuous camera-state interpolation with one live rendered scene, so preserve the author-facing intent as a camera-transition composition rather than duplicating an image-space transition primitive.",
+      };
+    }
+    if (capabilityId === "match_cut") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "hard_cut",
+        qualification_note:
+          "A.11A.62 preserves Match cut as a continuity-aware editing compound over Hard cut. A truthful match requires measured or authored correspondence between outgoing and incoming shots such as screen position, scale, silhouette, geometry, motion, or semantic identity; an ordinary reframe cannot manufacture the match.",
+      };
+    }
+    if (capabilityId === "continuous_take") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.62 preserves Continuous take as a sequence policy: forbid an edit boundary across an authored interval while camera and attention may continue to move. The absence of a cut is not itself a visual transition primitive.",
+      };
+    }
+    if (capabilityId === "cut_on_action") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "hard_cut",
+        qualification_note:
+          "A.11A.62 preserves Cut on action as Hard cut plus action-phase continuity and cut-timing policy. The useful editorial grammar is to place the edit inside compatible ongoing motion, not to invent another renderer transition.",
+      };
+    }
+    if (capabilityId === "camera_pass_transition") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.62 preserves Camera pass-through transition as a high-value compound motif built from camera travel plus a truthful foreground occlusion or pass boundary and an incoming shot/representation. The motif remains reusable, but the reel does not justify a new atomic transition renderer.",
+      };
+    }
+    if (capabilityId === "scale_transition") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.62 preserves Scale transition as a compound motif requiring truthful authored outgoing and incoming scale/representation endpoints plus a shared visual anchor. The current pass-through-like choreography must not invent a second representation merely to force a scale-transition label.",
+      };
+    }
+    if (capabilityId === "hold") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.62 closes Hold out of independent visual-transition Qualification. Hold is a shot dwell/pacing instruction that preserves the resolved state for an authored duration; timing remains first-class Director vocabulary without claiming a visual transform.",
+      };
+    }
+  }
+
+
+  if (
+    familyCategory === "transition_continuity" &&
+    familyGroup === "Motion & axis continuity"
+  ) {
+    if (capabilityId === "maintain_screen_direction") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.61 closes Maintain screen direction out of independent primitive Qualification and preserves it as a first-class continuity policy. Its visual invariant is projected screen-space motion direction across a shot transition; the rule constrains shot/camera selection rather than generating a new object or camera motion.",
+      };
+    }
+    if (capabilityId === "match_motion_direction") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "maintain_screen_direction",
+        qualification_note:
+          "A.11A.61 closes Match motion direction out of independent primitive Qualification. It shares the same projected screen-motion-direction continuity mechanism as Maintain screen direction; preserve both author-facing continuity intents while avoiding duplicate atomic evidence.",
+      };
+    }
+    if (capabilityId === "maintain_axis") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.61 preserves Maintain axis as a first-class continuity policy: establish or derive the action/relational axis, remember the camera side/half-space, and constrain later shot selection unless an intentional crossing is authored. The rule is not itself an animation primitive.",
+      };
+    }
+    if (capabilityId === "eyeline_match") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: true,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.61 closes Eyeline match out of independent primitive Qualification while preserving it as an authored-semantic continuity policy. Truthful eyeline matching requires an authored eye/head position or trustworthy gaze/semantic-forward axis plus a gaze target; arbitrary GLBs such as vehicles cannot manufacture an eyeline.",
+      };
+    }
+    if (capabilityId === "preserve_actor_state") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.61 preserves Preserve actor state as a cross-shot state-invariant continuity policy. Identity, visibility, pose, transform, articulation, attachments, and other declared state carry across the transition except where the story explicitly authorizes a change; no new motion primitive is implied.",
+      };
+    }
+    if (capabilityId === "preserve_action_continuity") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.61 preserves Preserve action continuity as a temporal continuity policy. The compiler carries action identity, phase/progress, trajectory, direction, and compatible motion state across a cut or reframe rather than restarting the action or treating continuity as a standalone animation primitive.",
+      };
+    }
+  }
+
+
+  if (
+    familyCategory === "object_motion" &&
+    familyGroup === "Rigid mechanics"
+  ) {
+    if (capabilityId === "hinge") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "rotate",
+        qualification_note:
+          "A.11A.60 closes Hinge out of independent Qualification. Hinge is a high-value compound mechanic: Rotate around an authored fixed pivot/hinge anchor with a declared axis or degree-of-freedom limit. Arbitrary whole-object rotation around a qualification pivot does not prove that the asset owns a real hinge.",
+      };
+    }
+    if (capabilityId === "slide") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "translate",
+        qualification_note:
+          "A.11A.60 closes Slide out of independent Qualification. Slide is constrained Translate along a declared local, surface, or target-relative linear axis; preserve the author-facing verb as a motion alias/modifier rather than duplicating the Translate primitive.",
+      };
+    }
+    if (capabilityId === "roll") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.60 preserves Roll as a high-value compound mechanic rather than an atomic primitive. Truthful rolling couples Translate and Rotate through a declared rolling axis/contact relation and requires geometry or directability that can actually roll; arbitrary boxes may tumble instead.",
+      };
+    }
+    if (capabilityId === "spin") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "rotate",
+        qualification_note:
+          "A.11A.60 closes Spin out of independent Qualification. Spin is repeated or sustained Rotate around a declared axis; rotationally symmetric assets may make it perceptually weak, but stronger proof-only cues would not create a new primitive.",
+      };
+    }
+    if (capabilityId === "lift" || capabilityId === "lower") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "translate",
+        qualification_note:
+          capabilityId === "lift"
+            ? "A.11A.60 closes Lift out of independent Qualification. The current visual fact is signed vertical Translate in the scene's declared up direction; do not infer an unseen agent, force, or support relation merely from upward motion."
+            : "A.11A.60 closes Lower out of independent Qualification. The current visual fact is signed vertical Translate opposite the scene's declared up direction; preserve Lower as an author-facing directional alias rather than another atomic motion primitive.",
+      };
+    }
+    if (capabilityId === "object_open" || capabilityId === "object_close") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          capabilityId === "object_open"
+            ? "A.11A.60 closes Open out of independent Qualification. A truthful opening requires an authored openable subpart, hinge/slider articulation, pivot or rail, allowed range, and current/target articulation state; rotating the entire arbitrary GLB is not valid open proof."
+            : "A.11A.60 closes Close out of independent Qualification. Close requires the same authored articulation channel plus a pre-existing open/current state and target closed state; reversing a whole-object hinge fallback cannot manufacture closable structure.",
+      };
+    }
+  }
+
   if (
     familyCategory === "object_motion" &&
     familyGroup === "Process & quantity motion"
@@ -1565,6 +1800,382 @@ export function isDirectorQualificationCapabilityProcessQuantityNonAtomic(
   ).includes(capabilityId);
 }
 
+
+/**
+ * A.11A.60 Rigid-mechanics structural closeout: the eight author-facing
+ * mechanical verbs remain useful Director/runtime vocabulary, but the
+ * cross-asset reel did not expose a new atomic visual primitive.
+ *
+ * Hinge and Roll remain high-value compound mechanics. Slide, Spin, Lift, and
+ * Lower are constrained/directional aliases over already-qualified Translate
+ * or Rotate. Open/Close require truthful authored articulation state rather
+ * than whole-object fallback motion.
+ *
+ * Preserve the frozen historical family and all existing runtime/compiler
+ * lanes, but remove the now-empty Rigid mechanics family from independent
+ * active Qualification rather than manufacturing fake hinges, rolling contact,
+ * agents, lids, doors, drawers, or articulation channels on arbitrary assets.
+ */
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_COMPOUND_MECHANIC_CAPABILITY_IDS = [
+  "hinge",
+  "roll",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_PRIMITIVE_ALIAS_CAPABILITY_IDS = [
+  "slide",
+  "spin",
+  "lift",
+  "lower",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_ARTICULATION_COMPOUND_CAPABILITY_IDS = [
+  "object_open",
+  "object_close",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_NON_ATOMIC_CAPABILITY_IDS = [
+  "hinge",
+  "slide",
+  "roll",
+  "spin",
+  "lift",
+  "lower",
+  "object_open",
+  "object_close",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_COMPONENTS_BY_ID = {
+  hinge: ["rotate"],
+  slide: ["translate"],
+  roll: ["translate", "rotate"],
+  spin: ["rotate"],
+  lift: ["translate"],
+  lower: ["translate"],
+  object_open: ["rotate", "translate"],
+  object_close: ["rotate", "translate"],
+} as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_CANONICAL_MECHANISM_BY_ID = {
+  hinge: "authored_fixed_pivot_rotation",
+  slide: "constrained_linear_translation",
+  roll: "coupled_translation_rotation_with_contact",
+  spin: "repeated_axis_rotation",
+  lift: "signed_vertical_translation",
+  lower: "signed_vertical_translation",
+  object_open: "authored_articulation_state_transition",
+  object_close: "authored_articulation_state_transition",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_VERTICAL_DIRECTION_BY_ID = {
+  lift: 1,
+  lower: -1,
+} as const;
+
+export const DIRECTOR_QUALIFICATION_RIGID_MECHANICS_AUTHORED_STATE_REQUIREMENTS_BY_ID = {
+  hinge: [
+    "authored_pivot_or_hinge_anchor",
+    "authored_rotation_axis_or_degree_of_freedom",
+  ],
+  slide: ["declared_linear_axis_surface_or_rail"],
+  roll: [
+    "rollable_geometry_or_authored_rolling_axis",
+    "authored_contact_surface_or_contact_relation",
+  ],
+  spin: ["declared_rotation_axis"],
+  object_open: [
+    "authored_openable_subpart",
+    "authored_hinge_or_slider_articulation",
+    "authored_pivot_or_rail_and_allowed_range",
+    "authored_current_and_target_articulation_state",
+  ],
+  object_close: [
+    "authored_openable_subpart",
+    "authored_hinge_or_slider_articulation",
+    "authored_pivot_or_rail_and_allowed_range",
+    "existing_authored_open_or_current_articulation_state",
+    "authored_target_closed_state",
+  ],
+} as const;
+
+export function isDirectorQualificationCapabilityRigidMechanicsCompoundMechanic(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_RIGID_MECHANICS_COMPOUND_MECHANIC_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityRigidMechanicsPrimitiveAlias(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_RIGID_MECHANICS_PRIMITIVE_ALIAS_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityRigidMechanicsArticulationCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_RIGID_MECHANICS_ARTICULATION_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityRigidMechanicsNonAtomic(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_RIGID_MECHANICS_NON_ATOMIC_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+
+/**
+ * A.11A.61 Motion-and-axis-continuity structural closeout: these six
+ * author-facing continuity verbs remain first-class Director policy vocabulary,
+ * but the cross-asset reel did not expose any standalone visual motion primitive.
+ *
+ * Maintain screen direction and Match motion direction share one projected
+ * screen-space motion-direction invariant. Maintain axis constrains shot
+ * selection relative to an established action/relational axis. Preserve actor
+ * state and Preserve action continuity are cross-shot state/temporal invariants.
+ * Eyeline match requires truthful authored gaze semantics.
+ *
+ * Preserve the frozen historical family, canonical continuity rules, registry
+ * support/fallback/demo lanes, and runtime ownership. Remove only the empty
+ * Motion & axis continuity family from independent active Qualification rather
+ * than inventing arrows, axis overlays, gaze vectors, or other proof-only cues.
+ */
+export const DIRECTOR_QUALIFICATION_CONTINUITY_SCREEN_MOTION_POLICY_CAPABILITY_IDS = [
+  "maintain_screen_direction",
+  "match_motion_direction",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_SEQUENCE_POLICY_CAPABILITY_IDS = [
+  "maintain_axis",
+  "preserve_actor_state",
+  "preserve_action_continuity",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_AUTHORED_SEMANTIC_POLICY_CAPABILITY_IDS = [
+  "eyeline_match",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_POLICY_CAPABILITY_IDS = [
+  "maintain_screen_direction",
+  "maintain_axis",
+  "eyeline_match",
+  "preserve_actor_state",
+  "preserve_action_continuity",
+  "match_motion_direction",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_SHARED_SCREEN_MOTION_MECHANISM =
+  "screen_motion_direction_continuity" as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_CANONICAL_MECHANISM_BY_ID = {
+  maintain_screen_direction: "screen_motion_direction_continuity",
+  maintain_axis: "action_axis_half_space_continuity",
+  eyeline_match: "authored_gaze_eyeline_continuity",
+  preserve_actor_state: "cross_shot_actor_state_invariant",
+  preserve_action_continuity: "cross_shot_action_phase_continuity",
+  match_motion_direction: "screen_motion_direction_continuity",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_CONTINUITY_POLICY_REQUIREMENTS_BY_ID = {
+  maintain_screen_direction: [
+    "tracked_actor_motion_across_transition",
+    "outgoing_and_incoming_screen_space_motion_direction",
+  ],
+  maintain_axis: [
+    "authored_or_derived_action_or_relational_axis",
+    "camera_side_or_allowed_half_space_before_transition",
+  ],
+  eyeline_match: [
+    "authored_eye_or_head_position_or_view_origin",
+    "authored_gaze_or_trustworthy_semantic_forward_axis",
+    "authored_gaze_target",
+  ],
+  preserve_actor_state: [
+    "stable_actor_identity_across_transition",
+    "pre_transition_actor_state_snapshot",
+    "explicitly_authorized_state_changes",
+  ],
+  preserve_action_continuity: [
+    "stable_action_identity_across_transition",
+    "pre_transition_action_phase_progress_or_trajectory",
+    "compatible_post_transition_motion_state",
+  ],
+  match_motion_direction: [
+    "tracked_actor_motion_across_transition",
+    "outgoing_and_incoming_screen_space_motion_direction",
+  ],
+} as const;
+
+export function isDirectorQualificationCapabilityContinuityScreenMotionPolicy(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_CONTINUITY_SCREEN_MOTION_POLICY_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityContinuitySequencePolicy(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_CONTINUITY_SEQUENCE_POLICY_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityContinuityAuthoredSemanticPolicy(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_CONTINUITY_AUTHORED_SEMANTIC_POLICY_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityContinuityPolicy(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_CONTINUITY_POLICY_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+/**
+ * A.11A.63 final Transitions closeout.
+ *
+ * Hard cut and the repaired Crossfade both passed cold-read cross-asset evidence
+ * and are frozen as the two foundational atomic edit transitions. The remaining
+ * seven author-facing transition verbs stay canonical Director vocabulary at
+ * their A.11A.62 higher-level roles: camera composition, continuity-aware edit
+ * compounds, cinematic motifs, or sequence/timing policy. With no unresolved
+ * atomic member left, the active Transitions family intentionally disappears.
+ */
+export const DIRECTOR_QUALIFICATION_TRANSITION_FROZEN_PRIMITIVE_CAPABILITY_IDS = [
+  "hard_cut",
+  "crossfade",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_ACTIVE_REPAIR_CAPABILITY_IDS = [] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_CAMERA_INTERPOLATION_CAPABILITY_IDS = [
+  "smooth_blend",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_CONTINUITY_COMPOUND_CAPABILITY_IDS = [
+  "match_cut",
+  "cut_on_action",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_SEQUENCE_POLICY_CAPABILITY_IDS = [
+  "continuous_take",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_COMPOUND_MOTIF_CAPABILITY_IDS = [
+  "camera_pass_transition",
+  "scale_transition",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_TIMING_MODIFIER_CAPABILITY_IDS = [
+  "hold",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_NON_ATOMIC_CAPABILITY_IDS = [
+  "smooth_blend",
+  "match_cut",
+  "continuous_take",
+  "cut_on_action",
+  "camera_pass_transition",
+  "scale_transition",
+  "hold",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_CANONICAL_MECHANISM_BY_ID = {
+  hard_cut: "instantaneous_shot_boundary",
+  smooth_blend: "continuous_camera_state_interpolation",
+  match_cut: "hard_cut_with_cross_shot_visual_correspondence",
+  continuous_take: "forbid_cut_interval",
+  cut_on_action: "hard_cut_with_action_phase_continuity",
+  crossfade: "two_shot_alpha_composite",
+  camera_pass_transition: "camera_occlusion_pass_transition",
+  scale_transition: "authored_endpoint_scale_transition",
+  hold: "shot_dwell_timing",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_TRANSITION_REQUIREMENTS_BY_ID = {
+  hard_cut: [
+    "complete_outgoing_shot_state",
+    "complete_incoming_shot_state",
+    "instantaneous_edit_boundary",
+  ],
+  smooth_blend: [
+    "outgoing_camera_state",
+    "incoming_camera_state",
+    "continuous_camera_interpolation",
+  ],
+  match_cut: [
+    "complete_outgoing_shot_state",
+    "complete_incoming_shot_state",
+    "measured_or_authored_cross_shot_visual_correspondence",
+  ],
+  continuous_take: [
+    "authored_no_cut_interval",
+    "continuous_scene_and_action_state",
+  ],
+  cut_on_action: [
+    "hard_cut_boundary",
+    "stable_action_identity",
+    "compatible_action_phase_across_cut",
+  ],
+  crossfade: [
+    "complete_outgoing_shot_state",
+    "complete_incoming_shot_state",
+    "simultaneous_two_shot_render_authority",
+    "deterministic_image_space_alpha_composite",
+  ],
+  camera_pass_transition: [
+    "camera_travel_path",
+    "truthful_foreground_occluder_or_pass_boundary",
+    "incoming_shot_or_representation",
+  ],
+  scale_transition: [
+    "truthful_outgoing_scale_or_representation",
+    "truthful_incoming_scale_or_representation",
+    "shared_visual_anchor_mapping",
+  ],
+  hold: [
+    "resolved_shot_state",
+    "authored_dwell_duration",
+  ],
+} as const;
+
+export function isDirectorQualificationCapabilityTransitionFrozenPrimitive(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_TRANSITION_FROZEN_PRIMITIVE_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityTransitionActiveRepair(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_TRANSITION_ACTIVE_REPAIR_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityTransitionNonAtomic(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_TRANSITION_NON_ATOMIC_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityObjectMotionModifier(
   capabilityId: string,
 ) {
@@ -1705,7 +2316,11 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityKinematicRelationState(capabilityId) &&
     !isDirectorQualificationCapabilityKinematicOrientationCompound(capabilityId) &&
     !isDirectorQualificationCapabilityObjectRelationCompound(capabilityId) &&
-    !isDirectorQualificationCapabilityProcessQuantityNonAtomic(capabilityId)
+    !isDirectorQualificationCapabilityProcessQuantityNonAtomic(capabilityId) &&
+    !isDirectorQualificationCapabilityRigidMechanicsNonAtomic(capabilityId) &&
+    !isDirectorQualificationCapabilityContinuityPolicy(capabilityId) &&
+    !isDirectorQualificationCapabilityTransitionFrozenPrimitive(capabilityId) &&
+    !isDirectorQualificationCapabilityTransitionNonAtomic(capabilityId)
   );
 }
 
@@ -1724,7 +2339,7 @@ export function directorQualificationExpectedActiveCapabilityCount(
  * modifiers, compound-only narrative verbs, authored-representation-dependent
  * verbs, object-motion labels that require authored anchors/axes or relational
  * orchestration, kinematic constraint states/modifiers, and authored
- * object-relationship state transitions remain in the 184-entry Director registry and in
+ * object-relationship state transitions, cross-shot continuity policies, already-qualified edit primitives, and non-atomic transition strategies remain in the 184-entry Director registry and in
  * buildDirectorQualificationFamilies(...) so historical compatibility evidence stays
  * stable. The live campaign excludes capabilities that either cannot yet be proven
  * truthfully, are awaiting/undergoing semantic consolidation, have already been

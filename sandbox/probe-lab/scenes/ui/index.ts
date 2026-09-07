@@ -2,6 +2,9 @@ export {
   DirectorProcessRuntimeOverlay,
 } from "./director-process-runtime-overlay";
 export {
+  DirectorShotCrossfadeCompositor,
+} from "./director-transition-runtime";
+export {
   ResolvedAssetModel,
   fittedResolvedAssetScale,
   preloadResolvedAsset,

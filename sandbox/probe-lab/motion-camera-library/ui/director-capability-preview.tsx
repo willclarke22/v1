@@ -12,6 +12,7 @@ import type { AssetDirectabilityProfileV1 } from "../../directability/asset-dire
 import {
   applyDirectorBlocking,
   DirectorShotCameraController,
+  DirectorShotCrossfadeCompositor,
   DirectorShotLightingRig,
   DirectorShotPathGuide,
   sampleDirectorActorState,
@@ -2092,12 +2093,24 @@ export function DirectorCapabilityPreview({
       />
       <ProcessCarrierOverlay moment={moment} actors={qualificationActors} progress={progress} fixtureKind={fixtureKind} />
       {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={qualificationActors} /> : null}
-      <DirectorShotCameraController
-        moment={moment}
-        actors={qualificationActors}
-        progress={progress}
-        isPlaying={auditSnap ? false : isPlaying}
-      />
+      {capability.id === "crossfade" && qualificationVisibilityAssist ? (
+        <DirectorShotCrossfadeCompositor
+          moment={moment}
+          actors={qualificationActors}
+          progress={progress}
+          fromProgress={0.22}
+          toProgress={0.82}
+          blendStartProgress={0.34}
+          blendEndProgress={0.66}
+        />
+      ) : (
+        <DirectorShotCameraController
+          moment={moment}
+          actors={qualificationActors}
+          progress={progress}
+          isPlaying={auditSnap ? false : isPlaying}
+        />
+      )}
       <QualificationCameraVisibilityFill enabled={useQualificationVisibilityFill} />
       {/* Controlled audit proofs are camera-authoritative. OrbitControls can
           overwrite a paused Director pose and create a false pause-to-play snap.
