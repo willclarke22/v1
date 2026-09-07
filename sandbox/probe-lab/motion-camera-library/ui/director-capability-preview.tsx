@@ -2093,7 +2093,11 @@ export function DirectorCapabilityPreview({
       />
       <ProcessCarrierOverlay moment={moment} actors={qualificationActors} progress={progress} fixtureKind={fixtureKind} />
       {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={qualificationActors} /> : null}
-      {capability.id === "crossfade" && qualificationVisibilityAssist ? (
+      {/* A.11A.65: Crossfade is a qualified shared transition primitive, not
+          Qualification-only proof instrumentation. Keep the same single Canvas
+          and route both the Capability Library and Qualification Room through
+          the shared two-render-target compositor. */}
+      {capability.id === "crossfade" ? (
         <DirectorShotCrossfadeCompositor
           moment={moment}
           actors={qualificationActors}

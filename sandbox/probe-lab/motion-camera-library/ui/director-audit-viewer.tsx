@@ -94,10 +94,11 @@ export function DirectorAuditViewer({
     <div ref={hostRef} style={shellStyle}>
       <div style={modeBarStyle}>
         <div style={{ display: "grid", gap: 4 }}>
-          <strong>Real-asset proof</strong>
+          <strong>Real-asset execution preview</strong>
           <small style={mutedStyle}>
-            The Director capability executes directly against reviewed Asset Library
-            GLBs. Asset roles remain searchable and switchable below.
+            The selected Director vocabulary entry is previewed against reviewed Asset
+            Library GLBs. Qualification taxonomy stays metadata-only outside this
+            single WebGL viewer.
           </small>
         </div>
       </div>
@@ -120,7 +121,7 @@ export function DirectorAuditViewer({
           </div>
         ) : realAssetError ? (
           <div style={viewerMessageStyle}>
-            <strong>Real-asset proof unavailable.</strong>
+            <strong>Real-asset execution preview unavailable.</strong>
             <span>{realAssetError}</span>
             <button
               type="button"

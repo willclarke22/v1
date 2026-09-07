@@ -279,14 +279,19 @@ function main() {
   const preview = source(
     "sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx",
   );
+  const crossfadeQualificationOnlyRoute =
+    preview.includes('capability.id === "crossfade" && qualificationVisibilityAssist');
+  const crossfadeSharedLibraryRoute =
+    preview.includes('capability.id === "crossfade" ? (') &&
+    preview.includes("A.11A.65");
   assert(
-    preview.includes('capability.id === "crossfade" && qualificationVisibilityAssist') &&
+    (crossfadeQualificationOnlyRoute || crossfadeSharedLibraryRoute) &&
       preview.includes("<DirectorShotCrossfadeCompositor") &&
       preview.includes("fromProgress={0.22}") &&
       preview.includes("toProgress={0.82}") &&
       preview.includes("blendStartProgress={0.34}") &&
       preview.includes("blendEndProgress={0.66}"),
-    "A.11A.63 must preserve the repaired deterministic Crossfade evidence path even after it leaves the active family.",
+    "A.11A.63 must preserve the repaired deterministic Crossfade path even after it leaves the active family; A.11A.65 may expose that same qualified compositor in the Capability Library.",
   );
 
   const a62Source = source(

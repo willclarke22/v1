@@ -14,6 +14,13 @@ import {
   type DirectorCapabilitySupportLevel,
 } from "../director-capability-registry";
 import {
+  DIRECTOR_CAPABILITY_QUALIFICATION_ROLES,
+  DIRECTOR_CAPABILITY_QUALIFICATION_ROLE_LABELS,
+  directorCapabilityQualificationDescriptor,
+  type DirectorCapabilityQualificationDescriptor,
+  type DirectorCapabilityQualificationRole,
+} from "../director-capability-qualification";
+import {
   DIRECTOR_FILM_POLICIES,
   DIRECTOR_PERCEPTUAL_CAPABILITIES,
   DIRECTOR_PERCEPTUAL_CATEGORY_LABELS,
@@ -183,6 +190,7 @@ type LibraryCategoryFilter =
   | `level1:${DirectorPerceptualCapabilityCategory}`
   | `level2:${DirectorCapabilityCategory}`;
 type SupportFilter = "all" | DirectorCapabilitySupportLevel;
+type QualificationRoleFilter = "all" | DirectorCapabilityQualificationRole;
 
 type DirectorLibraryEntry =
   | {
@@ -194,6 +202,7 @@ type DirectorLibraryEntry =
       summary: string;
       accent: string;
       capability: DirectorCapability;
+      qualification: DirectorCapabilityQualificationDescriptor;
     }
   | {
       key: string;
@@ -980,7 +989,7 @@ function RealAssetExecutionQualificationPanel({
       ) : null}
 
       <details style={detailsStyle}>
-        <summary style={summaryStyle}>Phase 1B.5E qualification report JSON</summary>
+        <summary style={summaryStyle}>Phase 1B.5E execution/directability report JSON</summary>
         <pre style={preStyle}>{formatJson(report)}</pre>
       </details>
     </div>
@@ -1001,6 +1010,8 @@ function AtomicDirectorCapabilityLibraryLab({
   const [selectedEntryKey, setSelectedEntryKey] = useState("atomic:over_shoulder");
   const [category, setCategory] = useState<LibraryCategoryFilter>("level2_all");
   const [support, setSupport] = useState<SupportFilter>("all");
+  const [qualificationRole, setQualificationRole] =
+    useState<QualificationRoleFilter>("all");
   const [query, setQuery] = useState("");
   const [roleAssetOverrides, setRoleAssetOverrides] = useState<Record<string, string>>({});
   const [catalogLimit, setCatalogLimit] = useState(INITIAL_CATALOG_LIMIT);
@@ -1017,20 +1028,27 @@ function AtomicDirectorCapabilityLibraryLab({
 
   const filtered = useMemo(() => {
     const needle = normalized(query);
-    const atomicCategory =
+    const executionCategory =
       category.startsWith("level2:")
         ? (category.slice("level2:".length) as DirectorCapabilityCategory)
         : null;
-    const atomicLayerVisible =
+    const executionLayerVisible =
       category === "all_levels" ||
       category === "level2_all" ||
       category.startsWith("level2:");
 
-    if (!atomicLayerVisible) return [];
+    if (!executionLayerVisible) return [];
 
     return DIRECTOR_CAPABILITIES.filter((capability) => {
-      if (atomicCategory && capability.category !== atomicCategory) return false;
+      if (executionCategory && capability.category !== executionCategory) return false;
       if (support !== "all" && capability.compiler.threejs !== support) return false;
+      const qualification = directorCapabilityQualificationDescriptor(capability);
+      if (
+        qualificationRole !== "all" &&
+        qualification.role !== qualificationRole
+      ) {
+        return false;
+      }
       if (!needle) return true;
       const haystack = normalized(
         [
@@ -1040,11 +1058,16 @@ function AtomicDirectorCapabilityLibraryLab({
           capability.summary,
           capability.semantic_intent,
           DIRECTOR_CATEGORY_LABELS[capability.category],
+          qualification.role_label,
+          qualification.canonical_mechanism ?? "",
+          qualification.canonical_capability_id ?? "",
+          ...qualification.component_capability_ids,
+          ...qualification.requirements,
         ].join(" "),
       );
       return haystack.includes(needle);
     });
-  }, [category, query, support]);
+  }, [category, qualificationRole, query, support]);
 
   const libraryEntries = useMemo<DirectorLibraryEntry[]>(
     () => [
@@ -1070,6 +1093,7 @@ function AtomicDirectorCapabilityLibraryLab({
           summary: capability.summary,
           accent: CATEGORY_ACCENTS[capability.category],
           capability,
+          qualification: directorCapabilityQualificationDescriptor(capability),
         }),
       ),
       ...DIRECTOR_FILM_POLICIES.map(
@@ -1122,6 +1146,14 @@ function AtomicDirectorCapabilityLibraryLab({
         return false;
       }
 
+      if (
+        qualificationRole !== "all" &&
+        (entry.kind !== "atomic" ||
+          entry.qualification.role !== qualificationRole)
+      ) {
+        return false;
+      }
+
       if (!needle) return true;
 
       const searchText =
@@ -1133,6 +1165,11 @@ function AtomicDirectorCapabilityLibraryLab({
               entry.summary,
               entry.capability.semantic_intent,
               DIRECTOR_CATEGORY_LABELS[entry.capability.category],
+              entry.qualification.role_label,
+              entry.qualification.canonical_mechanism ?? "",
+              entry.qualification.canonical_capability_id ?? "",
+              ...entry.qualification.component_capability_ids,
+              ...entry.qualification.requirements,
             ].join(" ")
           : entry.kind === "perceptual"
             ? [
@@ -1155,7 +1192,7 @@ function AtomicDirectorCapabilityLibraryLab({
 
       return normalized(searchText).includes(needle);
     });
-  }, [category, libraryEntries, query, support]);
+  }, [category, libraryEntries, qualificationRole, query, support]);
 
   const selectedLibraryEntry =
     libraryEntries.find((entry) => entry.key === selectedEntryKey) ??
@@ -1246,7 +1283,7 @@ function AtomicDirectorCapabilityLibraryLab({
 
   useEffect(() => {
     setCatalogLimit(INITIAL_CATALOG_LIMIT);
-  }, [category, query, support]);
+  }, [category, qualificationRole, query, support]);
 
   useEffect(() => {
     setRoleAssetOverrides({});
@@ -1512,7 +1549,7 @@ function AtomicDirectorCapabilityLibraryLab({
     return Array.from(groups.entries());
   }, [visibleFilteredEntries]);
 
-  const categoryShowsAtomicSupport =
+  const categoryShowsExecutionFilters =
     category === "all_levels" ||
     category === "level2_all" ||
     category.startsWith("level2:");
@@ -1525,7 +1562,7 @@ function AtomicDirectorCapabilityLibraryLab({
             <div style={eyebrowStyle}>MyWay Probe Lab · Director Capability Library</div>
             <h1 style={compactTitleStyle}>Director Capability Library</h1>
             <p style={compactSubtitleStyle}>
-              One workbench for perceptual/composite direction, atomic execution,
+              One workbench for perceptual/composite direction, Director execution vocabulary,
               and film-wide policies. The hierarchy lives in the catalogue instead
               of splitting the library into separate pages.
             </p>
@@ -1571,6 +1608,9 @@ function AtomicDirectorCapabilityLibraryLab({
                       gap: 8,
                     }}
                   >
+                    <span style={badgeStyle}>
+                      {selectedLibraryEntry.qualification.role_label}
+                    </span>
                     <SupportBadge status={selected.compiler.threejs} />
                     <span style={badgeStyle}>
                       Blender: {supportLabel(selected.compiler.blender)}
@@ -1595,7 +1635,73 @@ function AtomicDirectorCapabilityLibraryLab({
                 </div>
 
                 <details style={compactDetailsStyle}>
-                  <summary style={compactSummaryStyle}>Real-asset proof & qualification</summary>
+                  <summary style={compactSummaryStyle}>Qualification taxonomy</summary>
+                  <div style={advancedDetailsBodyStyle}>
+                    <div style={perceptualOverviewStyle}>
+                      <div style={compactInfoCardStyle}>
+                        <span style={statLabelStyle}>Qualification role</span>
+                        <strong>{selectedLibraryEntry.qualification.role_label}</strong>
+                        <span style={mutedStyle}>
+                          {selectedLibraryEntry.qualification.role_summary}
+                        </span>
+                      </div>
+                      <div style={compactInfoCardStyle}>
+                        <span style={statLabelStyle}>Canonical mechanism</span>
+                        <strong>
+                          {selectedLibraryEntry.qualification.canonical_mechanism ??
+                            selected.id}
+                        </strong>
+                        <span style={mutedStyle}>
+                          {selectedLibraryEntry.qualification.canonical_capability_id
+                            ? `Canonical capability: ${selectedLibraryEntry.qualification.canonical_capability_id}`
+                            : selectedLibraryEntry.qualification.base_policy_capability_id
+                              ? `Base policy: ${selectedLibraryEntry.qualification.base_policy_capability_id}`
+                              : "Qualification keeps the selected author-facing capability identity."}
+                        </span>
+                      </div>
+                      <div style={compactInfoCardStyle}>
+                        <span style={statLabelStyle}>Director components</span>
+                        <strong>
+                          {selectedLibraryEntry.qualification.component_capability_ids.length
+                            ? selectedLibraryEntry.qualification.component_capability_ids.join(
+                                " + ",
+                              )
+                            : "Self / policy authority"}
+                        </strong>
+                        <span style={mutedStyle}>
+                          Runtime support below remains a separate implementation dimension.
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedLibraryEntry.qualification.requirements.length ? (
+                      <div style={auditExpectationsStyle}>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <span style={statLabelStyle}>Truthful authoring requirements</span>
+                          {selectedLibraryEntry.qualification.requirements.map(
+                            (requirement) => (
+                              <span key={requirement} style={auditExpectationItemStyle}>
+                                <span aria-hidden="true">•</span>
+                                <span>{requirement.replace(/_/g, " ")}</span>
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div style={honestyStyle}>
+                      <strong>Qualification authority</strong>
+                      <span>
+                        {selectedLibraryEntry.qualification.source}. Qualification
+                        role is distinct from Three.js / Blender runtime support.
+                      </span>
+                    </div>
+                  </div>
+                </details>
+
+                <details style={compactDetailsStyle}>
+                  <summary style={compactSummaryStyle}>Real-asset execution & directability</summary>
                   <div style={compactDetailsBodyStyle}>
                     <RealAssetExecutionQualificationPanel
                       capability={selected}
@@ -1619,7 +1725,7 @@ function AtomicDirectorCapabilityLibraryLab({
                       <div style={auditHeaderStyle}>
                         <div style={{ display: "grid", gap: 5 }}>
                           <strong style={{ fontSize: 16 }}>
-                            {reviewedCount}/{DIRECTOR_CAPABILITIES.length} atomic capabilities reviewed
+                            {reviewedCount}/{DIRECTOR_CAPABILITIES.length} Director capabilities reviewed
                           </strong>
                           <span style={mutedStyle}>
                             Review the selected capability directly with real Asset Library actors.
@@ -1836,7 +1942,7 @@ function AtomicDirectorCapabilityLibraryLab({
                     <span style={statLabelStyle}>Composition</span>
                     <strong>{selectedLibraryEntry.capability.phases.join(" → ")}</strong>
                     <span style={mutedStyle}>
-                      Atomic Director capabilities:{" "}
+                      Director components:{" "}
                       {selectedLibraryEntry.capability.atomic_capability_ids.join(", ")}
                     </span>
                   </div>
@@ -1957,7 +2063,7 @@ function AtomicDirectorCapabilityLibraryLab({
 
               <div
                 style={
-                  categoryShowsAtomicSupport
+                  categoryShowsExecutionFilters
                     ? sidebarFilterGridStyle
                     : { display: "grid", gap: 8 }
                 }
@@ -1973,6 +2079,7 @@ function AtomicDirectorCapabilityLibraryLab({
                       nextCategory.startsWith("level1:")
                     ) {
                       setSupport("all");
+                      setQualificationRole("all");
                     }
                   }}
                   style={selectStyle}
@@ -1991,7 +2098,7 @@ function AtomicDirectorCapabilityLibraryLab({
                     })}
                   </optgroup>
 
-                  <optgroup label={`Level 2 · Atomic Execution · ${DIRECTOR_CAPABILITIES.length}`}>
+                  <optgroup label={`Level 2 · Director Execution Vocabulary · ${DIRECTOR_CAPABILITIES.length}`}>
                     <option value="level2_all">All Level 2 capabilities</option>
                     {DIRECTOR_CAPABILITY_CATEGORIES.map((item) => (
                       <option key={item} value={`level2:${item}`}>
@@ -2005,20 +2112,38 @@ function AtomicDirectorCapabilityLibraryLab({
                   </optgroup>
                 </select>
 
-                {categoryShowsAtomicSupport ? (
-                  <select
-                    value={support}
-                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                      setSupport(event.target.value as SupportFilter)
-                    }
-                    style={selectStyle}
-                  >
-                    <option value="all">All Three.js support</option>
-                    <option value="direct">Direct</option>
-                    <option value="compound">Compound</option>
-                    <option value="approximate">Approximate</option>
-                    <option value="declared">Declared</option>
-                  </select>
+                {categoryShowsExecutionFilters ? (
+                  <>
+                    <select
+                      value={support}
+                      onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                        setSupport(event.target.value as SupportFilter)
+                      }
+                      style={selectStyle}
+                    >
+                      <option value="all">All Three.js support</option>
+                      <option value="direct">Direct</option>
+                      <option value="compound">Compound</option>
+                      <option value="approximate">Approximate</option>
+                      <option value="declared">Declared</option>
+                    </select>
+                    <select
+                      value={qualificationRole}
+                      onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                        setQualificationRole(
+                          event.target.value as QualificationRoleFilter,
+                        )
+                      }
+                      style={selectStyle}
+                    >
+                      <option value="all">All qualification roles</option>
+                      {DIRECTOR_CAPABILITY_QUALIFICATION_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {DIRECTOR_CAPABILITY_QUALIFICATION_ROLE_LABELS[role]}
+                        </option>
+                      ))}
+                    </select>
+                  </>
                 ) : null}
               </div>
             </div>
@@ -2677,7 +2802,7 @@ const sidebarControlsStyle: CSSProperties = {
 
 const sidebarFilterGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
   gap: 8,
 };
 

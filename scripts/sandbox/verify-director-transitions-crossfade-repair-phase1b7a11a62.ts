@@ -267,14 +267,19 @@ function main() {
   const preview = source(
     "sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx",
   );
+  const crossfadeQualificationOnlyRoute =
+    preview.includes('capability.id === "crossfade" && qualificationVisibilityAssist');
+  const crossfadeSharedLibraryRoute =
+    preview.includes('capability.id === "crossfade" ? (') &&
+    preview.includes("A.11A.65");
   assert(
-    preview.includes('capability.id === "crossfade" && qualificationVisibilityAssist') &&
+    (crossfadeQualificationOnlyRoute || crossfadeSharedLibraryRoute) &&
       preview.includes("<DirectorShotCrossfadeCompositor") &&
       preview.includes("fromProgress={0.22}") &&
       preview.includes("toProgress={0.82}") &&
       preview.includes("blendStartProgress={0.34}") &&
       preview.includes("blendEndProgress={0.66}"),
-    "A.11A.62 Qualification preview must route Crossfade through the shared two-shot compositor with a visible deterministic blend window.",
+    "A.11A.62 Crossfade must route through the shared two-shot compositor with a visible deterministic blend window; A.11A.65 may promote that same compositor from Qualification-only previewing into the Capability Library.",
   );
   assert(
     preview.includes("<DirectorShotCameraController") &&
