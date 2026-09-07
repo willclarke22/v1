@@ -813,6 +813,170 @@ function capabilityProfile(
   }
 
   if (
+    familyCategory === "object_motion" &&
+    familyGroup === "Process & quantity motion"
+  ) {
+    if (capabilityId === "scatter") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Scatter out of independent Qualification. Scatter is an authored group-motion compound: preserve collection membership, then distribute per-member displacement away from a common region. Arbitrary extra actors, camera motion, or unrelated separation is not truthful scatter proof.",
+      };
+    }
+    if (capabilityId === "expand" || capabilityId === "contract") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          capabilityId === "expand"
+            ? "A.11A.59 closes Expand out of independent Qualification because Expand and Contract are opposite signs of one reusable geometric scale-animation modifier. Preserve the author verb as positive signed scale animation; this changes literal object extent and must not be confused with semantic representation-scale transitions."
+            : "A.11A.59 closes Contract out of independent Qualification because Contract and Expand are opposite signs of one reusable geometric scale-animation modifier. Preserve the author verb as negative signed scale animation; this changes literal object extent and must not be confused with semantic representation-scale transitions.",
+      };
+    }
+    if (capabilityId === "flow") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 preserves Flow as a high-value compound process motif rather than an atomic motion primitive. The successful cross-asset reel shows carrier instances travelling along a declared route with temporal staggering; truthful authoring still requires carrier/process semantics plus a route or destination.",
+      };
+    }
+    if (capabilityId === "emit") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 preserves Emit as a high-value compound process motif rather than an atomic motion primitive. The successful reel shows repeated carriers leaving a source, but truthful authoring requires an emitter/source, an emission origin, and carrier/material/signal semantics instead of inventing particles around an arbitrary asset.",
+      };
+    }
+    if (capabilityId === "fill") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Fill out of independent Qualification. Fill requires an authored fillable region or volume, quantity/capacity state, and a representation for the contents; guide marks or root-scale changes cannot manufacture empty-to-full semantic state on an arbitrary GLB.",
+      };
+    }
+    if (capabilityId === "drain") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Drain out of independent Qualification. Drain requires an existing authored fill quantity in a fillable region and then reduces that persisted quantity state; ordinary motion or a guide overlay is not evidence that a container has drained.",
+      };
+    }
+    if (capabilityId === "accumulate") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Accumulate out of independent Qualification. Accumulation needs an authored destination region/surface plus quantity or carrier identity and must visibly retain increasing quantity there; a destination ring alone is proof instrumentation, not accumulation semantics.",
+      };
+    }
+    if (capabilityId === "split") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Split out of independent Qualification. Split is an authored identity/quantity transition: a declared source must map to declared result identities or partition semantics before reusable separation motion can visualize the change. Unrelated actors moving apart are not split proof.",
+      };
+    }
+    if (capabilityId === "merge") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.59 closes Merge out of independent Qualification. Merge is an authored identity/quantity transition: declared inputs must map to a declared result identity or shared result state before reusable convergence motion can visualize the change. Unrelated actors approaching one another are not merge proof.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "object_motion" &&
+    familyGroup === "Object relationships"
+  ) {
+    if (capabilityId === "attach") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Attach out of independent Qualification. A truthful attachment requires an authored attachment site or relationship, then composes an approach motion with establishment of a persistent fixed-relative-transform state. Arbitrary overlap, disappearance, or proximity is not valid attachment proof.",
+      };
+    }
+    if (capabilityId === "detach") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Detach out of independent Qualification. Detach requires a pre-existing authored attachment relationship, then releases that relation before optional independent movement. Translation away from an arbitrary nearby actor is not valid detachment proof.",
+      };
+    }
+    if (capabilityId === "insert_into") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Insert into target out of independent Qualification. Insertion requires an authored receptacle, socket, or containment region plus compatible fit/clearance semantics; compose motion toward that authored region with a containment-state transition. Arbitrary GLB overlap or passing behind a target cannot manufacture an interior.",
+      };
+    }
+    if (capabilityId === "remove_from") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Remove out of independent Qualification. Removal requires an existing authored containment/insertion relation, then releases that state before moving the actor away. Ordinary translation from an arbitrary target does not prove removal.",
+      };
+    }
+    if (capabilityId === "assemble") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Assemble out of independent Qualification. Assembly requires authored part-whole membership plus target placements, sockets, or attachment relations, then composes already-qualified motion/orientation with semantic relationship-state changes. Unrelated actors converging along guide paths are not assembly proof.",
+      };
+    }
+    if (capabilityId === "disassemble") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.58 closes Disassemble out of independent Qualification. Disassembly requires an existing authored assembled part-whole state and preserved component identity, then releases those relations and separates the components. Unrelated actors separating or replacing one another is not disassembly proof.",
+      };
+    }
+  }
+
+  if (
     familyCategory === "blocking_placement" &&
     familyGroup === "Support & containment" &&
     inSet(capabilityId, ["on_surface", "inside"])
@@ -1103,6 +1267,304 @@ export const DIRECTOR_QUALIFICATION_OBJECT_MOTION_COMPOUND_COMPONENTS_BY_ID = {
   follow_target: ["translate"],
 } as const;
 
+/**
+ * A.11A.57 Kinematic-constraints structural closeout: the five author-facing
+ * constraint verbs remain useful Director/runtime vocabulary, but the
+ * Baseline/Diversity reel did not expose a new asset-independent visual
+ * primitive for any of them.
+ *
+ * Axis lock and Maintain distance constrain an underlying motion rather than
+ * generating a distinct motion of their own. Persistent attachment and Rigid
+ * link both cold-read as a fixed relative relationship even though their
+ * runtime semantics remain distinct. Look-at constraint requires authored
+ * semantic forward/orientation truth and composes existing orientation logic.
+ *
+ * Preserve the frozen 184-capability vocabulary and the historical five-member
+ * family, but remove the empty Kinematic constraints family from independent
+ * active Qualification rather than inventing proof-only axes, arrows, badges,
+ * or other UI semantics.
+ */
+export const DIRECTOR_QUALIFICATION_KINEMATIC_MODIFIER_CAPABILITY_IDS = [
+  "axis_lock",
+  "maintain_distance",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_KINEMATIC_RELATION_STATE_CAPABILITY_IDS = [
+  "attach_constraint",
+  "rigid_link",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_KINEMATIC_ORIENTATION_COMPOUND_CAPABILITY_IDS = [
+  "look_at_constraint",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_KINEMATIC_COMPONENTS_BY_ID = {
+  axis_lock: ["translate"],
+  maintain_distance: ["translate"],
+  look_at_constraint: ["aim_at"],
+} as const;
+
+export const DIRECTOR_QUALIFICATION_KINEMATIC_RELATION_CANONICAL_MECHANISM_BY_ID = {
+  attach_constraint: "fixed_relative_transform",
+  rigid_link: "fixed_relative_transform",
+} as const;
+
+export function isDirectorQualificationCapabilityKinematicModifier(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_KINEMATIC_MODIFIER_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityKinematicRelationState(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_KINEMATIC_RELATION_STATE_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityKinematicOrientationCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_KINEMATIC_ORIENTATION_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+/**
+ * A.11A.58 Object-relationships structural closeout: all six author-facing
+ * relationship verbs remain useful Director/runtime vocabulary, but the
+ * Baseline/Diversity reel did not expose a new asset-independent visual
+ * primitive for any of them.
+ *
+ * Attach/Detach are relationship-state transitions. Insert/Remove require
+ * authored receptacle/containment truth. Assemble/Disassemble require authored
+ * part-whole membership and valid assembled/disassembled states. Preserve the
+ * frozen historical family and runtime vocabulary, but remove the empty family
+ * from independent active Qualification rather than inventing proof-only
+ * interiors, sockets, part membership, arrows, or guide semantics.
+ */
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_STATE_TRANSITION_CAPABILITY_IDS = [
+  "attach",
+  "detach",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_CONTAINMENT_COMPOUND_CAPABILITY_IDS = [
+  "insert_into",
+  "remove_from",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_PART_WHOLE_COMPOUND_CAPABILITY_IDS = [
+  "assemble",
+  "disassemble",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_COMPOUND_CAPABILITY_IDS = [
+  ...DIRECTOR_QUALIFICATION_OBJECT_RELATION_STATE_TRANSITION_CAPABILITY_IDS,
+  ...DIRECTOR_QUALIFICATION_OBJECT_RELATION_CONTAINMENT_COMPOUND_CAPABILITY_IDS,
+  ...DIRECTOR_QUALIFICATION_OBJECT_RELATION_PART_WHOLE_COMPOUND_CAPABILITY_IDS,
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_COMPONENTS_BY_ID = {
+  attach: ["move_toward"],
+  detach: ["move_away"],
+  insert_into: ["move_toward"],
+  remove_from: ["move_away"],
+  assemble: ["move_toward", "rotate"],
+  disassemble: ["move_away"],
+} as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_CANONICAL_MECHANISM_BY_ID = {
+  attach: "establish_fixed_relative_transform",
+  detach: "release_fixed_relative_transform",
+  insert_into: "establish_authored_containment",
+  remove_from: "release_authored_containment",
+  assemble: "establish_authored_part_whole_state",
+  disassemble: "release_authored_part_whole_state",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_RELATION_AUTHORED_STATE_REQUIREMENTS_BY_ID = {
+  attach: ["target_actor", "authored_attachment_site_or_relation"],
+  detach: ["existing_authored_attachment_relation"],
+  insert_into: [
+    "authored_receptacle_socket_or_containment_region",
+    "compatible_fit_or_clearance",
+  ],
+  remove_from: ["existing_authored_containment_or_insertion_relation"],
+  assemble: [
+    "authored_part_whole_membership",
+    "authored_target_placements_sockets_or_attachment_relations",
+  ],
+  disassemble: [
+    "existing_authored_assembled_part_whole_state",
+    "preserved_component_identity",
+  ],
+} as const;
+
+export function isDirectorQualificationCapabilityObjectRelationCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_OBJECT_RELATION_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+/**
+ * A.11A.59 Process-and-quantity structural closeout: the ten author-facing
+ * verbs remain useful Director/runtime vocabulary, but the cross-asset reel
+ * did not expose a new atomic visual primitive.
+ *
+ * Expand/Contract are opposite signs of one literal geometric scale-animation
+ * modifier. Flow/Emit are successful reusable compound motifs built from
+ * carrier instances, route/outward motion, and timing. Scatter is an authored
+ * collection-dispersion compound. Fill/Drain/Accumulate/Split/Merge require
+ * truthful authored quantity, region, or identity state.
+ *
+ * Preserve the frozen historical family and all existing runtime/compiler
+ * lanes, but remove the now-empty Process & quantity motion family from
+ * independent active Qualification rather than manufacturing fake fill
+ * volumes, group membership, identity transitions, or particle semantics.
+ */
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_SCALE_MODIFIER_CAPABILITY_IDS = [
+  "expand",
+  "contract",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_COMPOUND_MOTIF_CAPABILITY_IDS = [
+  "flow",
+  "emit",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_GROUP_COMPOUND_CAPABILITY_IDS = [
+  "scatter",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_AUTHORED_STATE_COMPOUND_CAPABILITY_IDS = [
+  "fill",
+  "drain",
+  "accumulate",
+  "split",
+  "merge",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_NON_ATOMIC_CAPABILITY_IDS = [
+  "scatter",
+  "expand",
+  "contract",
+  "flow",
+  "fill",
+  "drain",
+  "emit",
+  "accumulate",
+  "split",
+  "merge",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_SCALE_ANIMATION_MECHANISM =
+  "signed_geometric_scale_animation" as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_SCALE_DIRECTION_BY_ID = {
+  expand: 1,
+  contract: -1,
+} as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_COMPONENTS_BY_ID = {
+  scatter: ["move_away"],
+  flow: ["follow_path"],
+  emit: ["translate"],
+  split: ["move_away"],
+  merge: ["move_toward"],
+} as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_CANONICAL_MECHANISM_BY_ID = {
+  scatter: "authored_collection_dispersion",
+  expand: "signed_geometric_scale_animation",
+  contract: "signed_geometric_scale_animation",
+  flow: "carrier_instances_follow_path_with_temporal_stagger",
+  fill: "interpolate_authored_fill_quantity",
+  drain: "interpolate_authored_fill_quantity",
+  emit: "authored_emitter_spawn_and_motion",
+  accumulate: "increase_authored_retained_quantity_at_region",
+  split: "authored_identity_quantity_partition",
+  merge: "authored_identity_quantity_coalescence",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_AUTHORED_STATE_REQUIREMENTS_BY_ID = {
+  scatter: ["authored_collection_membership"],
+  flow: [
+    "authored_flow_carrier_or_process_semantics",
+    "authored_route_or_destination",
+  ],
+  fill: [
+    "authored_fillable_region_or_volume",
+    "authored_quantity_state_or_capacity",
+    "authored_contents_representation",
+  ],
+  drain: [
+    "existing_authored_fill_quantity_state",
+    "authored_fillable_region_or_volume",
+  ],
+  emit: [
+    "authored_emitter_source",
+    "authored_emission_origin",
+    "authored_carrier_material_or_signal_semantics",
+  ],
+  accumulate: [
+    "authored_accumulation_region_or_surface",
+    "authored_quantity_or_carrier_identity",
+  ],
+  split: [
+    "authored_source_identity",
+    "authored_result_identities_or_partition_semantics",
+  ],
+  merge: [
+    "authored_input_identities",
+    "authored_result_identity_or_shared_result_state",
+  ],
+} as const;
+
+export function isDirectorQualificationCapabilityProcessQuantityScaleModifier(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_SCALE_MODIFIER_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityProcessQuantityCompoundMotif(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_COMPOUND_MOTIF_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityProcessQuantityGroupCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_GROUP_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityProcessQuantityAuthoredStateCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_AUTHORED_STATE_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityProcessQuantityNonAtomic(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_PROCESS_QUANTITY_NON_ATOMIC_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityObjectMotionModifier(
   capabilityId: string,
 ) {
@@ -1238,7 +1700,12 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityRevealCompoundNarrative(capabilityId) &&
     !isDirectorQualificationCapabilityCompoundRepresentation(capabilityId) &&
     !isDirectorQualificationCapabilityObjectMotionModifier(capabilityId) &&
-    !isDirectorQualificationCapabilityObjectMotionCompound(capabilityId)
+    !isDirectorQualificationCapabilityObjectMotionCompound(capabilityId) &&
+    !isDirectorQualificationCapabilityKinematicModifier(capabilityId) &&
+    !isDirectorQualificationCapabilityKinematicRelationState(capabilityId) &&
+    !isDirectorQualificationCapabilityKinematicOrientationCompound(capabilityId) &&
+    !isDirectorQualificationCapabilityObjectRelationCompound(capabilityId) &&
+    !isDirectorQualificationCapabilityProcessQuantityNonAtomic(capabilityId)
   );
 }
 
@@ -1255,13 +1722,14 @@ export function directorQualificationExpectedActiveCapabilityCount(
  *
  * Deferred, merge-candidate, successfully merged legacy capabilities, composable
  * modifiers, compound-only narrative verbs, authored-representation-dependent
- * verbs, and object-motion labels that require authored anchors/axes or relational orchestration remain in
- * the 184-entry Director registry and in
+ * verbs, object-motion labels that require authored anchors/axes or relational
+ * orchestration, kinematic constraint states/modifiers, and authored
+ * object-relationship state transitions remain in the 184-entry Director registry and in
  * buildDirectorQualificationFamilies(...) so historical compatibility evidence stays
  * stable. The live campaign excludes capabilities that either cannot yet be proven
  * truthfully, are awaiting/undergoing semantic consolidation, have already been
- * consolidated, require authored representation semantics, or do not claim an
- * independent visual primitive.
+ * consolidated, require authored representation/process semantics, or do not
+ * claim an independent visual primitive.
  */
 export function buildActiveDirectorQualificationFamilies(
   capabilities: DirectorCapability[],

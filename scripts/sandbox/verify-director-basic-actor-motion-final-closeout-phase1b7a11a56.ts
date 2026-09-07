@@ -37,11 +37,6 @@ function main() {
 
   assert(frozenFamily, "A.11A.56 must preserve the frozen Basic actor motion family.");
   assert(activeFamily, "A.11A.56 must keep Basic actor motion active for its seven qualified primitives.");
-  assert(
-    activeFamilies.length === 32,
-    `A.11A.56 should preserve the 32 active-family count; found ${activeFamilies.length}.`,
-  );
-
   const frozenExpected = [
     "translate",
     "rotate",
@@ -123,7 +118,7 @@ function main() {
   }
 
   console.log(
-    "A.11A.56 Basic actor motion final semantic closeout verified: 184 vocabulary entries preserved; active family remains 32 families; seven independent primitives remain; Follow target is preserved as a compound relational Director verb over reusable translation/target-relative constraint semantics.",
+    "A.11A.56 successor-safe Basic actor motion final semantic closeout verified: 184 vocabulary entries preserved; seven independent primitives remain; Follow target is preserved as a compound relational Director verb over reusable translation/target-relative constraint semantics; unrelated later family closeouts may reduce the global active-family count.",
   );
 }
 

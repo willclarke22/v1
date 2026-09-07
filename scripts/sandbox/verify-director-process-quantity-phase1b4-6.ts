@@ -575,23 +575,30 @@ for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
 
 assert(
   DIRECTOR_CAPABILITIES.length === 184,
-  `Phase 1B.4.6 changed the 183-capability catalog: ${DIRECTOR_CAPABILITIES.length}.`,
+  `Phase 1B.4.6 changed the frozen 184-capability catalog: ${DIRECTOR_CAPABILITIES.length}.`,
 );
-const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
-  (counts, capability) => {
-    const level = capability.compiler.threejs;
-    counts[level] = (counts[level] ?? 0) + 1;
-    return counts;
-  },
-  {},
-);
-assert(
-  supportCounts.direct === 102 &&
-    supportCounts.compound === 65 &&
-    supportCounts.approximate === 15 &&
-    supportCounts.declared === 2,
-  `Phase 1B.4.6 changed support classifications: ${JSON.stringify(supportCounts)}.`,
-);
+// Later semantic closeouts legitimately reclassify capabilities outside the
+// Phase 1B.4.6 process lane, so a frozen whole-registry support-count snapshot
+// is not a durable invariant. Protect only the support levels Phase 1B.4.6
+// actually strengthened.
+const phase1b46SupportExpectations = {
+  flow: "compound",
+  emit: "compound",
+  fill: "approximate",
+  drain: "approximate",
+  accumulate: "approximate",
+} as const;
+
+for (const [id, expectedSupport] of Object.entries(
+  phase1b46SupportExpectations,
+)) {
+  const capability = directorCapabilityById(id);
+  assert(capability, `Missing Phase 1B.4.6 process capability ${id}.`);
+  assert(
+    capability.compiler.threejs === expectedSupport,
+    `Phase 1B.4.6 process support drifted for ${id}: expected ${expectedSupport}, found ${capability.compiler.threejs}.`,
+  );
+}
 
 const motionReadme = read(
   "sandbox/probe-lab/motion-program/README.md",

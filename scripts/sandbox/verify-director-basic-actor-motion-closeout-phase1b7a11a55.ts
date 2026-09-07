@@ -53,11 +53,6 @@ function main() {
   );
   assert(frozenFamily, "A.11A.55 must preserve the frozen Basic actor motion family.");
   assert(activeFamily, "A.11A.55 must keep Basic actor motion active after reduction.");
-  assert(
-    activeFamilies.length === 32,
-    `A.11A.55 should preserve the 32 active-family count; found ${activeFamilies.length}.`,
-  );
-
   const frozenExpected = [
     "translate",
     "rotate",
