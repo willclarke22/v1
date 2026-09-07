@@ -251,13 +251,36 @@ function main() {
     );
   }
 
+  const visualContinuityExpected = [
+    "keep_visible",
+    "preserve_visual_anchor",
+    "avoid_occlusion",
+    "preserve_screen_position",
+    "preserve_relative_scale",
+    "preserve_orientation",
+  ];
+  const frozenVisualContinuity = frozenFamilies.find(
+    (family) => family.key === "transition_continuity:Visual continuity",
+  );
   const activeVisualContinuity = activeFamilies.find(
     (family) => family.key === "transition_continuity:Visual continuity",
   );
-  assert(
+  const visualContinuityStillActive =
     activeVisualContinuity?.capability_ids.join("|") ===
-      "keep_visible|preserve_visual_anchor|avoid_occlusion|preserve_screen_position|preserve_relative_scale|preserve_orientation",
-    "A.11A.61 must not accidentally remove the separate Visual continuity family from active Qualification.",
+    visualContinuityExpected.join("|");
+  const visualContinuityClosedBySuccessor =
+    activeVisualContinuity === undefined &&
+    frozenVisualContinuity?.capability_ids.join("|") ===
+      visualContinuityExpected.join("|") &&
+    visualContinuityExpected.every(
+      (id) =>
+        !isDirectorQualificationCapabilityActive(id) &&
+        directorQualificationCapabilityProfile(frozenVisualContinuity, id)
+          .qualification_note?.includes("A.11A.64"),
+    );
+  assert(
+    visualContinuityStillActive || visualContinuityClosedBySuccessor,
+    "A.11A.61 must preserve the separate Visual continuity family until a later explicit structural closeout, and any successor closeout must keep its frozen membership plus explicit rationale.",
   );
 
   for (const closedKey of [

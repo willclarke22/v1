@@ -912,6 +912,73 @@ function capabilityProfile(
 
   if (
     familyCategory === "transition_continuity" &&
+    familyGroup === "Visual continuity"
+  ) {
+    if (capabilityId === "keep_visible") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.64 closes Keep visible out of independent primitive Qualification and preserves it as a first-class framing-visibility continuity constraint. The compiler should keep declared subject bounds inside an authored safe frame/frustum margin while choosing camera motion; staying visible is an invariant on a shot, not a new rendered transition effect.",
+      };
+    }
+    if (capabilityId === "preserve_visual_anchor") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.64 preserves Preserve visual anchor as first-class screen-anchor continuity policy. Cross-asset evidence showed the same underlying projected screen-anchor invariant as Preserve screen position; preserve both author-facing intents while sharing one compiler mechanism rather than duplicating a visual primitive.",
+      };
+    }
+    if (capabilityId === "avoid_occlusion") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.64 closes Avoid occlusion out of independent primitive Qualification and preserves it as a line-of-sight / visible-fraction continuity constraint. An actor may remain in-frame yet be hidden by another object, so this stays distinct from Keep visible and should be enforced by camera/path validation rather than by proof-only overlays.",
+      };
+    }
+    if (capabilityId === "preserve_screen_position") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "preserve_visual_anchor",
+        qualification_note:
+          "A.11A.64 closes Preserve screen position out of independent primitive Qualification. It shares the same screen_anchor_continuity mechanism as Preserve visual anchor: keep the chosen actor projection near an authored screen coordinate/region while the camera or surrounding composition changes.",
+      };
+    }
+    if (capabilityId === "preserve_relative_scale") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.64 preserves Preserve relative scale as a projected-composition continuity constraint. The compiler should keep the apparent screen-size relationship of declared actors within tolerance across reframing; the invariant constrains composition and does not introduce a new visual transformation.",
+      };
+    }
+    if (capabilityId === "preserve_orientation") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "preserve_actor_state",
+        qualification_note:
+          "A.11A.64 closes Preserve orientation out of independent primitive Qualification and treats it as an actor-state continuity specialization. Preserve the authored world/scene orientation state across a cut or reframe except where an explicit story action changes it; do not rotate the actor merely to preserve a screen-facing silhouette.",
+      };
+    }
+  }
+
+
+  if (
+    familyCategory === "transition_continuity" &&
     familyGroup === "Motion & axis continuity"
   ) {
     if (capabilityId === "maintain_screen_direction") {
@@ -2045,6 +2112,113 @@ export function isDirectorQualificationCapabilityContinuityPolicy(
 }
 
 /**
+ * A.11A.64 Visual-continuity structural closeout: these six author-facing
+ * continuity verbs remain first-class Director policy vocabulary, but the
+ * cross-asset reel exposed constraints/invariants rather than standalone visual
+ * transition primitives.
+ *
+ * Preserve visual anchor and Preserve screen position share one projected
+ * screen-anchor mechanism. Keep visible and Avoid occlusion remain distinct
+ * framing/line-of-sight constraints. Preserve relative scale is a projected
+ * composition invariant. Preserve orientation specializes the already-closed
+ * Preserve actor state continuity policy.
+ *
+ * Preserve the frozen historical family, canonical continuity vocabulary,
+ * registry support/fallback/demo lanes, and existing runtime ownership. Remove
+ * only the empty Visual continuity family from independent active Qualification;
+ * do not add safe-frame boxes, anchor dots, occlusion gauges, scale brackets, or
+ * orientation arrows merely to make the rule explain itself.
+ */
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_FRAMING_VISIBILITY_POLICY_CAPABILITY_IDS = [
+  "keep_visible",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_SCREEN_ANCHOR_POLICY_CAPABILITY_IDS = [
+  "preserve_visual_anchor",
+  "preserve_screen_position",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_OCCLUSION_POLICY_CAPABILITY_IDS = [
+  "avoid_occlusion",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_PROJECTED_SCALE_POLICY_CAPABILITY_IDS = [
+  "preserve_relative_scale",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_ACTOR_STATE_POLICY_CAPABILITY_IDS = [
+  "preserve_orientation",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_POLICY_CAPABILITY_IDS = [
+  "keep_visible",
+  "preserve_visual_anchor",
+  "avoid_occlusion",
+  "preserve_screen_position",
+  "preserve_relative_scale",
+  "preserve_orientation",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_SHARED_SCREEN_ANCHOR_MECHANISM =
+  "screen_anchor_continuity" as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_CANONICAL_MECHANISM_BY_ID = {
+  keep_visible: "framing_visibility_constraint",
+  preserve_visual_anchor: "screen_anchor_continuity",
+  avoid_occlusion: "line_of_sight_occlusion_constraint",
+  preserve_screen_position: "screen_anchor_continuity",
+  preserve_relative_scale: "projected_relative_scale_continuity",
+  preserve_orientation: "actor_orientation_state_invariant",
+} as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_POLICY_REQUIREMENTS_BY_ID = {
+  keep_visible: [
+    "stable_actor_identity",
+    "projected_actor_bounds_or_screen_envelope",
+    "authored_safe_frame_or_frustum_bounds",
+  ],
+  preserve_visual_anchor: [
+    "stable_actor_identity",
+    "outgoing_projected_anchor",
+    "authored_target_screen_anchor_or_region",
+  ],
+  avoid_occlusion: [
+    "stable_actor_identity",
+    "camera_to_subject_line_of_sight_or_occlusion_estimate",
+    "maximum_allowed_occlusion_ratio",
+  ],
+  preserve_screen_position: [
+    "stable_actor_identity",
+    "outgoing_projected_anchor",
+    "authored_target_screen_anchor_or_region",
+  ],
+  preserve_relative_scale: [
+    "stable_actor_or_pair_identity",
+    "outgoing_projected_size_or_size_ratio",
+    "incoming_projected_size_or_size_ratio",
+    "continuity_tolerance",
+  ],
+  preserve_orientation: [
+    "stable_actor_identity",
+    "pre_transition_authored_orientation_state",
+    "explicitly_authorized_orientation_changes",
+  ],
+} as const;
+
+export const DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_BASE_POLICY_BY_ID = {
+  preserve_orientation: "preserve_actor_state",
+} as const;
+
+export function isDirectorQualificationCapabilityVisualContinuityPolicy(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_VISUAL_CONTINUITY_POLICY_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+
+/**
  * A.11A.63 final Transitions closeout.
  *
  * Hard cut and the repaired Crossfade both passed cold-read cross-asset evidence
@@ -2319,6 +2493,7 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityProcessQuantityNonAtomic(capabilityId) &&
     !isDirectorQualificationCapabilityRigidMechanicsNonAtomic(capabilityId) &&
     !isDirectorQualificationCapabilityContinuityPolicy(capabilityId) &&
+    !isDirectorQualificationCapabilityVisualContinuityPolicy(capabilityId) &&
     !isDirectorQualificationCapabilityTransitionFrozenPrimitive(capabilityId) &&
     !isDirectorQualificationCapabilityTransitionNonAtomic(capabilityId)
   );
