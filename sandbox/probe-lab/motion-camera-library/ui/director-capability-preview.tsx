@@ -89,6 +89,206 @@ function directorQualificationPreviewMoment(
     return baseMoment;
   }
 
+  const basicActorMotionIds = [
+    "translate",
+    "rotate",
+    "follow_path",
+    "enter_frame",
+    "exit_frame",
+    "move_toward",
+    "move_away",
+    "follow_target",
+  ];
+  if (
+    capability.category === "object_motion" &&
+    basicActorMotionIds.includes(capability.id)
+  ) {
+    const primary = roles.find((role) => role.role === "primary_subject");
+    const secondary = roles.find((role) => role.role === "secondary_subject");
+    const primaryStart = [...(primary?.blocking.position ?? [-1.1, 0, 1.1])] as [
+      number,
+      number,
+      number,
+    ];
+    const secondaryStart = [...(secondary?.blocking.position ?? [0, 0, 0])] as [
+      number,
+      number,
+      number,
+    ];
+    const viewRight: [number, number, number] = [
+      Math.SQRT1_2,
+      0,
+      -Math.SQRT1_2,
+    ];
+    const offsetRight = (
+      origin: [number, number, number],
+      distance: number,
+      lift = 0,
+    ): [number, number, number] => [
+      origin[0] + viewRight[0] * distance,
+      origin[1] + lift,
+      origin[2] + viewRight[2] * distance,
+    ];
+    const subtract = (
+      left: [number, number, number],
+      right: [number, number, number],
+    ): [number, number, number] => [
+      left[0] - right[0],
+      left[1] - right[1],
+      left[2] - right[2],
+    ];
+
+    const events = baseMoment.events.map((event) => {
+      if (capability.id === "translate" && event.id === "demo_translate") {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            start_position: primaryStart,
+            target_position: offsetRight(primaryStart, 3.1),
+          },
+        };
+      }
+      if (capability.id === "follow_path" && event.id === "demo_follow_path") {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            path_points: [
+              primaryStart,
+              offsetRight(primaryStart, 0.95, 0.65),
+              offsetRight(primaryStart, 2.05, 0.32),
+              offsetRight(primaryStart, 3.1, 0),
+            ],
+          },
+        };
+      }
+      if (capability.id === "enter_frame" && event.id === "demo_enter_frame") {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            start_position: primaryStart,
+            target_position: offsetRight(primaryStart, 3.45),
+          },
+        };
+      }
+      if (capability.id === "exit_frame" && event.id === "demo_exit_frame") {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            start_position: primaryStart,
+            target_position: offsetRight(primaryStart, 5.0),
+          },
+        };
+      }
+      if (
+        capability.id === "move_toward" &&
+        event.id === "demo_move_toward"
+      ) {
+        return {
+          ...event,
+          parameters: { ...event.parameters, distance_m: 1.85 },
+        };
+      }
+      if (capability.id === "move_away" && event.id === "demo_move_away") {
+        return {
+          ...event,
+          parameters: { ...event.parameters, distance_m: 1.5 },
+        };
+      }
+      if (
+        capability.id === "follow_target" &&
+        event.id === "demo_follow_target_moving_target"
+      ) {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            start_position: secondaryStart,
+            target_position: offsetRight(secondaryStart, 2.2),
+          },
+        };
+      }
+      if (capability.id === "follow_target" && event.id === "demo_follow_target") {
+        return {
+          ...event,
+          parameters: {
+            ...event.parameters,
+            offset: subtract(primaryStart, secondaryStart),
+          },
+        };
+      }
+      return event;
+    });
+
+    const boundaryCrossing =
+      capability.id === "enter_frame" || capability.id === "exit_frame";
+    const relational =
+      capability.id === "move_toward" ||
+      capability.id === "move_away" ||
+      capability.id === "follow_target";
+    const focusEntityIds = boundaryCrossing
+      ? ["secondary_subject"]
+      : relational
+        ? ["primary_subject", "secondary_subject"]
+        : ["primary_subject"];
+    const framing =
+      capability.id === "rotate"
+        ? ("medium_close" as const)
+        : capability.id === "translate" || capability.id === "follow_path"
+          ? ("wide" as const)
+          : relational
+            ? ("wide" as const)
+            : ("medium_wide" as const);
+
+    // A.11A.55 qualification-only proof: keep the default three-quarter camera
+    // but move travel onto its screen-horizontal basis. Boundary clips frame a
+    // stationary reference instead of following the offscreen actor; relational
+    // clips keep both actors readable. Production/authored moments are untouched.
+    return {
+      ...baseMoment,
+      events,
+      shot: {
+        ...baseMoment.shot,
+        composition: {
+          ...baseMoment.shot.composition,
+          framing,
+          angle: "three_quarter_front" as const,
+          keep_visible_entity_ids: focusEntityIds,
+          preserve_relationship_entity_ids: relational
+            ? ["primary_subject", "secondary_subject"]
+            : [],
+        },
+        camera: {
+          ...baseMoment.shot.camera,
+          focus_entity_ids: focusEntityIds,
+          movement_steps: [
+            {
+              movement: "static" as const,
+              start_progress: 0,
+              end_progress: 1,
+              strength: 0,
+              easing: "linear" as const,
+              coordinate_space: "world" as const,
+              target_entity_id: focusEntityIds[0] ?? "primary_subject",
+              parameters: {},
+            },
+          ],
+          start_intent: boundaryCrossing
+            ? "Hold the established frame while the moving actor crosses its boundary."
+            : relational
+              ? "Hold both actors so the changing relationship is visible."
+              : "Hold a stable stage so object motion is read against the world.",
+          end_intent: boundaryCrossing
+            ? "Finish only after the boundary crossing is unmistakable."
+            : "Settle with the motion result still readable.",
+        },
+      },
+    };
+  }
+
   if (capability.id === "build_from_parts") {
     const events = baseMoment.events.map((event) => {
       if (event.id === "demo_build_part_secondary") {

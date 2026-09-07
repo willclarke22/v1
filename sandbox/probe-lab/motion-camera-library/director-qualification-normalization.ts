@@ -151,6 +151,18 @@ export function defaultQualificationNormalizationPolicy(input: {
     return "presentation_normalized";
   }
 
+  // A.11A.55: Basic actor motion is a screen-space readability test for
+  // Baseline/Diversity, not a real-world scale comparison. Presentation
+  // normalization prevents physically small props (cups, lamps, dryers, etc.)
+  // from becoming unjudgeable specks. The Qualification Room still forces the
+  // physical_stress pass back to physical_context before rendering.
+  if (
+    input.category === "object_motion" &&
+    input.group === "Basic actor motion"
+  ) {
+    return "presentation_normalized";
+  }
+
   if (input.category === "object_motion" || input.category === "blocking_placement") {
     return "physical_context";
   }

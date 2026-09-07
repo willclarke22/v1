@@ -10,6 +10,15 @@ import type { DirectorQualificationScene } from "./director-qualification-scenes
 export const DIRECTOR_QUALIFICATION_FIXTURE_POLICY_VERSION =
   "director_qualification_fixture_policy_phase1b7a11a2_v1" as const;
 
+export const DIRECTOR_BASIC_ACTOR_MOTION_FIXTURE_POLICY_VERSION =
+  "director_basic_actor_motion_fixture_policy_phase1b7a11a55_v1" as const;
+
+export const DIRECTOR_BASIC_ACTOR_MOTION_VIEW_RIGHT_BASIS = [
+  Math.SQRT1_2,
+  0,
+  -Math.SQRT1_2,
+] as const;
+
 
 export const DIRECTOR_GROUP_FORMATION_FIXTURE_POLICY_VERSION =
   "director_group_formation_fixture_policy_phase1b7a11a4_v1" as const;
@@ -99,6 +108,15 @@ export const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_VIEW_RIGHT_BASIS = [
   0,
   -Math.SQRT1_2,
 ] as const;
+
+export function isBasicActorMotionQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "object_motion" &&
+      family.group === "Basic actor motion",
+  );
+}
 
 export function isDetailRelationshipFramingQualificationFamily(
   family: DirectorQualificationFamily | undefined,
@@ -586,6 +604,43 @@ export function directorQualificationLightingStyleMotivationAssetRoles(
 }
 
 
+const DIRECTOR_BASIC_ACTOR_MOTION_BINARY_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+] as const;
+
+/**
+ * A.11A.55 keeps Basic actor motion evidence intentionally small. Pure
+ * transform/path proofs render only the moving actor. Boundary-crossing and
+ * relational proofs render one stationary/reference actor as well so the camera
+ * can hold a stable composition and the relationship can be cold-read.
+ */
+export function directorQualificationBasicActorMotionAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (!isBasicActorMotionQualificationFamily(family)) {
+    return [...capability.demo.asset_roles];
+  }
+
+  const binary = [
+    "enter_frame",
+    "exit_frame",
+    "move_toward",
+    "move_away",
+    "follow_target",
+  ].includes(capability.id);
+  const roleIds = binary
+    ? DIRECTOR_BASIC_ACTOR_MOTION_BINARY_ROLE_IDS
+    : (["primary_subject"] as const);
+
+  return roleIds
+    .map((roleId) =>
+      capability.demo.asset_roles.find((role) => role.role === roleId) ?? null,
+    )
+    .filter((role): role is DirectorDemoRole => Boolean(role));
+}
+
 /**
  * Shared role selection for the Qualification Room. Keep the previously frozen
  * Depth/screen, Group-formation, Relative-actor, and Support/containment policies
@@ -596,6 +651,9 @@ export function directorQualificationAssetRoles(
   family: DirectorQualificationFamily,
   capability: DirectorCapability,
 ): DirectorDemoRole[] {
+  if (isBasicActorMotionQualificationFamily(family)) {
+    return directorQualificationBasicActorMotionAssetRoles(family, capability);
+  }
   if (isRotationalReframingQualificationFamily(family)) {
     return directorQualificationRotationalReframingAssetRoles(
       family,
@@ -810,6 +868,69 @@ export function directorQualificationAdjustDetailRelationshipFixturePositions(in
     return output;
   }
 
+  return output;
+}
+
+/**
+ * A.11A.55 neutralizes Basic actor motion staging against the default
+ * three-quarter camera. Travel happens primarily on the camera's horizontal
+ * view-right basis, avoiding the old world-X path that could read as a push
+ * toward/away from camera. Relational siblings begin with deliberately readable
+ * gaps, and Enter/Exit get a stationary reference actor so camera composition
+ * can stay put while the primary crosses the frame boundary.
+ */
+export function directorQualificationAdjustBasicActorMotionFixturePositions(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  scene: DirectorQualificationScene;
+  positions: DirectorQualificationFixturePosition[];
+}): DirectorQualificationFixturePosition[] {
+  const output = input.positions.map(
+    (position) => [...position] as DirectorQualificationFixturePosition,
+  );
+  if (!isBasicActorMotionQualificationFamily(input.family) || output.length < 1) {
+    return output;
+  }
+
+  const [rightX, , rightZ] = DIRECTOR_BASIC_ACTOR_MOTION_VIEW_RIGHT_BASIS;
+  const atRight = (distance: number, y: number): DirectorQualificationFixturePosition => [
+    rightX * distance,
+    y,
+    rightZ * distance,
+  ];
+
+  if (input.capability.id === "rotate") {
+    output[0] = [0, output[0]![1], 0];
+    return output;
+  }
+  if (input.capability.id === "translate" || input.capability.id === "follow_path") {
+    output[0] = atRight(-1.55, output[0]![1]);
+    return output;
+  }
+  if (input.capability.id === "enter_frame") {
+    output[0] = atRight(-4.25, output[0]![1]);
+    if (output[1]) output[1] = [0, output[1]![1], 0];
+    return output;
+  }
+  if (input.capability.id === "exit_frame") {
+    output[0] = atRight(-0.9, output[0]![1]);
+    if (output[1]) output[1] = [0, output[1]![1], 0];
+    return output;
+  }
+  if (input.capability.id === "move_toward") {
+    output[0] = atRight(-1.65, output[0]![1]);
+    if (output[1]) output[1] = atRight(1.05, output[1]![1]);
+    return output;
+  }
+  if (input.capability.id === "move_away") {
+    output[0] = atRight(-0.55, output[0]![1]);
+    if (output[1]) output[1] = atRight(0.55, output[1]![1]);
+    return output;
+  }
+  if (input.capability.id === "follow_target") {
+    output[0] = atRight(-1.75, output[0]![1]);
+    if (output[1]) output[1] = atRight(-0.65, output[1]![1]);
+  }
   return output;
 }
 

@@ -79,6 +79,7 @@ import {
   type DirectorQualificationFamily,
 } from "../director-qualification-families";
 import {
+  directorQualificationAdjustBasicActorMotionFixturePositions,
   directorQualificationAdjustDepthScreenFixturePositions,
   directorQualificationAdjustDetailRelationshipFixturePositions,
   directorQualificationAdjustLensPerspectiveFixturePositions,
@@ -2761,12 +2762,19 @@ function buildPlannedRoles(input: {
     input.scene,
     roleBindings.map((entry) => entry.normalization),
   );
+  const basicActorMotionFixturePositions =
+    directorQualificationAdjustBasicActorMotionFixturePositions({
+      family: input.family,
+      capability: input.capability,
+      scene: input.scene,
+      positions,
+    });
   const depthScreenFixturePositions =
     directorQualificationAdjustDepthScreenFixturePositions({
       family: input.family,
       capability: input.capability,
       scene: input.scene,
-      positions,
+      positions: basicActorMotionFixturePositions,
     });
   const relativeFixturePositions = directorQualificationAdjustRelativeActorFixturePositions({
     family: input.family,
@@ -2966,6 +2974,18 @@ function capabilityForPlannedClip(clip: PlannedClip) {
     "on_surface",
     "inside",
   ].includes(clip.capability.id);
+  const basicActorMotionEvidence =
+    clip.capability.category === "object_motion" &&
+    [
+      "translate",
+      "rotate",
+      "follow_path",
+      "enter_frame",
+      "exit_frame",
+      "move_toward",
+      "move_away",
+      "follow_target",
+    ].includes(clip.capability.id);
   const detailRelationshipEvidence =
     clip.capability.category === "camera_framing" &&
     ["two_shot", "group_shot", "point_of_view", "cutaway"].includes(
@@ -2997,7 +3017,9 @@ function capabilityForPlannedClip(clip: PlannedClip) {
           ? plannedRoleIds
           : supportContainment
             ? plannedRoleIds
-            : detailRelationshipEvidence || lensPerspectiveEvidence
+            : basicActorMotionEvidence ||
+                detailRelationshipEvidence ||
+                lensPerspectiveEvidence
               ? plannedRoleIds
               : clip.capability.demo.required_visible_roles,
       blocking: clip.roles.map((role) => ({

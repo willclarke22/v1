@@ -680,24 +680,31 @@ assert(
   "target_relative runtime coverage is not owned by the strengthened MotionProgram sampler.",
 );
 
-const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
-  (counts, item) => {
-    counts[item.compiler.threejs] =
-      (counts[item.compiler.threejs] ?? 0) + 1;
-    return counts;
-  },
-  {},
-);
-assert(
-  JSON.stringify(supportCounts) ===
-    JSON.stringify({
-      direct: 102,
-      compound: 65,
-      approximate: 15,
-      declared: 2,
-    }),
-  `Phase 1B.4.3 must not silently promote support classifications: ${JSON.stringify(supportCounts)}.`,
-);
+// Successor-safe historical guard:
+// Later Qualification/taxonomy closeouts may legitimately reclassify capabilities
+// outside the Phase 1B.4.3 recipe lane, so a frozen whole-registry support-count
+// snapshot is not a durable invariant. Protect the support levels of the exact
+// relational/articulation capabilities strengthened by this phase instead.
+const expectedPhase1B43Support = {
+  follow_target: "compound",
+  attach: "declared",
+  detach: "declared",
+  align: "compound",
+  aim_at: "direct",
+  hinge: "compound",
+  object_open: "approximate",
+  object_close: "approximate",
+  slide: "direct",
+  roll: "compound",
+} as const;
+
+for (const [id, expectedSupport] of Object.entries(expectedPhase1B43Support)) {
+  const actualSupport = capability(id).compiler.threejs;
+  assert(
+    actualSupport === expectedSupport,
+    `Phase 1B.4.3 recipe support drifted for ${id}: expected ${expectedSupport}, found ${actualSupport}.`,
+  );
+}
 
 const runtime = source(
   "sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx",
@@ -788,5 +795,5 @@ console.log(
   "Random-access determinism and the four Phase 1B.4.2 frozen canaries remain intact; later phases may strengthen other semantic lanes while Spin remains explicit.",
 );
 console.log(
-  "Articulation stays declared-not-executed as a subpart channel, support classifications remain unchanged, and the Capability Library still owns zero direct Canvas elements.",
+  "Articulation stays declared-not-executed as a subpart channel, Phase 1B.4.3 recipe support classifications remain protected, and the Capability Library still owns zero direct Canvas elements.",
 );

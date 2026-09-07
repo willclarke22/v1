@@ -285,15 +285,20 @@ for (const marker of [
 const library = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
+// Successor-safe Phase 1B.4.1 invariant: later UI phases may rename the
+// visible evidence heading, so protect the object-motion fidelity seam and
+// diagnostic contract rather than a historical copy literal.
 for (const marker of [
   "buildDirectorObjectMotionFidelityReport",
-  "Phase 1B.4.1 controlled object-motion proof",
+  "function ObjectMotionFidelityEvidence(",
+  "qualification_foundation:",
+  "Phase 1B.4.1 specialized fixture + sampled actor-state evidence",
   "known semantic overlap",
   "runtime_semantics_rewritten_in_this_phase: false",
 ]) {
   assert(
     library.includes(marker),
-    `Director Capability Library is missing Phase 1B.4.1 evidence marker: ${marker}.`,
+    `Director Capability Library is missing successor-safe Phase 1B.4.1 evidence marker: ${marker}.`,
   );
 }
 

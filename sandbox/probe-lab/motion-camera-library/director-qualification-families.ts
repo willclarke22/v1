@@ -747,6 +747,72 @@ function capabilityProfile(
   }
 
   if (
+    familyCategory === "object_motion" &&
+    familyGroup === "Basic actor motion"
+  ) {
+    if (capabilityId === "pivot") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "rotate",
+        qualification_note:
+          "A.11A.55 closes Pivot out of independent Qualification. A visible pivot requires an authored contact/hinge anchor; without that semantic anchor arbitrary GLBs only read as another Rotate. Preserve Pivot as an anchored compound transform over Rotate rather than fabricating a qualification hinge.",
+      };
+    }
+    if (capabilityId === "oscillate") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.55 treats Oscillate as a composable temporal motion modifier: repeat/reverse an already-declared motion around a rest pose. The vocabulary remains available, but it no longer consumes an independent primitive reel slot.",
+      };
+    }
+    if (capabilityId === "align") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "rotate",
+        qualification_note:
+          "A.11A.55 closes Align out of independent Qualification. Alignment is a target-relative compound that requires an authored axis/reference; arbitrary assets otherwise reduce visually to Rotate with no perceptible alignment fact.",
+      };
+    }
+    if (capabilityId === "aim_at") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: true,
+        merge_compare_with_capability_id: "rotate",
+        qualification_note:
+          "A.11A.55 closes Aim at out of independent Qualification until the actor has a trustworthy semantic visual-forward axis. A mathematical root yaw is not perceptual proof that an arbitrary box, chair, or symmetric prop is aiming at anything.",
+      };
+    }
+    if (capabilityId === "move_toward" || capabilityId === "move_away") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "A.11A.55 relational staging keeps both actors readable at comparable presentation scale so the changing inter-actor distance—not perspective growth or shrinkage—proves the direction relationship.",
+      };
+    }
+    if (capabilityId === "follow_target") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "translate",
+        qualification_note:
+          "A.11A.56 closes Follow target out of independent Qualification. Cross-asset evidence remained visually equivalent to coordinated target-relative translation with a maintained follower offset; the useful Director verb is therefore a compound relational behavior rather than a new atomic motion primitive. Preserve the vocabulary/runtime recipe and compose it from reusable translation plus target-relative constraint semantics instead of adding leader badges, delays, or other proof-only cues.",
+      };
+    }
+  }
+
+  if (
     familyCategory === "blocking_placement" &&
     familyGroup === "Support & containment" &&
     inSet(capabilityId, ["on_surface", "inside"])
@@ -1000,6 +1066,59 @@ export const DIRECTOR_QUALIFICATION_COMPOUND_REPRESENTATION_COMPONENTS_BY_ID = {
   show_inside_outside: ["compare", "hold_for_understanding"],
 } as const;
 
+
+/**
+ * A.11A.55 Basic-actor-motion semantic closeout found four labels that remain
+ * useful Director vocabulary but do not earn separate asset-independent
+ * primitive evidence:
+ *
+ * - Pivot requires an authored contact/hinge anchor and otherwise collapses to Rotate.
+ * - Oscillate is a temporal repeat/reversal modifier over an underlying motion.
+ * - Align requires an authored comparison axis/reference and otherwise reads as Rotate.
+ * - Aim at requires a trustworthy semantic visual-forward axis on the actor.
+ *
+ * A.11A.56 completes the family closeout after the repaired cross-asset reel:
+ * Follow target still cold-reads as coordinated translation with a maintained
+ * relative offset, so it remains a useful compound relational verb rather than
+ * an eighth atomic motion primitive.
+ *
+ * Keep all ids in the frozen 184-capability compatibility vocabulary. Only their
+ * independent Qualification coverage changes.
+ */
+export const DIRECTOR_QUALIFICATION_OBJECT_MOTION_MODIFIER_CAPABILITY_IDS = [
+  "oscillate",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_MOTION_COMPOUND_CAPABILITY_IDS = [
+  "pivot",
+  "align",
+  "aim_at",
+  "follow_target",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_OBJECT_MOTION_COMPOUND_COMPONENTS_BY_ID = {
+  pivot: ["rotate"],
+  align: ["rotate"],
+  aim_at: ["rotate"],
+  follow_target: ["translate"],
+} as const;
+
+export function isDirectorQualificationCapabilityObjectMotionModifier(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_OBJECT_MOTION_MODIFIER_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityObjectMotionCompound(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_OBJECT_MOTION_COMPOUND_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityCompoundRepresentation(
   capabilityId: string,
 ) {
@@ -1117,7 +1236,9 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityCompoundNarrative(capabilityId) &&
     !isDirectorQualificationCapabilityVisibilityModifier(capabilityId) &&
     !isDirectorQualificationCapabilityRevealCompoundNarrative(capabilityId) &&
-    !isDirectorQualificationCapabilityCompoundRepresentation(capabilityId)
+    !isDirectorQualificationCapabilityCompoundRepresentation(capabilityId) &&
+    !isDirectorQualificationCapabilityObjectMotionModifier(capabilityId) &&
+    !isDirectorQualificationCapabilityObjectMotionCompound(capabilityId)
   );
 }
 
@@ -1133,8 +1254,9 @@ export function directorQualificationExpectedActiveCapabilityCount(
  * Active Qualification Room view of the frozen Director family taxonomy.
  *
  * Deferred, merge-candidate, successfully merged legacy capabilities, composable
- * modifiers, compound-only narrative verbs, and authored-representation-dependent
- * verbs remain in the 184-entry Director registry and in
+ * modifiers, compound-only narrative verbs, authored-representation-dependent
+ * verbs, and object-motion labels that require authored anchors/axes or relational orchestration remain in
+ * the 184-entry Director registry and in
  * buildDirectorQualificationFamilies(...) so historical compatibility evidence stays
  * stable. The live campaign excludes capabilities that either cannot yet be proven
  * truthfully, are awaiting/undergoing semantic consolidation, have already been
