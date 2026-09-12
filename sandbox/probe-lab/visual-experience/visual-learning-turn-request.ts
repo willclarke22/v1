@@ -47,6 +47,7 @@ export type VisualLearningTurnRequestBody = {
   fallback_provider?: "none" | "scaffold" | "deepseek" | "glm" | string;
   use_fallback_on_invalid?: boolean;
   example?: "krebs" | "unclear" | string;
+  asset_collection_mode?: "bodyparts3d_slp_pilot" | null;
 };
 
 export type VisualLearningTurnModelRequest = {
@@ -463,7 +464,7 @@ function compactPolicy(input: VisualLearningTurnInput) {
   };
 }
 
-function buildUserPrompt(input: VisualLearningTurnInput) {
+function buildUserPrompt(input: VisualLearningTurnInput, body: VisualLearningTurnRequestBody = {}) {
   const context = compactLearnerContext(input);
   const outputPolicy = compactPolicy(input);
 
@@ -489,6 +490,18 @@ ${JSON.stringify(
       recent_user_messages: [],
     },
     output_policy: outputPolicy,
+    sandbox_asset_context: body.asset_collection_mode === "bodyparts3d_slp_pilot"
+      ? {
+          mode: "bodyparts3d_slp_pilot",
+          note: "These are real BodyParts3D SLP pilot assets currently available to this sandbox run. Refer to them by semantic name only; MyWay binds asset ids after your output. Prefer these structures when they are pedagogically useful, but do not force every one into the scene.",
+          available_semantic_assets: [
+            "tongue", "mandible", "hyoid bone", "epiglottis", "thyroid cartilage",
+            "right arytenoid cartilage", "left arytenoid cartilage",
+            "right vocal ligament", "left vocal ligament", "trachea", "esophagus",
+            "superior pharyngeal constrictor",
+          ],
+        }
+      : null,
   },
   null,
   2,
@@ -517,8 +530,8 @@ RULES:
 - probe.full_prompt should be workbook-style and should test the target_takeaway.`;
 }
 
-export function buildVisualLearningTurnModelRequest(input: VisualLearningTurnInput): VisualLearningTurnModelRequest {
-  const userPrompt = buildUserPrompt(input);
+export function buildVisualLearningTurnModelRequest(input: VisualLearningTurnInput, body: VisualLearningTurnRequestBody = {}): VisualLearningTurnModelRequest {
+  const userPrompt = buildUserPrompt(input, body);
 
   return {
     model_task: "visual_learning_semantic_draft_planner",

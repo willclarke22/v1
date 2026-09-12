@@ -76,6 +76,9 @@ export type ManualGlbImportInput = {
   modificationNotice?: string | null;
   downloadedAt?: string | null;
   provenanceNotes?: string | null;
+  normalizationMode?: "standard" | "preserve_geometry";
+  collectionMembership?: MyWayAssetRecord["collection_membership"];
+  contentIdentityMode?: "binary" | "source_identity";
   runVision?: boolean;
   runEmbedding?: boolean;
 };
@@ -311,6 +314,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     output_path: outputPath,
     thumbnail_path: thumbnailPath,
     target_extent_m: targetExtentM,
+    normalization_mode: input.normalizationMode ?? "standard",
     source_type: "manual",
     result: null,
     error: null,
@@ -385,6 +389,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     },
     geometry_profile_generator:
       result.geometry_profile?.generator ?? null,
+    collection_membership: input.collectionMembership ?? null,
     imported_at: now,
   };
 
@@ -453,6 +458,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     support_surfaces: result.geometry_profile?.support_surfaces ?? [],
     geometry_profile: result.geometry_profile ?? null,
     preferred_for_concepts: [],
+    collection_membership: input.collectionMembership ?? null,
     source_type: "manual",
     source_asset_id: sourceAssetId,
     source_prompt: null,
@@ -538,6 +544,8 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     autoEnrich: false,
     replaceMissingAssetId:
       repairMissingDuplicate?.asset_id ?? null,
+    contentIdentityMode:
+      input.contentIdentityMode ?? "binary",
   });
 
   if (!registered.created && !repairMissingDuplicate) {

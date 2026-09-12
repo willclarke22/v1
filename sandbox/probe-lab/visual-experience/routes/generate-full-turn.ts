@@ -176,7 +176,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as GenerateFullTurnRequestBody;
     const input = buildVisualLearningTurnInput(body);
-    const modelRequest = buildVisualLearningTurnModelRequest(input);
+    const modelRequest = buildVisualLearningTurnModelRequest(input, body);
     const scaffoldOutput = buildVisualLearningTurnScaffoldOutput(input, body);
     const scaffoldRawText = JSON.stringify(scaffoldOutput, null, 2);
     const provider = getVisualLearningTurnProvider(body.provider);
@@ -279,6 +279,7 @@ export async function POST(request: Request) {
       await attachApprovedAssetsToVisualTurn(
         finalResolved,
         finalOutput,
+        { sandbox_asset_collection_mode: body.asset_collection_mode ?? null },
       );
 
     const diagnostics = {

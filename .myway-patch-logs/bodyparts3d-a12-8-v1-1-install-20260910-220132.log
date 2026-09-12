@@ -1,0 +1,41 @@
+**********************
+PowerShell transcript start
+Start time: 20260910220132
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\a44adf7f53\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 24264
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.12.8 v1.1 BodyParts3D distinct-source-identity completion patch applied successfully.
+Normal MyWay imports still dedupe by binary content hash.
+BodyParts3D full-atlas imports now use official FJ source identity, so byte-identical pilot/full-atlas geometry can coexist as distinct records.
+Re-select the same isa_BP3D_4.0_obj_99.zip. Preparation should find 2,224 already present and queue only the 10 missing FJ elements.
+The importer will only report complete after the registry verifies all 2,234 full-atlas FJ identities.
+**********************
+PowerShell transcript end
+End time: 20260910220239
+**********************

@@ -981,6 +981,49 @@ export function safeAssetId(value: string) {
   return normalizeAssetIdLike(value);
 }
 
+function collectionMembership(
+  value: unknown,
+): MyWayAssetRecord["collection_membership"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const item = value as Record<string, unknown>;
+  if (item.schema_version !== "myway_asset_collection_membership_v1") return null;
+  const collectionId = nullableString(item.collection_id);
+  const collectionName = nullableString(item.collection_name);
+  const memberId = nullableString(item.member_id);
+  const conceptName = nullableString(item.concept_name);
+  if (!collectionId || !collectionName || !memberId || !conceptName) return null;
+  const transformRaw = item.runtime_transform && typeof item.runtime_transform === "object" && !Array.isArray(item.runtime_transform)
+    ? item.runtime_transform as Record<string, unknown>
+    : {};
+  const sourceUnits = ["millimeters", "meters", "unknown"].includes(String(item.source_units))
+    ? item.source_units as "millimeters" | "meters" | "unknown"
+    : "unknown";
+  const sourceUpAxis = ["x", "y", "z", "unknown"].includes(String(item.source_up_axis))
+    ? item.source_up_axis as "x" | "y" | "z" | "unknown"
+    : "unknown";
+  return {
+    schema_version: "myway_asset_collection_membership_v1",
+    collection_id: collectionId,
+    collection_name: collectionName,
+    collection_version: nullableString(item.collection_version),
+    member_id: memberId,
+    concept_id: nullableString(item.concept_id),
+    concept_name: conceptName,
+    source_units: sourceUnits,
+    source_up_axis: sourceUpAxis,
+    runtime_collection_space: "glb_y_up_meters",
+    runtime_transform: {
+      position: vec3(transformRaw.position, [0, 0, 0]),
+      rotation: vec3(transformRaw.rotation, [0, 0, 0]),
+      scale: vec3(transformRaw.scale, [1, 1, 1]),
+    },
+    group_tags: stringList(item.group_tags).slice(0, 24),
+    source_archive: nullableString(item.source_archive),
+    source_member_path: nullableString(item.source_member_path),
+    provenance_notes: nullableString(item.provenance_notes),
+  };
+}
+
 export function normalizeMyWayAssetRecord(
   raw: unknown,
 ): MyWayAssetRecord | null {
@@ -1213,6 +1256,9 @@ export function normalizeMyWayAssetRecord(
     ).map(normalizePhrase),
     appearance_profile: normalizedAppearanceProfile,
     appearance_embedding: normalizedAppearanceEmbedding,
+    collection_membership: collectionMembership(
+      item.collection_membership,
+    ),
 
     source_type: sourceType,
     source_asset_id: nullableString(

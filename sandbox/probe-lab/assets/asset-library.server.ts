@@ -496,6 +496,7 @@ export async function registerMyWayAsset(
   options: {
     autoEnrich?: boolean;
     replaceMissingAssetId?: string | null;
+    contentIdentityMode?: "binary" | "source_identity";
   } = {},
 ) {
   let asset =
@@ -524,7 +525,46 @@ export async function registerMyWayAsset(
     options.replaceMissingAssetId
       ? safeAssetId(options.replaceMissingAssetId)
       : null;
+  const contentIdentityMode =
+    options.contentIdentityMode ?? "binary";
+
+  if (
+    contentIdentityMode === "source_identity" &&
+    (!asset.source_asset_id?.trim() ||
+      !asset.attribution?.source_provider?.trim())
+  ) {
+    throw new Error(
+      "Source-identity content registration requires a stable source provider and source asset ID.",
+    );
+  }
+
+  const sourceIdentityMatch =
+    contentIdentityMode === "source_identity"
+      ? registry.assets.find(
+          (candidate) =>
+            candidate.asset_id !== replaceMissingAssetId &&
+            candidate.source_asset_id === asset!.source_asset_id &&
+            candidate.attribution?.source_provider?.trim().toLowerCase() ===
+              asset!.attribution?.source_provider?.trim().toLowerCase(),
+        )
+      : null;
+
+  if (sourceIdentityMatch) {
+    return {
+      asset:
+        sourceIdentityMatch,
+      created:
+        false,
+      duplicate_of:
+        sourceIdentityMatch.asset_id,
+    };
+  }
+
+  // Binary identity remains the default for every normal MyWay import.
+  // Structured authoritative collections may explicitly opt into source identity
+  // when distinct upstream records legitimately share byte-identical geometry.
   const duplicateHash =
+    contentIdentityMode === "binary" &&
     asset.content_hash
       ? registry.assets.find(
           (candidate) =>

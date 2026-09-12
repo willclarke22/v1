@@ -305,6 +305,31 @@ export type MyWayAssetGeometryProfileV1 = {
   generator: string;
 };
 
+export type MyWayAssetCollectionTransformV1 = {
+  position: Vec3;
+  rotation: Vec3;
+  scale: Vec3;
+};
+
+export type MyWayAssetCollectionMembershipV1 = {
+  schema_version: "myway_asset_collection_membership_v1";
+  collection_id: string;
+  collection_name: string;
+  collection_version: string | null;
+  member_id: string;
+  concept_id: string | null;
+  concept_name: string;
+  source_units: "millimeters" | "meters" | "unknown";
+  source_up_axis: "x" | "y" | "z" | "unknown";
+  runtime_collection_space: "glb_y_up_meters";
+  runtime_transform: MyWayAssetCollectionTransformV1;
+  group_tags: string[];
+  source_archive: string | null;
+  source_member_path: string | null;
+  source_element_ids?: string[];
+  provenance_notes: string | null;
+};
+
 export type MyWayAssetRecord = {
   asset_id: string;
   /** Immutable internal identity. Legacy registries are deterministically backfilled. */
@@ -339,6 +364,7 @@ export type MyWayAssetRecord = {
   preferred_for_concepts?: string[];
   appearance_profile?: MyWayAssetAppearanceProfileV1;
   appearance_embedding?: MyWayAssetAppearanceEmbeddingV1;
+  collection_membership?: MyWayAssetCollectionMembershipV1 | null;
 
   source_type: MyWayAssetSourceType;
   source_asset_id?: string | null;

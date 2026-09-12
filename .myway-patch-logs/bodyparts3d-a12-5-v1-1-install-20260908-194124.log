@@ -1,0 +1,34 @@
+**********************
+PowerShell transcript start
+Start time: 20260908194124
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\a44adf7f53\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 6372
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+
+
+
+
+
+A.12.5 v1.1 BodyParts3D full atlas catalog/import applied successfully.
+Open Asset Library > BodyParts3D Atlas, choose the official IS-A OBJ ZIP, then Prepare + import all 2,234 elements.
+Full-atlas imports remain in Needs Review with Omni Vision and embeddings OFF.
+**********************
+PowerShell transcript end
+End time: 20260908194219
+**********************

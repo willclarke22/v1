@@ -6,6 +6,7 @@ import {
 import {
   getMyWayAsset,
 } from "../asset-library.server";
+import { getAssetBrowserRegistryAsset } from "../asset-browser-snapshot.server";
 import {
   readPendingAssetReviewObject,
 } from "../storage/pending-asset-storage.server";
@@ -57,8 +58,25 @@ export async function GET(
   }
 
   try {
-    const asset =
-      await getMyWayAsset(assetId);
+    const revision =
+      request.nextUrl.searchParams.get("revision")?.trim() ?? "";
+    const version =
+      request.nextUrl.searchParams.get("v")?.trim() ?? "";
+    let asset =
+      revision
+        ? await getAssetBrowserRegistryAsset(assetId, revision)
+        : await getAssetBrowserRegistryAsset(assetId);
+
+    if (
+      asset &&
+      kind === "thumbnail" &&
+      version &&
+      (asset.thumbnail_etag ||
+        asset.thumbnail_object_key ||
+        asset.asset_id) !== version
+    ) {
+      asset = await getMyWayAsset(assetId);
+    }
 
     if (!asset) {
       return errorResponse(
@@ -122,7 +140,14 @@ export async function GET(
           "Content-Length":
             String(object.size_bytes),
           "Cache-Control":
-            "private, no-store",
+            kind === "thumbnail" && version
+              ? "private, max-age=31536000, immutable"
+              : revision
+                ? "private, max-age=3600, stale-while-revalidate=86400"
+                : "private, no-store",
+          ...(object.etag
+            ? { ETag: object.etag }
+            : {}),
           "X-Content-Type-Options":
             "nosniff",
           "Content-Disposition":

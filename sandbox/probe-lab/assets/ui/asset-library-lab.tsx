@@ -1,22 +1,50 @@
-
 "use client";
 
-import { Bounds, Clone, Html, OrbitControls, useGLTF } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
 import {
-  Component,
-  Suspense,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import type { ErrorInfo, ReactNode } from "react";
-import * as THREE from "three";
+import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 
-import { AmbientCgLibraryLab } from "./ambientcg-library-lab";
-import { SmartAssetImportLab } from "./smart-asset-import-lab";
-import { AssetIdentityAuditLab } from "./asset-identity-audit-lab";
+import {
+  BODYPARTS3D_SLP_COLLECTION_ID,
+  bodyParts3dSemanticMaterialForMember,
+  BODYPARTS3D_FULL_COLLECTION_ID,
+  bodyParts3dSemanticMaterialForSystem,
+  bodyParts3dSystemFromGroupTags,
+} from "../bodyparts3d-slp-pilot";
+
+const AmbientCgLibraryLab = dynamic(
+  () => import("./ambientcg-library-lab").then((module) => module.AmbientCgLibraryLab),
+  { ssr: false, loading: () => <div className="asset-library-loading">Loading resources…</div> },
+);
+const SmartAssetImportLab = dynamic(
+  () => import("./smart-asset-import-lab").then((module) => module.SmartAssetImportLab),
+  { ssr: false, loading: () => <div className="asset-library-loading">Loading import tools…</div> },
+);
+const BodyParts3dSlpPilotImportLab = dynamic(
+  () => import("./bodyparts3d-slp-pilot-import-lab").then((module) => module.BodyParts3dSlpPilotImportLab),
+  { ssr: false, loading: () => <div className="asset-library-loading">Loading anatomy importer…</div> },
+);
+const BodyParts3dThumbnailMaintenanceLab = dynamic(
+  () => import("./bodyparts3d-thumbnail-maintenance-lab").then((module) => module.BodyParts3dThumbnailMaintenanceLab),
+  { ssr: false, loading: () => <div className="asset-library-loading">Loading anatomy thumbnail tools…</div> },
+);
+const AssetIdentityAuditLab = dynamic(
+  () => import("./asset-identity-audit-lab").then((module) => module.AssetIdentityAuditLab),
+  { ssr: false, loading: () => <div className="asset-library-loading">Loading identity audit…</div> },
+);
+const AssetLibraryViewer = dynamic(
+  () => import("./asset-library-viewer").then((module) => module.AssetLibraryViewer),
+  { ssr: false, loading: () => <div className="asset-library-viewer-message">3D viewer loads only after you select an asset.</div> },
+);
+
+function preloadAssetLibraryViewer() {
+  void import("./asset-library-viewer");
+}
 
 type Vec3 = [number, number, number];
 
@@ -226,6 +254,28 @@ type LibraryAsset = {
   scene_review_status: "pending" | "approved" | "rejected";
   scene_reviewed_at?: string | null;
   scene_review_notes?: string | null;
+  collection_membership?: {
+    schema_version: "myway_asset_collection_membership_v1";
+    collection_id: string;
+    collection_name: string;
+    collection_version: string | null;
+    member_id: string;
+    concept_id: string | null;
+    concept_name: string;
+    source_units: "millimeters" | "meters" | "unknown";
+    source_up_axis: "x" | "y" | "z" | "unknown";
+    runtime_collection_space: "glb_y_up_meters";
+    runtime_transform: {
+      position: Vec3;
+      rotation: Vec3;
+      scale: Vec3;
+    };
+    group_tags: string[];
+    source_archive: string | null;
+    source_member_path: string | null;
+    source_element_ids?: string[];
+    provenance_notes: string | null;
+  } | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -235,6 +285,28 @@ type LibraryAsset = {
 type LibraryResponse = {
   ok: boolean;
   count?: number;
+  total?: number;
+  offset?: number;
+  limit?: number;
+  counts?: {
+    all: number;
+    needs_review: number;
+    approved: number;
+    rejected: number;
+  };
+  facets?: {
+    sources: string[];
+    domains: string[];
+    statuses: string[];
+    scene_review_statuses: string[];
+    licenses: string[];
+  };
+  stats?: {
+    files_available: number;
+    automatically_acquired: number;
+    identity_verified: number;
+    scene_approved: number;
+  };
   assets?: LibraryAsset[];
   asset?: LibraryAsset;
   renamed_from?: string;
@@ -481,6 +553,7 @@ type ManualAcquisitionMode =
   | "trellis"
   | "glm"
   | "import"
+  | "bodyparts3d"
   | "identity";
 
 type ReviewView =
@@ -502,12 +575,6 @@ type IdentityDraft = {
   preferredConcepts: string;
   notes: string;
 };
-
-function uniqueSorted(values: string[]) {
-  return [...new Set(values.filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b),
-  );
-}
 
 function formatBytes(value: number | null) {
   if (value == null) return "No file size";
@@ -577,121 +644,70 @@ function publishAssetIdentityRevision() {
   );
 }
 
-function LoadedAsset({ src }: { src: string }) {
-  const gltf = useGLTF(src);
-
-  return (
-    <Bounds fit clip observe margin={1.3}>
-      <Clone object={gltf.scene} castShadow receiveShadow />
-    </Bounds>
-  );
+function bodyParts3dMaterialForAsset(asset: LibraryAsset | null) {
+  const membership = asset?.collection_membership;
+  if (!membership) return null;
+  if (membership.collection_id === BODYPARTS3D_SLP_COLLECTION_ID) {
+    return bodyParts3dSemanticMaterialForMember(membership.member_id);
+  }
+  if (membership.collection_id === BODYPARTS3D_FULL_COLLECTION_ID) {
+    return bodyParts3dSemanticMaterialForSystem(
+      bodyParts3dSystemFromGroupTags(membership.group_tags),
+    );
+  }
+  return null;
 }
 
-function ViewerLoading() {
-  return (
-    <Html center>
-      <div className="asset-library-loading">Loading 3D asset…</div>
-    </Html>
-  );
-}
 
-class ViewerErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: string | null }
-> {
-  state = { error: null as string | null };
 
-  static getDerivedStateFromError(error: unknown) {
-    return {
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+function AssetCardThumbnail({ asset }: { asset: LibraryAsset }) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Asset library GLB preview failed.", error, info);
-  }
+  useEffect(() => {
+    setFailed(false);
+    setVisible(false);
+  }, [asset.thumbnail_path]);
 
-  render() {
-    if (this.state.error) {
-      return (
-        <div className="asset-library-viewer-message">
-          <strong>The GLB could not be previewed.</strong>
-          <span>{this.state.error}</span>
-        </div>
-      );
+  useEffect(() => {
+    const node = hostRef.current;
+    if (!node || visible || failed || !asset.thumbnail_path) return;
+    if (!("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
     }
-
-    return this.props.children;
-  }
-}
-
-function AssetViewer({ asset }: { asset: LibraryAsset | null }) {
-  if (!asset) {
-    return (
-      <div className="asset-library-viewer-message">
-        Select an asset to inspect it in 3D.
-      </div>
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px 0px" },
     );
-  }
-
-  const canPreview =
-    asset.file_stats.exists &&
-    (asset.asset_type === "glb" || asset.asset_type === "gltf");
-
-  if (!canPreview) {
-    return (
-      <div className="asset-library-viewer-message">
-        <strong>No browser-loadable 3D file is available.</strong>
-        <span>
-          This entry is either procedural or its registered file is missing.
-        </span>
-      </div>
-    );
-  }
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [asset.thumbnail_path, failed, visible]);
 
   return (
-    <ViewerErrorBoundary key={asset.asset_id}>
-      <Canvas
-        camera={{ position: [4.5, 3.2, 5.5], fov: 42 }}
-        dpr={[1, 1.75]}
-        gl={{
-          antialias: true,
-          alpha: false,
-        }}
-        shadows
-      >
-        <color attach="background" args={["#07111f"]} />
-        <ambientLight intensity={0.75} />
-        <hemisphereLight
-          args={["#f8fafc", "#172554", 1.15]}
-          position={[0, 4, 0]}
+    <div className="asset-library-card-image" ref={hostRef}>
+      {asset.thumbnail_path && visible && !failed ? (
+        <img
+          alt={`${asset.display_name} thumbnail`}
+          decoding="async"
+          fetchPriority="low"
+          loading="lazy"
+          onError={() => setFailed(true)}
+          src={asset.thumbnail_path}
         />
-        <directionalLight
-          castShadow
-          intensity={2.2}
-          position={[4, 6, 5]}
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-        />
-        <directionalLight intensity={0.85} position={[-4, 2, -3]} />
-
-        <Suspense fallback={<ViewerLoading />}>
-          <LoadedAsset src={asset.public_path} />
-        </Suspense>
-
-        <gridHelper
-          args={[10, 20, "#334155", "#172033"]}
-          position={[0, -1.35, 0]}
-        />
-        <OrbitControls
-          makeDefault
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={1.5}
-          maxDistance={14}
-        />
-      </Canvas>
-    </ViewerErrorBoundary>
+      ) : (
+        <div className="asset-library-placeholder">
+          <span>{assetTitle(asset).slice(0, 2).toUpperCase()}</span>
+          {failed ? <small>thumbnail unavailable</small> : null}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -731,117 +747,190 @@ function MetadataRow({
 
 type AssetLibrarySnapshot = {
   assets: LibraryAsset[];
+  total: number;
+  offset: number;
+  limit: number;
+  counts: {
+    all: number;
+    needs_review: number;
+    approved: number;
+    rejected: number;
+  };
+  facets: {
+    sources: string[];
+    domains: string[];
+    statuses: string[];
+    scene_review_statuses: string[];
+    licenses: string[];
+  };
+  stats: {
+    files_available: number;
+    automatically_acquired: number;
+    identity_verified: number;
+    scene_approved: number;
+  };
+};
+
+type AssetLibraryBackgroundSnapshot = {
   jobs: AcquisitionJob[];
   enrichmentQueue: EnrichmentQueueEntry[];
   geometryQueue: GeometryQueueEntry[];
 };
 
-let assetLibrarySnapshotPromise:
-  Promise<AssetLibrarySnapshot> | null =
-  null;
 
-function fetchAssetLibrarySnapshot() {
-  if (assetLibrarySnapshotPromise) {
-    return assetLibrarySnapshotPromise;
+async function readAssetApiJson<T>(
+  response: Response,
+  label: string,
+): Promise<T> {
+  const text = await response.text();
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    const looksLikeHtml = /^\s*</.test(text);
+    throw new Error(
+      `Asset API ${label} returned ${looksLikeHtml ? "HTML instead of JSON" : "a non-JSON response"} (HTTP ${response.status}). ` +
+        "The Next.js dev server may have restarted or still be compiling. The current Asset Library state has not been deleted; retry after the server is stable.",
+    );
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Asset API ${label} returned malformed JSON (HTTP ${response.status}).`);
+  }
+}
+
+async function fetchAssetLibrarySnapshot(
+  browserQuery: string,
+  signal?: AbortSignal,
+): Promise<AssetLibrarySnapshot> {
+  const libraryResponse = await fetch(
+    `/api/sandbox/probe-lab/assets/library-browser?${browserQuery}`,
+    {
+      cache: "no-store",
+      signal,
+    },
+  );
+  const libraryPayload =
+    await readAssetApiJson<LibraryResponse>(libraryResponse, "library");
+
+  if (
+    !libraryResponse.ok ||
+    !libraryPayload.ok ||
+    !Array.isArray(
+      libraryPayload.assets,
+    )
+  ) {
+    throw new Error(
+      libraryPayload.error ||
+        "The asset library could not be loaded.",
+    );
   }
 
-  assetLibrarySnapshotPromise =
-    Promise.all([
-      fetch(
-        "/api/sandbox/probe-lab/assets/library",
-        { cache: "no-store" },
-      ),
-      fetch(
-        "/api/sandbox/probe-lab/assets/acquisition?summary=1",
-        { cache: "no-store" },
-      ),
-      fetch(
-        "/api/sandbox/probe-lab/assets/enrichment",
-        { cache: "no-store" },
-      ),
-      fetch(
-        "/api/sandbox/probe-lab/assets/geometry",
-        { cache: "no-store" },
-      ),
-    ])
-      .then(
-        async ([
-          libraryResponse,
-          acquisitionResponse,
-          enrichmentResponse,
-          geometryResponse,
-        ]) => {
-          const libraryPayload =
-            (await libraryResponse.json()) as LibraryResponse;
-          const acquisitionPayload =
-            (await acquisitionResponse.json()) as AcquisitionResponse;
-          const enrichmentPayload =
-            (await enrichmentResponse.json()) as EnrichmentResponse;
-          const geometryPayload =
-            (await geometryResponse.json()) as GeometryResponse;
-
-          if (
-            !libraryResponse.ok ||
-            !libraryPayload.ok ||
-            !Array.isArray(
-              libraryPayload.assets,
-            )
-          ) {
-            throw new Error(
-              libraryPayload.error ||
-                "The asset library could not be loaded.",
-            );
-          }
-
-          if (
-            !acquisitionResponse.ok ||
-            !acquisitionPayload.ok
-          ) {
-            throw new Error(
-              acquisitionPayload.error ||
-                "The missing-asset queue could not be loaded.",
-            );
-          }
-
-          if (
-            !enrichmentResponse.ok ||
-            !enrichmentPayload.ok
-          ) {
-            throw new Error(
-              enrichmentPayload.error ||
-                "The appearance-analysis queue could not be loaded.",
-            );
-          }
-
-          if (!geometryResponse.ok || !geometryPayload.ok) {
-            throw new Error(
-              geometryPayload.error ||
-                "The geometry-profile queue could not be loaded.",
-            );
-          }
-
-          return {
-            assets:
-              libraryPayload.assets,
-            jobs:
-              acquisitionPayload.jobs ??
-              [],
-            enrichmentQueue:
-              enrichmentPayload.queue ??
-              [],
-            geometryQueue:
-              geometryPayload.queue ??
-              [],
-          };
-        },
-      )
-      .finally(() => {
-        assetLibrarySnapshotPromise =
-          null;
-      });
-
-  return assetLibrarySnapshotPromise;
+  return {
+    assets:
+      libraryPayload.assets,
+    total: libraryPayload.total ?? libraryPayload.assets.length,
+    offset: libraryPayload.offset ?? 0,
+    limit: libraryPayload.limit ?? libraryPayload.assets.length,
+    counts: libraryPayload.counts ?? {
+      all: libraryPayload.assets.length,
+      needs_review: libraryPayload.assets.filter((asset) => asset.scene_review_status === "pending").length,
+      approved: libraryPayload.assets.filter((asset) => asset.scene_review_status === "approved").length,
+      rejected: libraryPayload.assets.filter((asset) => asset.scene_review_status === "rejected").length,
+    },
+    facets: libraryPayload.facets ?? {
+      sources: [],
+      domains: [],
+      statuses: [],
+      scene_review_statuses: [],
+      licenses: [],
+    },
+    stats: libraryPayload.stats ?? {
+      files_available: libraryPayload.assets.filter((asset) => asset.file_stats.exists).length,
+      automatically_acquired: libraryPayload.assets.filter((asset) => asset.source_type === "blenderkit" || asset.source_type === "trellis").length,
+      identity_verified: libraryPayload.assets.filter((asset) => asset.semantic_review_status === "verified").length,
+      scene_approved: libraryPayload.assets.filter((asset) => asset.scene_review_status === "approved").length,
+    },
+  };
 }
+
+async function fetchAssetLibraryBackground(
+  signal?: AbortSignal,
+): Promise<AssetLibraryBackgroundSnapshot> {
+  const [
+    acquisitionResponse,
+    enrichmentResponse,
+    geometryResponse,
+  ] = await Promise.all([
+    fetch(
+      "/api/sandbox/probe-lab/assets/acquisition?summary=1",
+      {
+        cache: "no-store",
+        signal,
+      },
+    ),
+    fetch(
+      "/api/sandbox/probe-lab/assets/enrichment",
+      {
+        cache: "no-store",
+        signal,
+      },
+    ),
+    fetch(
+      "/api/sandbox/probe-lab/assets/geometry",
+      {
+        cache: "no-store",
+        signal,
+      },
+    ),
+  ]);
+
+  const acquisitionPayload =
+    await readAssetApiJson<AcquisitionResponse>(acquisitionResponse, "acquisition");
+  const enrichmentPayload =
+    await readAssetApiJson<EnrichmentResponse>(enrichmentResponse, "enrichment");
+  const geometryPayload =
+    await readAssetApiJson<GeometryResponse>(geometryResponse, "geometry");
+
+  if (
+    !acquisitionResponse.ok ||
+    !acquisitionPayload.ok
+  ) {
+    throw new Error(
+      acquisitionPayload.error ||
+        "The missing-asset queue could not be loaded.",
+    );
+  }
+
+  if (
+    !enrichmentResponse.ok ||
+    !enrichmentPayload.ok
+  ) {
+    throw new Error(
+      enrichmentPayload.error ||
+        "The appearance-analysis queue could not be loaded.",
+    );
+  }
+
+  if (!geometryResponse.ok || !geometryPayload.ok) {
+    throw new Error(
+      geometryPayload.error ||
+        "The geometry-profile queue could not be loaded.",
+    );
+  }
+
+  return {
+    jobs:
+      acquisitionPayload.jobs ??
+      [],
+    enrichmentQueue:
+      enrichmentPayload.queue ??
+      [],
+    geometryQueue:
+      geometryPayload.queue ??
+      [],
+  };
+}
+
 
 function acquisitionStatusSignature(
   jobs: AcquisitionJob[],
@@ -913,7 +1002,15 @@ export function AssetLibraryLab({
   >(initialSection);
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [selectedAssetDetail, setSelectedAssetDetail] = useState<LibraryAsset | null>(null);
+  const [selectedAssetLoading, setSelectedAssetLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pageOffset, setPageOffset] = useState(0);
+  const [browserTotal, setBrowserTotal] = useState(0);
+  const [browserCounts, setBrowserCounts] = useState({ all: 0, needs_review: 0, approved: 0, rejected: 0 });
+  const [browserFacets, setBrowserFacets] = useState({ sources: [] as string[], domains: [] as string[], statuses: [] as string[], scene_review_statuses: [] as string[], licenses: [] as string[] });
+  const [browserStats, setBrowserStats] = useState({ files_available: 0, automatically_acquired: 0, identity_verified: 0, scene_approved: 0 });
   const [sourceFilter, setSourceFilter] = useState("all");
   const [domainFilter, setDomainFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -1006,16 +1103,115 @@ export function AssetLibraryLab({
     useRef("");
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPageOffset(0);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPageOffset(0);
+  }, [
+    reviewView,
+    sourceFilter,
+    domainFilter,
+    statusFilter,
+    sceneReviewFilter,
+    licenseFilter,
+    sortKey,
+  ]);
+
+  useEffect(() => {
     let active = true;
+    const controller =
+      new AbortController();
 
     setIsLoading(true);
     setError(null);
 
-    void fetchAssetLibrarySnapshot()
+    const browserParams = new URLSearchParams({
+      review: reviewView,
+      q: debouncedSearch,
+      source: sourceFilter,
+      domain: domainFilter,
+      status: statusFilter,
+      scene_review: sceneReviewFilter,
+      license: licenseFilter,
+      sort: sortKey,
+      offset: String(pageOffset),
+      limit: "30",
+      revision: String(refreshToken),
+    });
+
+    void fetchAssetLibrarySnapshot(
+      browserParams.toString(),
+      controller.signal,
+    )
       .then((snapshot) => {
         if (!active) return;
 
         setAssets(snapshot.assets);
+        setBrowserTotal(snapshot.total);
+        setBrowserCounts(snapshot.counts);
+        setBrowserFacets(snapshot.facets);
+        setBrowserStats(snapshot.stats);
+        setSelectedAssetId((current) => {
+          if (current && snapshot.assets.some((asset) => asset.asset_id === current)) {
+            return current;
+          }
+          setSelectedAssetDetail(null);
+          return null;
+        });
+      })
+      .catch((caught) => {
+        if (
+          !active ||
+          (caught instanceof DOMException &&
+            caught.name === "AbortError")
+        ) {
+          return;
+        }
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [
+    refreshToken,
+    debouncedSearch,
+    reviewView,
+    sourceFilter,
+    domainFilter,
+    statusFilter,
+    sceneReviewFilter,
+    licenseFilter,
+    sortKey,
+    pageOffset,
+  ]);
+
+  useEffect(() => {
+    let active = true;
+    const controller =
+      new AbortController();
+
+    void fetchAssetLibraryBackground(
+      controller.signal,
+    )
+      .then((snapshot) => {
+        if (!active) return;
+
         setAcquisitionJobs(
           snapshot.jobs,
         );
@@ -1033,71 +1229,62 @@ export function AssetLibraryLab({
           geometryTerminalSignature(
             snapshot.geometryQueue,
           );
-        setSelectedAssetId((current) => {
-          if (
-            current &&
-            snapshot.assets.some(
-              (asset) =>
-                asset.asset_id ===
-                current,
-            )
-          ) {
-            return current;
-          }
-
-          const previewable =
-            snapshot.assets
-              .filter(
-                (asset) =>
-                  asset.file_stats.exists &&
-                  (asset.asset_type ===
-                    "glb" ||
-                    asset.asset_type ===
-                      "gltf"),
-              )
-              .sort(
-                (a, b) =>
-                  Date.parse(
-                    b.created_at,
-                  ) -
-                  Date.parse(
-                    a.created_at,
-                  ),
-              );
-          const newestPreviewable =
-            previewable.find(
-              (asset) =>
-                asset.scene_review_status ===
-                "pending",
-            ) ?? previewable[0];
-
-          return (
-            newestPreviewable
-              ?.asset_id ??
-            snapshot.assets[0]
-              ?.asset_id ??
-            null
-          );
-        });
       })
       .catch((caught) => {
-        if (!active) return;
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : String(caught),
-        );
-      })
-      .finally(() => {
-        if (active) {
-          setIsLoading(false);
+        if (
+          !active ||
+          (caught instanceof DOMException &&
+            caught.name === "AbortError")
+        ) {
+          return;
         }
+        setError(
+          `Asset background status: ${
+            caught instanceof Error
+              ? caught.message
+              : String(caught)
+          }`,
+        );
       });
 
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [refreshToken]);
+  }, [
+    refreshToken,
+  ]);
+
+
+  useEffect(() => {
+    if (!selectedAssetId) {
+      setSelectedAssetDetail(null);
+      setSelectedAssetLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSelectedAssetLoading(true);
+    void fetch(
+      `/api/sandbox/probe-lab/assets/library?asset_id=${encodeURIComponent(selectedAssetId)}&revision=${encodeURIComponent(String(refreshToken))}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then((response) => readAssetApiJson<LibraryResponse>(response, "asset detail").then((payload) => ({ response, payload })))
+      .then(({ response, payload }) => {
+        if (!response.ok || !payload.ok || !payload.asset) {
+          throw new Error(payload.error || "The selected asset detail could not be loaded.");
+        }
+        setSelectedAssetDetail(payload.asset);
+      })
+      .catch((caught) => {
+        if (caught instanceof DOMException && caught.name === "AbortError") return;
+        setSelectedAssetDetail(null);
+        setError(caught instanceof Error ? caught.message : String(caught));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSelectedAssetLoading(false);
+      });
+    return () => controller.abort();
+  }, [selectedAssetId, refreshToken]);
 
   const hasActiveAcquisition =
     acquisitionJobs.some(
@@ -1135,7 +1322,7 @@ export function AssetLibraryLab({
           { cache: "no-store" },
         );
         const payload =
-          (await response.json()) as AcquisitionResponse;
+          await readAssetApiJson<AcquisitionResponse>(response, "acquisition poll");
 
         if (
           !response.ok ||
@@ -1154,6 +1341,7 @@ export function AssetLibraryLab({
             nextJobs,
           );
 
+        setError((current) => current?.startsWith("Asset API acquisition poll") ? null : current);
         setAcquisitionJobs(
           nextJobs,
         );
@@ -1186,9 +1374,7 @@ export function AssetLibraryLab({
       } catch (caught) {
         if (!disposed) {
           setError(
-            caught instanceof Error
-              ? caught.message
-              : String(caught),
+            `Asset API acquisition poll: ${caught instanceof Error ? caught.message : String(caught)}`,
           );
         }
       } finally {
@@ -1259,7 +1445,7 @@ export function AssetLibraryLab({
           { cache: "no-store" },
         );
         const payload =
-          (await response.json()) as EnrichmentResponse;
+          await readAssetApiJson<EnrichmentResponse>(response, "enrichment poll");
 
         if (
           !response.ok ||
@@ -1277,6 +1463,7 @@ export function AssetLibraryLab({
           enrichmentTerminalSignature(
             nextQueue,
           );
+        setError((current) => current?.startsWith("Asset API enrichment poll") ? null : current);
         setEnrichmentQueue(
           nextQueue,
         );
@@ -1297,9 +1484,7 @@ export function AssetLibraryLab({
       } catch (caught) {
         if (!disposed) {
           setError(
-            caught instanceof Error
-              ? caught.message
-              : String(caught),
+            `Asset API enrichment poll: ${caught instanceof Error ? caught.message : String(caught)}`,
           );
         }
       } finally {
@@ -1368,7 +1553,7 @@ export function AssetLibraryLab({
           { cache: "no-store" },
         );
         const payload =
-          (await response.json()) as GeometryResponse;
+          await readAssetApiJson<GeometryResponse>(response, "geometry poll");
 
         if (!response.ok || !payload.ok) {
           throw new Error(
@@ -1380,6 +1565,7 @@ export function AssetLibraryLab({
         const nextQueue = payload.queue ?? [];
         const terminalSignature =
           geometryTerminalSignature(nextQueue);
+        setError((current) => current?.startsWith("Asset API geometry poll") ? null : current);
         setGeometryQueue(nextQueue);
 
         if (
@@ -1395,9 +1581,7 @@ export function AssetLibraryLab({
       } catch (caught) {
         if (!disposed) {
           setError(
-            caught instanceof Error
-              ? caught.message
-              : String(caught),
+            `Asset API geometry poll: ${caught instanceof Error ? caught.message : String(caught)}`,
           );
         }
       } finally {
@@ -1627,11 +1811,7 @@ export function AssetLibraryLab({
   async function approveSelectedAsset() {
     if (!selectedAssetId) return;
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
 
     const polyPizzaPublicSceneApproval =
@@ -1705,11 +1885,7 @@ export function AssetLibraryLab({
   ) {
     if (!selectedAssetId) return;
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
 
     const note = window.prompt(
@@ -1734,11 +1910,7 @@ export function AssetLibraryLab({
   async function removeSelectedNeedsReviewCandidate() {
     if (!selectedAssetId) return;
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
 
     const linkedJob =
@@ -1824,11 +1996,7 @@ export function AssetLibraryLab({
       return;
     }
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
 
     if (!asset) return;
 
@@ -1943,11 +2111,7 @@ export function AssetLibraryLab({
       return;
     }
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
 
     if (!asset) return;
 
@@ -2065,11 +2229,7 @@ export function AssetLibraryLab({
       return;
     }
 
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
 
     const aliases = csvValues(
@@ -2189,9 +2349,7 @@ export function AssetLibraryLab({
   ) {
     if (!selectedAssetId || !identityDraft) return;
 
-    const asset = assets.find(
-      (candidate) => candidate.asset_id === selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
 
     const verifiedCanonicalLabel =
@@ -2789,11 +2947,7 @@ export function AssetLibraryLab({
 
   async function editSelectedAssetProvenance() {
     if (!selectedAssetId) return;
-    const asset = assets.find(
-      (candidate) =>
-        candidate.asset_id ===
-        selectedAssetId,
-    );
+    const asset = selectedAsset;
     if (!asset) return;
     if (
       asset.storage_provider === "r2" ||
@@ -2959,9 +3113,7 @@ export function AssetLibraryLab({
   async function removeSelectedAsset() {
     if (!selectedAssetId) return;
 
-    const asset = assets.find(
-      (candidate) => candidate.asset_id === selectedAssetId,
-    );
+    const asset = selectedAsset;
 
     if (!asset) return;
 
@@ -3026,9 +3178,7 @@ export function AssetLibraryLab({
   ) {
     if (!selectedAssetId) return;
 
-    const asset = assets.find(
-      (candidate) => candidate.asset_id === selectedAssetId,
-    );
+    const asset = selectedAsset;
 
     if (!asset) return;
 
@@ -3092,26 +3242,11 @@ export function AssetLibraryLab({
     }
   }
 
-  const sources = useMemo(
-    () => uniqueSorted(assets.map((asset) => asset.source_type)),
-    [assets],
-  );
-  const domains = useMemo(
-    () => uniqueSorted(assets.map((asset) => asset.domain)),
-    [assets],
-  );
-  const statuses = useMemo(
-    () => uniqueSorted(assets.map((asset) => asset.status)),
-    [assets],
-  );
-  const sceneReviewStatuses = useMemo(
-    () => uniqueSorted(assets.map((asset) => asset.scene_review_status)),
-    [assets],
-  );
-  const licenses = useMemo(
-    () => uniqueSorted(assets.map((asset) => asset.license_kind)),
-    [assets],
-  );
+  const sources = browserFacets.sources;
+  const domains = browserFacets.domains;
+  const statuses = browserFacets.statuses;
+  const sceneReviewStatuses = browserFacets.scene_review_statuses;
+  const licenses = browserFacets.licenses;
 
 
   const acquisitionJobByAssetId =
@@ -3145,37 +3280,19 @@ export function AssetLibraryLab({
 
   const acquisitionCounts = useMemo(
     () => ({
-      all: assets.length,
-      needs_review: assets.filter(
-        (asset) =>
-          asset.scene_review_status ===
-          "pending",
-      ).length,
-      approved: assets.filter(
-        (asset) =>
-          asset.scene_review_status ===
-          "approved",
-      ).length,
-      rejected: assets.filter(
-        (asset) =>
-          asset.scene_review_status ===
-          "rejected",
-      ).length,
+      all: browserCounts.all,
+      needs_review: browserCounts.needs_review,
+      approved: browserCounts.approved,
+      rejected: browserCounts.rejected,
       acquiring: acquisitionJobs.filter(
         (job) =>
           job.status === "missing" ||
-          job.status ===
-            "searching_blenderkit" ||
-          job.status ===
-            "generating_trellis" ||
+          job.status === "searching_blenderkit" ||
+          job.status === "generating_trellis" ||
           job.status === "unavailable",
       ).length,
     }),
-    [
-      acquisitionJobByAssetId,
-      acquisitionJobs,
-      assets,
-    ],
+    [browserCounts, acquisitionJobs],
   );
 
   const activeAcquisitionJobs =
@@ -3194,174 +3311,24 @@ export function AssetLibraryLab({
       [acquisitionJobs],
     );
 
-  const visibleAssets = useMemo(() => {
-    const queryTokens = search
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-
-    const filtered = assets.filter((asset) => {
-      const linkedJob =
-        acquisitionJobByAssetId.get(
-          asset.asset_id,
-        );
-
-      if (
-        reviewView === "needs_review" &&
-        asset.scene_review_status !==
-          "pending"
-      ) {
-        return false;
-      }
-
-      if (
-        reviewView === "approved" &&
-        asset.scene_review_status !==
-          "approved"
-      ) {
-        return false;
-      }
-
-      if (
-        reviewView === "rejected" &&
-        asset.scene_review_status !==
-          "rejected"
-      ) {
-        return false;
-      }
-
-      if (
-        reviewView === "acquiring" &&
-        (!linkedJob ||
-          ![
-            "missing",
-            "searching_blenderkit",
-            "generating_trellis",
-            "unavailable",
-          ].includes(linkedJob.status))
-      ) {
-        return false;
-      }
-
-      if (sourceFilter !== "all" && asset.source_type !== sourceFilter) {
-        return false;
-      }
-      if (domainFilter !== "all" && asset.domain !== domainFilter) {
-        return false;
-      }
-      if (statusFilter !== "all" && asset.status !== statusFilter) {
-        return false;
-      }
-      if (
-        sceneReviewFilter !== "all" &&
-        asset.scene_review_status !== sceneReviewFilter
-      ) {
-        return false;
-      }
-      if (licenseFilter !== "all" && asset.license_kind !== licenseFilter) {
-        return false;
-      }
-
-      const searchable = [
-        asset.asset_id,
-        asset.canonical_label,
-        asset.display_name,
-        asset.domain,
-        asset.source_type,
-        asset.status,
-        asset.scene_review_status,
-        asset.semantic_review_status,
-        asset.license_kind,
-        asset.license_status,
-        asset.notes ?? "",
-        asset.source_prompt ?? "",
-        asset.requested_concept ?? "",
-        asset.source_display_name ?? "",
-        asset.verified_canonical_label ?? "",
-        ...asset.aliases,
-        ...(asset.verified_aliases ?? []),
-        ...asset.semantic_tags,
-        ...(asset.appearance_profile?.style_descriptors ?? []),
-        ...(asset.appearance_profile?.design_era ?? []),
-        ...(asset.appearance_profile?.realism_level ?? []),
-        ...(asset.appearance_profile?.shape_language ?? []),
-        ...(asset.appearance_profile?.material_treatment ?? []),
-        ...(asset.appearance_profile?.color_palette ?? []),
-        ...(asset.appearance_profile?.surface_condition ?? []),
-        ...(asset.appearance_profile?.ornamentation ?? []),
-        ...(asset.appearance_profile?.visual_mood ?? []),
-        ...(asset.appearance_profile?.detail_level ?? []),
-        ...(asset.appearance_profile?.scene_compatibility ?? []),
-        ...(asset.appearance_profile?.descriptors ?? []),
-        ...(asset.appearance_profile?.materials ?? []),
-        ...(asset.appearance_profile?.colors ?? []),
-        ...(asset.appearance_profile?.geometry ?? []),
-        asset.appearance_profile?.summary ?? "",
-        ...(asset.contains ?? []),
-        ...(asset.affordances ?? []),
-        ...(asset.preferred_for_concepts ?? []),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return queryTokens.every((token) => searchable.includes(token));
-    });
-
-    filtered.sort((a, b) => {
-      if (sortKey === "name") {
-        return a.display_name.localeCompare(b.display_name);
-      }
-      if (sortKey === "source") {
-        return (
-          a.source_type.localeCompare(b.source_type) ||
-          a.display_name.localeCompare(b.display_name)
-        );
-      }
-      if (sortKey === "reuse") {
-        return (
-          b.reuse_count - a.reuse_count ||
-          a.display_name.localeCompare(b.display_name)
-        );
-      }
-      return (
-        Date.parse(b.created_at) - Date.parse(a.created_at) ||
-        a.display_name.localeCompare(b.display_name)
-      );
-    });
-
-    return filtered;
-  }, [
-    assets,
-    acquisitionJobByAssetId,
-    domainFilter,
-    licenseFilter,
-    search,
-    reviewView,
-    sceneReviewFilter,
-    sortKey,
-    sourceFilter,
-    statusFilter,
-  ]);
+  const visibleAssets = useMemo(
+    () => assets,
+    [assets],
+  );
 
   useEffect(() => {
-    if (
-      selectedAssetId &&
-      visibleAssets.some(
-        (asset) =>
-          asset.asset_id === selectedAssetId,
-      )
-    ) {
-      return;
-    }
-
-    setSelectedAssetId(
-      visibleAssets[0]?.asset_id ?? null,
-    );
+    if (!selectedAssetId) return;
+    if (visibleAssets.some((asset) => asset.asset_id === selectedAssetId)) return;
+    setSelectedAssetId(null);
+    setSelectedAssetDetail(null);
   }, [selectedAssetId, visibleAssets]);
 
-  const selectedAsset =
-    assets.find((asset) => asset.asset_id === selectedAssetId) ?? null;
+  const selectedAsset = selectedAssetDetail;
+  const selectedCardAsset = useMemo(
+    () => assets.find((asset) => asset.asset_id === selectedAssetId) ?? null,
+    [assets, selectedAssetId],
+  );
+  const selectedViewerAsset = selectedAsset ?? selectedCardAsset;
 
   useEffect(() => {
     if (!selectedAsset) {
@@ -3424,21 +3391,10 @@ export function AssetLibraryLab({
         ) ?? null
       : null;
 
-  const existingFiles = assets.filter(
-    (asset) => asset.file_stats.exists,
-  ).length;
-  const generatedAssets = assets.filter(
-    (asset) =>
-      asset.source_type === "blenderkit" ||
-      asset.source_type === "trellis",
-  ).length;
-  const sceneApprovedAssets = assets.filter(
-    (asset) => asset.scene_review_status === "approved",
-  ).length;
-  const semanticVerifiedAssets = assets.filter(
-    (asset) =>
-      asset.semantic_review_status === "verified",
-  ).length;
+  const existingFiles = browserStats.files_available;
+  const generatedAssets = browserStats.automatically_acquired;
+  const sceneApprovedAssets = browserStats.scene_approved;
+  const semanticVerifiedAssets = browserStats.identity_verified;
 
   if (librarySection === "resources") {
     return (
@@ -4049,6 +4005,8 @@ export function AssetLibraryLab({
         }
 
         .asset-library-card {
+          content-visibility: auto;
+          contain-intrinsic-size: 320px 420px;
           overflow: hidden;
           width: 100%;
           border: 1px solid rgba(148, 163, 184, 0.18);
@@ -4198,6 +4156,124 @@ export function AssetLibraryLab({
           color: #bae6fd;
           background: rgba(2, 6, 23, 0.82);
           white-space: nowrap;
+        }
+
+        .asset-library-bodyparts-inspector {
+          display: grid;
+          gap: 0.85rem;
+          margin-top: 1rem;
+          border: 1px solid rgba(125, 211, 252, 0.2);
+          border-radius: 1rem;
+          padding: 0.9rem;
+          background: rgba(2, 6, 23, 0.32);
+        }
+
+        .asset-library-bodyparts-inspector-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .asset-library-bodyparts-inspector-header > div:first-child {
+          display: grid;
+          gap: 0.25rem;
+        }
+
+        .asset-library-bodyparts-inspector-header strong {
+          color: #f8fafc;
+        }
+
+        .asset-library-bodyparts-inspector-header small,
+        .asset-library-bodyparts-legend small {
+          color: rgba(203, 213, 225, 0.72);
+        }
+
+        .asset-library-bodyparts-inspector-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.45rem;
+        }
+
+        .asset-library-bodyparts-ok,
+        .asset-library-bodyparts-warning {
+          margin: 0;
+          border-radius: 0.7rem;
+          padding: 0.65rem 0.75rem;
+          font-size: 0.82rem;
+        }
+
+        .asset-library-bodyparts-ok {
+          border: 1px solid rgba(52, 211, 153, 0.25);
+          color: #a7f3d0;
+          background: rgba(6, 78, 59, 0.16);
+        }
+
+        .asset-library-bodyparts-warning {
+          border: 1px solid rgba(251, 191, 36, 0.28);
+          color: #fde68a;
+          background: rgba(120, 53, 15, 0.15);
+        }
+
+        .asset-library-bodyparts-inspector-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(220px, 0.34fr);
+          gap: 0.85rem;
+        }
+
+        .asset-library-bodyparts-canvas {
+          min-height: 430px;
+          overflow: hidden;
+          border: 1px solid rgba(148, 163, 184, 0.16);
+          border-radius: 0.9rem;
+          background: #07111f;
+        }
+
+        .asset-library-bodyparts-canvas > div,
+        .asset-library-bodyparts-canvas canvas {
+          width: 100% !important;
+          height: 430px !important;
+        }
+
+        .asset-library-bodyparts-legend {
+          display: grid;
+          align-content: start;
+          gap: 0.4rem;
+          max-height: 430px;
+          overflow: auto;
+        }
+
+        .asset-library-bodyparts-legend-item {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: center;
+          gap: 0.6rem;
+          width: 100%;
+          border: 1px solid rgba(148, 163, 184, 0.16);
+          border-radius: 0.75rem;
+          padding: 0.55rem 0.65rem;
+          color: #e2e8f0;
+          background: rgba(15, 23, 42, 0.6);
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .asset-library-bodyparts-legend-item[data-hidden="true"] {
+          opacity: 0.42;
+        }
+
+        .asset-library-bodyparts-legend-item > span:last-child {
+          display: grid;
+          gap: 0.08rem;
+          min-width: 0;
+        }
+
+        .asset-library-bodyparts-swatch {
+          width: 0.9rem;
+          height: 0.9rem;
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          border-radius: 999px;
+          box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.45);
         }
 
         .asset-library-viewer-message {
@@ -4446,6 +4522,14 @@ export function AssetLibraryLab({
         }
 
         @media (max-width: 1180px) {
+          .asset-library-bodyparts-inspector-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .asset-library-bodyparts-inspector-header {
+            display: grid;
+          }
+
           .asset-library-controls {
             grid-template-columns: repeat(3, minmax(150px, 1fr));
           }
@@ -4616,6 +4700,14 @@ export function AssetLibraryLab({
               type="button"
             >
               Import Asset
+            </button>
+            <button
+              data-active={manualAcquisitionMode === "bodyparts3d"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
+              onClick={() => setManualAcquisitionMode("bodyparts3d")}
+              type="button"
+            >
+              BodyParts3D Atlas
             </button>
             <button
               data-active={manualAcquisitionMode === "identity"}
@@ -4982,6 +5074,28 @@ export function AssetLibraryLab({
               </div>
               <p className="asset-library-trellis-warning">Best for geometric, mechanical, furniture, toy-like, symbolic, and educational objects. Organic or photorealistic requests may produce stylized approximations and remain pending review.</p>
             </form>
+          ) : manualAcquisitionMode === "bodyparts3d" ? (
+            <>
+              <BodyParts3dSlpPilotImportLab
+                onComplete={(summary) => {
+                  setReviewView("needs_review");
+                  setPromotionMessage(
+                    summary.mode === "full"
+                      ? `BodyParts3D full-atlas pass complete: ${(summary.available ?? 0).toLocaleString()} / ${(summary.total ?? 0).toLocaleString()} element assets available, ${summary.failed} failed. Atlas assets remain in Needs Review with Omni Vision and embeddings off.`
+                      : `BodyParts3D legacy pilot import complete: ${summary.imported} imported, ${summary.duplicate} already present, ${summary.missing} missing from archive, ${summary.failed} failed. Assets remain in Needs Review.`,
+                  );
+                  setRefreshToken((value) => value + 1);
+                }}
+                onRunningChange={setAssetImporting}
+              />
+              <BodyParts3dThumbnailMaintenanceLab
+                registryRevision={String(refreshToken)}
+                onChanged={(message) => {
+                  setPromotionMessage(message);
+                  setRefreshToken((value) => value + 1);
+                }}
+              />
+            </>
           ) : manualAcquisitionMode === "identity" ? (
             <AssetIdentityAuditLab
               onChanged={() => {
@@ -5008,7 +5122,7 @@ export function AssetLibraryLab({
         <section className="asset-library-stats">
           <StatCard
             label="Registered assets"
-            value={assets.length}
+            value={browserCounts.all}
             detail="Entries in the shared registry"
           />
           <StatCard
@@ -5092,6 +5206,7 @@ export function AssetLibraryLab({
             </small>
           </section>
         ) : null}
+
 
         {reviewView === "acquiring" &&
         activeAcquisitionJobs.length ? (
@@ -5217,7 +5332,7 @@ export function AssetLibraryLab({
           <input
             aria-label="Search assets"
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search names, IDs, aliases, tags, notes…"
+            placeholder="Search all assets, including BodyParts3D anatomy…"
             type="search"
             value={search}
           />
@@ -5310,15 +5425,44 @@ export function AssetLibraryLab({
               <span>
                 {isLoading
                   ? "Loading assets…"
-                  : `${visibleAssets.length} of ${assets.length} assets`}
+                  : `${visibleAssets.length} shown · ${browserTotal.toLocaleString()} matching`}
               </span>
               <span>Click a card to preview it</span>
             </div>
+
+            {browserTotal > 30 ? (
+              <div className="asset-library-maintenance-actions">
+                <button
+                  className="asset-library-button"
+                  data-secondary="true"
+                  disabled={pageOffset <= 0 || isLoading}
+                  onClick={() => setPageOffset((value) => Math.max(0, value - 30))}
+                  type="button"
+                >
+                  Previous 30
+                </button>
+                <small>
+                  {browserTotal > 0
+                    ? `${pageOffset + 1}–${Math.min(pageOffset + visibleAssets.length, browserTotal)} of ${browserTotal.toLocaleString()}`
+                    : "0 results"}
+                </small>
+                <button
+                  className="asset-library-button"
+                  data-secondary="true"
+                  disabled={pageOffset + visibleAssets.length >= browserTotal || isLoading}
+                  onClick={() => setPageOffset((value) => value + 30)}
+                  type="button"
+                >
+                  Next 30
+                </button>
+              </div>
+            ) : null}
 
             {visibleAssets.length > 0 ? (
               <div className="asset-library-grid">
                 {visibleAssets.map((asset) => {
                   const selected = asset.asset_id === selectedAssetId;
+                  const anatomyMaterial = bodyParts3dMaterialForAsset(asset);
 
                   return (
                     <button
@@ -5326,21 +5470,11 @@ export function AssetLibraryLab({
                       data-selected={selected}
                       key={asset.asset_id}
                       onClick={() => setSelectedAssetId(asset.asset_id)}
+                      onMouseEnter={preloadAssetLibraryViewer}
+                      onFocus={preloadAssetLibraryViewer}
                       type="button"
                     >
-                      <div className="asset-library-card-image">
-                        {asset.thumbnail_path ? (
-                          <img
-                            alt={`${asset.display_name} thumbnail`}
-                            loading="lazy"
-                            src={asset.thumbnail_path}
-                          />
-                        ) : (
-                          <div className="asset-library-placeholder">
-                            {assetTitle(asset).slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
+                      <AssetCardThumbnail asset={asset} />
 
                       <div className="asset-library-card-body">
                         <div className="asset-library-card-title-row">
@@ -5350,7 +5484,7 @@ export function AssetLibraryLab({
                             data-positive={asset.file_stats.exists}
                             data-warning={!asset.file_stats.exists}
                           >
-                            {asset.file_stats.exists ? "file ready" : "missing"}
+                            {asset.file_stats.exists ? "file registered" : "missing"}
                           </span>
                         </div>
 
@@ -5368,6 +5502,26 @@ export function AssetLibraryLab({
                           <span className="asset-library-badge">
                             {asset.domain}
                           </span>
+                          {anatomyMaterial ? (
+                            <span
+                              className="asset-library-badge"
+                              title={`Default anatomy material: ${anatomyMaterial.label}`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  backgroundColor: anatomyMaterial.base_color,
+                                  border: "1px solid rgba(255,255,255,0.35)",
+                                  borderRadius: 999,
+                                  display: "inline-block",
+                                  height: 9,
+                                  marginRight: 5,
+                                  width: 9,
+                                }}
+                              />
+                              {anatomyMaterial.tissue_class}
+                            </span>
+                          ) : null}
                           <span className="asset-library-badge">
                             {asset.asset_type}
                           </span>
@@ -5440,7 +5594,18 @@ export function AssetLibraryLab({
 
           <aside className="asset-library-panel">
             <div className="asset-library-viewer">
-              <AssetViewer asset={selectedAsset} />
+              {!selectedAssetId ? (
+                <div className="asset-library-viewer-message">Select an asset to inspect it in 3D.</div>
+              ) : selectedViewerAsset ? (
+                <AssetLibraryViewer
+                  asset={selectedViewerAsset}
+                  registryRevision={String(refreshToken)}
+                />
+              ) : selectedAssetLoading ? (
+                <div className="asset-library-viewer-message">Loading selected asset…</div>
+              ) : (
+                <div className="asset-library-viewer-message">Selected asset detail is unavailable.</div>
+              )}
             </div>
 
             <div className="asset-library-details">
@@ -6302,6 +6467,41 @@ export function AssetLibraryLab({
                         ? selectedAsset.preferred_for_concepts!.join(", ")
                         : "None"}
                     </MetadataRow>
+                    {selectedAsset.collection_membership ? (
+                      <>
+                        <MetadataRow label="Collection">
+                          {selectedAsset.collection_membership.collection_name} · {selectedAsset.collection_membership.member_id}
+                        </MetadataRow>
+                        <MetadataRow label="Collection elements">
+                          {(selectedAsset.collection_membership.source_element_ids ?? []).length
+                            ? selectedAsset.collection_membership.source_element_ids!.join(" + ")
+                            : selectedAsset.collection_membership.source_member_path || "Not recorded"}
+                        </MetadataRow>
+                        <MetadataRow label="Collection transform">
+                          <code>
+                            position [{selectedAsset.collection_membership.runtime_transform.position.map((value) => value.toFixed(4)).join(", ")}]
+                          </code>
+                        </MetadataRow>
+                        {bodyParts3dMaterialForAsset(selectedAsset) ? (
+                          <MetadataRow label="Default anatomy material">
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  backgroundColor: bodyParts3dMaterialForAsset(selectedAsset)!.base_color,
+                                  border: "1px solid rgba(255,255,255,0.35)",
+                                  borderRadius: 999,
+                                  display: "inline-block",
+                                  height: 12,
+                                  width: 12,
+                                }}
+                              />
+                              {bodyParts3dMaterialForAsset(selectedAsset)!.label}
+                            </span>
+                          </MetadataRow>
+                        ) : null}
+                      </>
+                    ) : null}
                     <MetadataRow label="Source">
                       {sourceLabel(selectedAsset.source_type)}
                     </MetadataRow>
@@ -6525,4 +6725,3 @@ export function AssetLibraryLab({
 }
 
 export default AssetLibraryLab;
-

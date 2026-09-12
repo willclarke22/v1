@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as VisualLearningTurnRequestBody;
     const input = buildVisualLearningTurnInput(body);
-    const modelRequest = buildVisualLearningTurnModelRequest(input);
+    const modelRequest = buildVisualLearningTurnModelRequest(input, body);
     const scaffoldOutput = buildVisualLearningTurnScaffoldOutput(input, body);
 
     return NextResponse.json({

@@ -17,6 +17,11 @@ export type BlenderAssetResult = {
   source_license?: string | null;
   source_author?: string | null;
   source_record?: Record<string, unknown> | null;
+  collection_transform?: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: [number, number, number];
+  } | null;
 };
 
 
@@ -51,9 +56,14 @@ export type BlenderNormalizeJob = {
   kind: "normalize_asset";
   status: "pending" | "running" | "completed" | "failed";
   input_path: string;
+  input_paths?: string[];
   output_path: string;
   thumbnail_path: string;
   target_extent_m: number;
+  normalization_mode?: "standard" | "collection_member" | "preserve_geometry";
+  source_scale?: number;
+  /** Optional render-only flat tint. Applied after GLB export, so runtime geometry/materials remain unchanged. */
+  thumbnail_color_hex?: string | null;
   source_type: "trellis" | "manual";
   created_at: string;
   updated_at: string;

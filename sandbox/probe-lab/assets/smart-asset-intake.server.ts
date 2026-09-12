@@ -43,7 +43,7 @@ function findEocd(buffer: Buffer) {
   }
   throw new Error("ZIP end-of-central-directory record was not found.");
 }
-function inspectZip(buffer: Buffer) {
+function inspectZip(buffer: Buffer, options: { enforceExpandedLimit?: boolean } = {}) {
   if (buffer.length > MAX_ARCHIVE_BYTES) {
     throw new Error(`ZIP exceeds the ${Math.round(MAX_ARCHIVE_BYTES / 1024 / 1024)} MB compressed limit.`);
   }
@@ -82,7 +82,7 @@ function inspectZip(buffer: Buffer) {
     if (method !== METHOD_STORED && method !== METHOD_DEFLATE) throw new Error(`Unsupported ZIP compression method ${method}: ${name}`);
     if (uncompressed > MAX_ENTRY_BYTES) throw new Error(`${name} exceeds the per-file safety limit.`);
     expanded += uncompressed;
-    if (expanded > MAX_EXPANDED_BYTES) throw new Error("ZIP expands beyond the 1 GB safety limit.");
+    if (options.enforceExpandedLimit !== false && expanded > MAX_EXPANDED_BYTES) throw new Error("ZIP expands beyond the 1 GB safety limit.");
     entries.push({ path: name, method, compressed_size: compressed, uncompressed_size: uncompressed, local_header_offset: localOffset });
   }
   return entries;
@@ -104,6 +104,82 @@ function entryBytes(buffer: Buffer, entry: ZipEntry) {
     throw new Error(`${entry.path} expanded to ${bytes.length} bytes; expected ${entry.uncompressed_size}.`);
   }
   return bytes;
+}
+
+export async function materializeArchiveMembersByBasename(input: {
+  archive: File;
+  basenames: string[];
+}) {
+  const workspace = await createAssetTempWorkspace("smart-archive-members");
+  try {
+    const buffer = Buffer.from(await input.archive.arrayBuffer());
+    const entries = inspectZip(buffer, { enforceExpandedLimit: false });
+    const requested = [...new Set(input.basenames.map((value) => path.basename(value).toLowerCase()))];
+    const byBasename = new Map<string, ZipEntry[]>();
+    for (const entry of entries) {
+      const key = path.basename(entry.path).toLowerCase();
+      const current = byBasename.get(key) ?? [];
+      current.push(entry);
+      byBasename.set(key, current);
+    }
+    const materialized = new Map<string, string>();
+    for (const basename of requested) {
+      const candidates = byBasename.get(basename) ?? [];
+      if (candidates.length !== 1) continue;
+      const entry = candidates[0];
+      const target = path.join(workspace.path, path.basename(entry.path));
+      await writeFile(target, entryBytes(buffer, entry));
+      materialized.set(basename, target);
+    }
+    return {
+      inputPathsByBasename: materialized,
+      archiveEntryCount: entries.length,
+      cleanup: workspace.cleanup,
+    };
+  } catch (caught) {
+    await workspace.cleanup().catch(() => undefined);
+    throw caught;
+  }
+}
+
+export async function extractArchiveMembersByBasenameToDirectory(input: {
+  archive: File;
+  basenames: string[];
+  outputDirectory: string;
+}) {
+  const buffer = Buffer.from(await input.archive.arrayBuffer());
+  const entries = inspectZip(buffer, { enforceExpandedLimit: false });
+  const requested = [...new Set(input.basenames.map((value) => path.basename(value).toLowerCase()))];
+  const requestedSet = new Set(requested);
+  const byBasename = new Map<string, ZipEntry[]>();
+  for (const entry of entries) {
+    const key = path.basename(entry.path).toLowerCase();
+    if (!requestedSet.has(key)) continue;
+    const current = byBasename.get(key) ?? [];
+    current.push(entry);
+    byBasename.set(key, current);
+  }
+  await mkdir(input.outputDirectory, { recursive: true });
+  const extracted = new Map<string, string>();
+  const ambiguous: string[] = [];
+  for (const basename of requested) {
+    const candidates = byBasename.get(basename) ?? [];
+    if (candidates.length !== 1) {
+      if (candidates.length > 1) ambiguous.push(basename);
+      continue;
+    }
+    const entry = candidates[0];
+    const target = path.join(input.outputDirectory, path.basename(entry.path));
+    await writeFile(target, entryBytes(buffer, entry));
+    extracted.set(basename, target);
+  }
+  return {
+    inputPathsByBasename: extracted,
+    archiveEntryCount: entries.length,
+    requestedCount: requested.length,
+    missingBasenames: requested.filter((basename) => !extracted.has(basename)),
+    ambiguousBasenames: ambiguous,
+  };
 }
 
 export async function materializeArchiveModel(input: {
@@ -138,8 +214,11 @@ export async function materializeArchiveModel(input: {
 
 export async function convertSourceModelToGlb(input: {
   inputPath: string;
+  inputPaths?: string[];
   sourceTypeLabel: string;
   targetExtentM: number;
+  normalizationMode?: "standard" | "collection_member" | "preserve_geometry";
+  sourceScale?: number;
 }) {
   const workspace = await createAssetTempWorkspace("smart-convert");
   const outputPath = path.join(workspace.path, "normalized.glb");
@@ -148,9 +227,12 @@ export async function convertSourceModelToGlb(input: {
     const { jobPath } = await createNormalizeJob({
       kind: "normalize_asset",
       input_path: input.inputPath,
+      input_paths: input.inputPaths?.length ? input.inputPaths : undefined,
       output_path: outputPath,
       thumbnail_path: thumbnailPath,
       target_extent_m: input.targetExtentM,
+      normalization_mode: input.normalizationMode ?? "standard",
+      source_scale: input.sourceScale ?? 1,
       source_type: "manual",
       result: null,
       error: null,
@@ -169,6 +251,7 @@ export async function convertSourceModelToGlb(input: {
           return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
         },
       },
+      collectionTransform: completed.result.collection_transform ?? null,
       cleanup: workspace.cleanup,
     };
   } catch (caught) {

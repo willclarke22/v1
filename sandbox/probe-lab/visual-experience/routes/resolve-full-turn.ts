@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       await attachApprovedAssetsToVisualTurn(
         resolveVisualLearningTurn(output, input),
         output,
+        { sandbox_asset_collection_mode: body.asset_collection_mode ?? null },
       );
 
     return NextResponse.json({

@@ -1,3 +1,5 @@
+import { BODYPARTS3D_SLP_COLLECTION_ID } from "../assets/bodyparts3d-slp-pilot";
+import type { MyWayAssetRecord } from "../assets/asset-types";
 import {
   loadReviewedAssetResolverSnapshot,
   resolveReviewedAsset,
@@ -53,9 +55,59 @@ function entitiesFromOutput(
     : [];
 }
 
+type AttachVisualAssetOptions = {
+  sandbox_asset_collection_mode?: "bodyparts3d_slp_pilot" | null;
+};
+
+function normalizedSemanticName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+function findSandboxBodyParts3dPilotAsset(
+  assets: MyWayAssetRecord[],
+  entity: SemanticSceneEntity,
+) {
+  const wanted = normalizedSemanticName(entity.display_name);
+  const tags = new Set((entity.visual_need.semantic_tags ?? []).map(normalizedSemanticName));
+  const candidates = assets.filter((asset) =>
+    asset.collection_membership?.collection_id === BODYPARTS3D_SLP_COLLECTION_ID &&
+    asset.safe_to_use_in_sandbox &&
+    asset.status !== "rejected"
+  );
+  return candidates.find((asset) => {
+    const names = [
+      asset.collection_membership?.concept_name ?? "",
+      asset.canonical_label,
+      asset.display_name,
+      ...asset.aliases,
+    ].map(normalizedSemanticName).filter(Boolean);
+    return names.includes(wanted) || names.some((name) => tags.has(name));
+  }) ?? null;
+}
+
+function bindingForAsset(entity: SemanticSceneEntity, asset: MyWayAssetRecord, reason: string): RenderBinding {
+  return {
+    entity_id: entity.id,
+    binding: {
+      kind: "registered_asset",
+      asset_id: asset.asset_id,
+      public_path: asset.public_path,
+      source_type: asset.source_type,
+      scene_review_status: asset.scene_review_status ?? "pending",
+      dimensions_m: asset.dimensions_m,
+      default_scale: asset.default_scale,
+      default_rotation: asset.default_rotation,
+      ground_offset_m: asset.ground_offset_m,
+      match_score: null,
+      reason,
+    },
+  };
+}
+
 export async function attachApprovedAssetsToVisualTurn(
   resolved: MyWayResolvedVisualLearningTurn,
   output: VisualLearningTurnOutput,
+  options: AttachVisualAssetOptions = {},
 ): Promise<MyWayResolvedVisualLearningTurn> {
   if (!resolved.source_output_valid) {
     return resolved;
@@ -125,6 +177,20 @@ export async function attachApprovedAssetsToVisualTurn(
     if (!entity || !queued) {
       bindings.push(current);
       continue;
+    }
+
+    if (options.sandbox_asset_collection_mode === "bodyparts3d_slp_pilot") {
+      const pilotAsset = findSandboxBodyParts3dPilotAsset(sharedSnapshot.registry.assets, entity);
+      if (pilotAsset) {
+        resolvedEntityIds.add(entity.id);
+        bindings.push(bindingForAsset(
+          entity,
+          pilotAsset,
+          `Sandbox-only BodyParts3D pilot binding to Needs Review asset ${pilotAsset.asset_id}. This does not approve the asset, verify its identity, or generate an embedding.`,
+        ));
+        warnings.push(`${entity.display_name}: BodyParts3D pilot used a Needs Review asset under the explicit sandbox collection exception.`);
+        continue;
+      }
     }
 
     const sharedResult =

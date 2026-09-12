@@ -13,27 +13,144 @@ import {
   updateMyWayAssetProvenance,
   reviewMyWayAssetForScenes,
   reviewMyWayAssetSemanticIdentity,
-} from "../asset-library.server";
+ } from "../asset-library.server";
+import { getAssetBrowserRegistryAsset } from "../asset-browser-snapshot.server";
 
-function errorResponse(caught: unknown, status = 400) {
+type ListedAsset = Awaited<ReturnType<typeof listMyWayAssets>>[number];
+
+const ASSET_LIBRARY_LIST_CONCURRENCY = 16;
+
+function errorText(caught: unknown) {
+  const raw =
+    caught instanceof Error
+      ? caught.message
+      : String(caught);
+  const trimmed = raw.trim();
+
+  if (trimmed) return trimmed;
+  if (caught instanceof Error && caught.name.trim()) {
+    return `${caught.name} was thrown without an error message.`;
+  }
+  return "Unknown Asset Library server error.";
+}
+
+function errorResponse(
+  caught: unknown,
+  status = 400,
+  stage = "request",
+) {
   return NextResponse.json(
     {
       ok: false,
-      error:
-        caught instanceof Error
-          ? caught.message
-          : String(caught),
+      error: errorText(caught),
+      error_stage: stage,
     },
     { status },
   );
 }
 
+function registryBackedListingStats(asset: ListedAsset) {
+  const storageProvider = asset.storage_provider ?? "local";
+  const remoteByRegistry =
+    storageProvider === "r2_private_pending" ||
+    storageProvider === "r2" ||
+    /^https:\/\//i.test(asset.public_path);
+
+  return {
+    ...asset,
+    file_stats: {
+      exists: remoteByRegistry && Boolean(asset.public_path),
+      file_size_bytes: asset.file_size_bytes ?? null,
+      project_relative_path: null,
+      storage_provider: storageProvider,
+      remote_url: remoteByRegistry ? asset.public_path : null,
+      verification: "registry_metadata" as const,
+    },
+  };
+}
+
+
+function browserDetailStats(asset: ListedAsset) {
+  const storageProvider = asset.storage_provider ?? "local";
+  const remoteByRegistry =
+    storageProvider === "r2_private_pending" ||
+    storageProvider === "r2" ||
+    /^https:\/\//i.test(asset.public_path);
+
+  return {
+    ...asset,
+    file_stats: {
+      exists: Boolean(asset.public_path),
+      file_size_bytes: asset.file_size_bytes ?? null,
+      project_relative_path: null,
+      storage_provider: storageProvider,
+      remote_url: remoteByRegistry ? asset.public_path : null,
+      verification: "registry_metadata" as const,
+    },
+  };
+}
+
+async function assetWithListingStats(asset: ListedAsset) {
+  // Bulk library views must not issue one R2 HEAD request per Needs Review asset.
+  // Registration already staged r2_private_pending objects before writing the record,
+  // so the list view can use registry metadata. A single-asset GET still performs
+  // the live storage check through assetWithFileStats.
+  if (asset.storage_provider === "r2_private_pending") {
+    return registryBackedListingStats(asset);
+  }
+
+  try {
+    return await assetWithFileStats(asset);
+  } catch (caught) {
+    return {
+      ...registryBackedListingStats(asset),
+      file_stats: {
+        ...registryBackedListingStats(asset).file_stats,
+        verification: "registry_metadata_fallback" as const,
+        verification_error: errorText(caught),
+      },
+    };
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(
+    Math.max(1, limit),
+    items.length,
+  );
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (true) {
+        const index = nextIndex;
+        nextIndex += 1;
+        if (index >= items.length) return;
+        results[index] = await worker(items[index]!, index);
+      }
+    }),
+  );
+
+  return results;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const assetId = request.nextUrl.searchParams.get("asset_id");
+    const browserRevision =
+      request.nextUrl.searchParams.get("revision")?.trim() ?? "";
 
     if (assetId) {
-      const asset = await getMyWayAsset(assetId);
+      const asset = browserRevision
+        ? await getAssetBrowserRegistryAsset(assetId, browserRevision)
+        : await getMyWayAsset(assetId);
 
       if (!asset) {
         return NextResponse.json(
@@ -44,11 +161,19 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         ok: true,
-        asset: await assetWithFileStats(asset),
+        asset: browserRevision
+          ? browserDetailStats(asset)
+          : await assetWithFileStats(asset),
       });
     }
 
-    const listedAssets = await listMyWayAssets();
+    let listedAssets: Awaited<ReturnType<typeof listMyWayAssets>>;
+    try {
+      listedAssets = await listMyWayAssets();
+    } catch (caught) {
+      return errorResponse(caught, 500, "registry_read");
+    }
+
     const view = request.nextUrl.searchParams.get("view");
     const selectedAssets =
       view === "qualification"
@@ -63,7 +188,16 @@ export async function GET(request: NextRequest) {
               asset.safe_to_use_in_sandbox !== false,
           )
         : listedAssets;
-    const assets = await Promise.all(selectedAssets.map(assetWithFileStats));
+    let assets: Awaited<ReturnType<typeof assetWithListingStats>>[];
+    try {
+      assets = await mapWithConcurrency(
+        selectedAssets,
+        ASSET_LIBRARY_LIST_CONCURRENCY,
+        assetWithListingStats,
+      );
+    } catch (caught) {
+      return errorResponse(caught, 500, "list_stats");
+    }
 
     return NextResponse.json({
       ok: true,
@@ -72,7 +206,7 @@ export async function GET(request: NextRequest) {
       assets,
     });
   } catch (caught) {
-    return errorResponse(caught, 500);
+    return errorResponse(caught, 500, "library_get");
   }
 }
 
@@ -401,4 +535,3 @@ export async function PATCH(request: NextRequest) {
     return errorResponse(caught);
   }
 }
-

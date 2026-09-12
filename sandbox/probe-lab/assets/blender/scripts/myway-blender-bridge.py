@@ -106,6 +106,26 @@ def import_asset(input_path):
         raise RuntimeError(f"Unsupported input asset format: {suffix}")
 
 
+def import_obj_components(input_paths):
+    """Import multiple BodyParts3D OBJ elements into one scene without resetting between elements."""
+    paths = [Path(value) for value in (input_paths or [])]
+    if not paths:
+        raise RuntimeError("No OBJ component paths were provided.")
+    if any(item.suffix.lower() != ".obj" for item in paths):
+        raise RuntimeError("Multi-component normalization currently supports OBJ elements only.")
+    clear_scene()
+    for item in paths:
+        before = set(bpy.context.scene.objects)
+        if hasattr(bpy.ops.wm, "obj_import"):
+            bpy.ops.wm.obj_import(filepath=str(item))
+        else:
+            bpy.ops.import_scene.obj(filepath=str(item))
+        imported = [obj for obj in bpy.context.scene.objects if obj not in before and obj.type == "MESH"]
+        for index, obj in enumerate(imported):
+            suffix = "" if len(imported) == 1 else f"_{index + 1}"
+            obj.name = f"{item.stem}{suffix}"
+
+
 def append_blend_file(blend_path):
     clear_scene()
     with bpy.data.libraries.load(str(blend_path), link=False) as (data_from, data_to):
@@ -166,6 +186,49 @@ def normalize_scene(target_extent):
     dimensions = maximum - minimum
     return [round(dimensions.x, 6), round(dimensions.y, 6), round(dimensions.z, 6)]
 
+
+
+def normalize_collection_member(source_scale=0.001):
+    """Localize one member while preserving an invertible shared collection transform."""
+    objects = asset_objects()
+    meshes = mesh_objects()
+    if not meshes:
+        raise RuntimeError("The imported collection member contained no mesh objects.")
+    roots = [obj for obj in objects if obj.parent is None or obj.parent not in objects]
+    scale = float(source_scale)
+    if not math.isfinite(scale) or scale <= 0:
+        raise RuntimeError("collection_member source_scale must be a positive finite number.")
+    for obj in roots:
+        obj.scale = obj.scale * scale
+    bpy.context.view_layer.update()
+
+    minimum, maximum = world_bbox(meshes)
+    origin = Vector(((minimum.x + maximum.x) / 2, (minimum.y + maximum.y) / 2, minimum.z))
+    for obj in roots:
+        obj.location -= origin
+    bpy.context.view_layer.update()
+
+    minimum, maximum = world_bbox(meshes)
+    dimensions = maximum - minimum
+    # geometry_profile/export convert Blender Z-up coordinates to GLB Y-up as (x, z, -y).
+    collection_position = [round(origin.x, 6), round(origin.z, 6), round(-origin.y, 6)]
+    return (
+        [round(dimensions.x, 6), round(dimensions.y, 6), round(dimensions.z, 6)],
+        {
+            "position": collection_position,
+            "rotation": [0.0, 0.0, 0.0],
+            "scale": [1.0, 1.0, 1.0],
+        },
+    )
+
+
+def preserve_scene_geometry():
+    meshes = mesh_objects()
+    if not meshes:
+        raise RuntimeError("The imported asset contained no mesh objects.")
+    minimum, maximum = world_bbox(meshes)
+    dimensions = maximum - minimum
+    return [round(dimensions.x, 6), round(dimensions.y, 6), round(dimensions.z, 6)]
 
 
 def _texture_directory_name(resolution):
@@ -625,7 +688,37 @@ def export_glb(output_path):
     )
 
 
-def make_thumbnail(thumbnail_path, dimensions):
+def apply_thumbnail_color(color_hex):
+    if not color_hex:
+        return
+    raw = str(color_hex).strip().lstrip("#")
+    if len(raw) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in raw):
+        raise RuntimeError(f"thumbnail_color_hex must be a six-digit RGB hex color, got: {color_hex}")
+    rgb = tuple(int(raw[index:index + 2], 16) / 255.0 for index in (0, 2, 4))
+    material = bpy.data.materials.new("MyWayThumbnailSemanticMaterial")
+    material.diffuse_color = (rgb[0], rgb[1], rgb[2], 1.0)
+    material.use_nodes = True
+    principled = material.node_tree.nodes.get("Principled BSDF") if material.node_tree else None
+    if principled:
+        base = principled.inputs.get("Base Color")
+        if base:
+            base.default_value = (rgb[0], rgb[1], rgb[2], 1.0)
+        roughness = principled.inputs.get("Roughness")
+        if roughness:
+            roughness.default_value = 0.58
+        metallic = principled.inputs.get("Metallic")
+        if metallic:
+            metallic.default_value = 0.0
+
+    for obj in mesh_objects():
+        if not getattr(obj, "data", None):
+            continue
+        obj.data.materials.clear()
+        obj.data.materials.append(material)
+
+
+def make_thumbnail(thumbnail_path, dimensions, color_hex=None):
+    apply_thumbnail_color(color_hex)
     Path(thumbnail_path).parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
     available_engines = {
@@ -1930,7 +2023,11 @@ def execute(job):
             "geometry_profile": profile,
         }
     elif job["kind"] == "normalize_asset":
-        import_asset(job["input_path"])
+        component_paths = job.get("input_paths") or []
+        if component_paths:
+            import_obj_components(component_paths)
+        else:
+            import_asset(job["input_path"])
     elif job["kind"] == "render_asset_analysis":
         import_asset(job["input_path"])
         dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
@@ -1969,10 +2066,19 @@ def execute(job):
 
     try:
         appearance_report = preserve_imported_appearance()
-        dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
+        normalization_mode = str(job.get("normalization_mode", "standard"))
+        collection_transform = None
+        if normalization_mode == "collection_member":
+            dimensions, collection_transform = normalize_collection_member(
+                float(job.get("source_scale", 0.001))
+            )
+        elif normalization_mode == "preserve_geometry":
+            dimensions = preserve_scene_geometry()
+        else:
+            dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
         profile = geometry_profile()
         export_glb(job["output_path"])
-        make_thumbnail(job["thumbnail_path"], dimensions)
+        make_thumbnail(job["thumbnail_path"], dimensions, job.get("thumbnail_color_hex"))
         return {
             "output_path": job["output_path"],
             "thumbnail_path": job["thumbnail_path"],
@@ -1983,6 +2089,7 @@ def execute(job):
             "geometry_profile": profile,
             "texture_report": texture_report,
             "appearance_report": appearance_report,
+            "collection_transform": collection_transform,
             **source_metadata,
         }
     finally:

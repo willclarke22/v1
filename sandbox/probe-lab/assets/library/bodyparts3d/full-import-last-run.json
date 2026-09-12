@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "phase": "complete",
+  "session_id": "6541c5c8-0a70-4ba8-9f17-56fd9acf05e8",
+  "total": 2234,
+  "available": 2234,
+  "completed_percent": 100,
+  "already_present": 2224,
+  "imported": 10,
+  "duplicate": 0,
+  "failed": 0,
+  "missing_from_archive": 0,
+  "remaining": 0,
+  "archive_entry_count": 2234,
+  "failures": [],
+  "reconciliation_missing": [],
+  "batch_results": [
+    {
+      "element_id": "FJ2808",
+      "name": "thyroid cartilage",
+      "system": "respiratory",
+      "status": "imported",
+      "asset_id": "thyroid_cartilage_man_e0145b63"
+    },
+    {
+      "element_id": "FJ3289",
+      "name": "mandible",
+      "system": "skeletal",
+      "status": "imported",
+      "asset_id": "mandible_man_7fc0bdf0"
+    }
+  ],
+  "catalog_counts": {
+    "elements": 2234,
+    "named_concepts": 4273,
+    "isa_relations": 2904,
+    "partof_relations": 1367
+  },
+  "system_counts": {
+    "connective": 129,
+    "sensory": 51,
+    "nervous": 118,
+    "skeletal": 305,
+    "muscular": 334,
+    "arterial": 590,
+    "cardiac": 106,
+    "endocrine": 4,
+    "venous": 388,
+    "digestive": 74,
+    "respiratory": 113,
+    "lymphatic": 3,
+    "integumentary": 3,
+    "reproductive": 10,
+    "urinary": 6
+  },
+  "run_vision": false,
+  "run_embedding": false,
+  "message": "Full BodyParts3D import pass finished and the registry verifies all 2,234 official FJ element identities.",
+  "finished_at": "2026-09-11T02:14:26.069Z"
+}

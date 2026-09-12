@@ -26,6 +26,7 @@ type RequestBody = {
   preferred_style: string;
   force_clarification: boolean;
   use_fallback_on_invalid: boolean;
+  asset_collection_mode: "bodyparts3d_slp_pilot" | null;
 };
 
 const defaultRequestBody: RequestBody = {
@@ -42,6 +43,7 @@ const defaultRequestBody: RequestBody = {
   preferred_style: "visual_description",
   force_clarification: false,
   use_fallback_on_invalid: true,
+  asset_collection_mode: null,
 };
 
 const unclearRequestBody: RequestBody = {
@@ -49,6 +51,15 @@ const unclearRequestBody: RequestBody = {
   learner_message: "I don’t get this.",
   topic_label: "",
   force_clarification: true,
+};
+
+const slpAnatomyPilotRequestBody: RequestBody = {
+  ...defaultRequestBody,
+  provider: "glm",
+  learner_message: "I don't understand how the epiglottis, laryngeal structures, trachea, and esophagus work together to protect the airway during swallowing.",
+  user_interests: "speech-language pathology, anatomy, swallowing, voice",
+  jargon_level: "light",
+  asset_collection_mode: "bodyparts3d_slp_pilot",
 };
 
 const shellStyle: CSSProperties = {
@@ -607,6 +618,15 @@ export function VisualExperienceLab() {
               </label>
             </div>
 
+            <label style={{ display: "flex", gap: 10, alignItems: "center", color: "rgba(255,255,255,0.74)" }}>
+              <input
+                type="checkbox"
+                checked={body.asset_collection_mode === "bodyparts3d_slp_pilot"}
+                onChange={(event) => setBody((current) => ({ ...current, asset_collection_mode: event.target.checked ? "bodyparts3d_slp_pilot" : null }))}
+              />
+              Use BodyParts3D SLP pilot assets, including Needs Review members, for this sandbox run only
+            </label>
+
             <Field label="Learner message">
               <textarea
                 value={body.learner_message}
@@ -683,6 +703,7 @@ export function VisualExperienceLab() {
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               <button onClick={() => setBody(defaultRequestBody)} style={buttonStyle}>Krebs example</button>
+              <button onClick={() => setBody(slpAnatomyPilotRequestBody)} style={buttonStyle}>SLP anatomy pilot</button>
               <button onClick={() => setBody(unclearRequestBody)} style={buttonStyle}>Unclear example</button>
             </div>
 
