@@ -1,0 +1,57 @@
+**********************
+PowerShell transcript start
+Start time: 20260918160206
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\7debcd0e2a\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 8800
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+[preflight] baseline sandbox/probe-lab/assets/blender/blender-job-types.ts
+[preflight] baseline sandbox/probe-lab/assets/blender/scripts/myway-blender-bridge.py
+[preflight] baseline sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+[preflight] baseline sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+[preflight] baseline sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+[preflight] baseline scripts/sandbox/verify-bodyparts3d-thumbnail-one-asset-preview-a12-17p1.ts
+[preflight] baseline scripts/sandbox/verify-bodyparts3d-semantic-anatomy-materials.ts
+[preflight] STATE 0: exact expected baseline.
+Applied sandbox/probe-lab/assets/blender/blender-job-types.ts
+Applied sandbox/probe-lab/assets/blender/scripts/myway-blender-bridge.py
+Applied sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+Applied sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+Applied sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+Applied scripts/sandbox/verify-bodyparts3d-thumbnail-one-asset-preview-a12-17p1.ts
+Applied scripts/sandbox/verify-bodyparts3d-semantic-anatomy-materials.ts
+
+
+
+
+
+
+
+
+
+[preflight] applied  sandbox/probe-lab/assets/blender/blender-job-types.ts
+[preflight] applied  sandbox/probe-lab/assets/blender/scripts/myway-blender-bridge.py
+[preflight] applied  sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+[preflight] applied  sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+[preflight] applied  sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+[preflight] applied  scripts/sandbox/verify-bodyparts3d-thumbnail-one-asset-preview-a12-17p1.ts
+[preflight] applied  scripts/sandbox/verify-bodyparts3d-semantic-anatomy-materials.ts
+[preflight] STATE 10: patch already applied exactly.
+SUCCESS: myway_bodyparts3d_thumbnail_one_asset_preview_a12_17p1_v2 applied and verified.
+Next: refresh the Asset Library, open BodyParts3D thumbnail maintenance, paste ONE anatomy asset ID (Trachea is a good test), and click 'Preview viewer-like thumbnail for one asset'. Do not run bulk yet.
+**********************
+PowerShell transcript end
+End time: 20260918160810
+**********************

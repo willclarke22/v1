@@ -21,11 +21,18 @@ import {
 } from "./storage/pending-asset-storage.server";
 import { getR2SourceStorage } from "./storage/r2-asset-storage.server";
 import { createAssetTempWorkspace } from "./storage/asset-temp-workspace.server";
+import {
+  assessBodyParts3dThumbnailPng,
+  type BodyParts3dThumbnailVisualAssessment,
+} from "./bodyparts3d-thumbnail-quality.server";
 
 export type BodyParts3dThumbnailAuditStatus =
   | "healthy"
   | "recoverable_reference"
   | "missing_object"
+  | "visual_blank"
+  | "visual_too_small"
+  | "visual_decode_error"
   | "unsupported";
 
 export type BodyParts3dThumbnailAuditItem = {
@@ -36,6 +43,7 @@ export type BodyParts3dThumbnailAuditItem = {
   thumbnail_object_key: string | null;
   registered_reference: boolean;
   object_exists: boolean;
+  visual_assessment: BodyParts3dThumbnailVisualAssessment | null;
 };
 
 function isFullAtlasAsset(asset: {
@@ -93,7 +101,7 @@ export async function auditBodyParts3dThumbnailBatch(input: {
 
   const items = await mapWithConcurrency(
     page,
-    12,
+    6,
     async (asset): Promise<BodyParts3dThumbnailAuditItem> => {
       if (asset.storage_provider !== "r2_private_pending") {
         return {
@@ -104,6 +112,7 @@ export async function auditBodyParts3dThumbnailBatch(input: {
           thumbnail_object_key: asset.thumbnail_object_key ?? null,
           registered_reference: false,
           object_exists: false,
+          visual_assessment: null,
         };
       }
 
@@ -113,21 +122,38 @@ export async function auditBodyParts3dThumbnailBatch(input: {
         asset.thumbnail_storage_provider === "r2_private_pending" &&
         asset.thumbnail_object_key === deterministicKey &&
         Boolean(asset.thumbnail_path);
-      const objectExists = await source.exists(deterministicKey);
+      const thumbnailObject = await source.read(deterministicKey);
+      if (!thumbnailObject) {
+        return {
+          asset_id: asset.asset_id,
+          source_asset_id: asset.source_asset_id ?? null,
+          concept_name: asset.collection_membership?.concept_name ?? null,
+          status: "missing_object",
+          thumbnail_object_key: deterministicKey,
+          registered_reference: registeredReference,
+          object_exists: false,
+          visual_assessment: null,
+        };
+      }
+
+      const visualAssessment =
+        await assessBodyParts3dThumbnailPng(thumbnailObject.body);
+      const visualStatus =
+        visualAssessment.status === "healthy"
+          ? registeredReference
+            ? "healthy"
+            : "recoverable_reference"
+          : visualAssessment.status;
 
       return {
         asset_id: asset.asset_id,
         source_asset_id: asset.source_asset_id ?? null,
         concept_name: asset.collection_membership?.concept_name ?? null,
-        status:
-          registeredReference && objectExists
-            ? "healthy"
-            : objectExists
-              ? "recoverable_reference"
-              : "missing_object",
+        status: visualStatus,
         thumbnail_object_key: deterministicKey,
         registered_reference: registeredReference,
-        object_exists: objectExists,
+        object_exists: true,
+        visual_assessment: visualAssessment,
       };
     },
   );
@@ -155,6 +181,203 @@ function anatomyThumbnailColor(asset: {
     bodyParts3dSemanticMaterialForSystem(systemId)?.base_color ??
     "#B7C0CC"
   );
+}
+
+
+export async function renderBodyParts3dThumbnailCalibration(input: {
+  assetId: string;
+  registryRevision: string;
+}) {
+  const asset =
+    await getAssetBrowserRegistryAsset(
+      input.assetId,
+      input.registryRevision,
+    );
+
+  if (!asset || !isFullAtlasAsset(asset)) {
+    throw new Error(
+      `BodyParts3D full-atlas asset was not found: ${input.assetId}`,
+    );
+  }
+
+  if (asset.storage_provider !== "r2_private_pending") {
+    throw new Error(
+      `BodyParts3D thumbnail calibration currently requires a private pending atlas model: ${asset.asset_id}`,
+    );
+  }
+
+  const model =
+    await readPendingAssetReviewObject(asset, "model");
+  if (!model) {
+    throw new Error(
+      `Cannot render thumbnail calibration because the private pending GLB is missing: ${asset.asset_id}`,
+    );
+  }
+
+  const workspace =
+    await createAssetTempWorkspace(
+      "bodyparts3d-thumbnail-calibration",
+    );
+
+  const targetColorHex =
+    anatomyThumbnailColor(asset);
+
+  const candidates = [
+    {
+      id: "A",
+      label: "Linear-color baseline",
+      description:
+        "sRGB palette color is converted to scene-linear RGB and shown with an emission baseline. This isolates color conversion from lighting.",
+      render_profile:
+        "bodyparts3d_calibration_color_baseline_v1" as const,
+    },
+    {
+      id: "B",
+      label: "Low-exposure matte",
+      description:
+        "Scene-linear semantic color with restrained sun-style key/fill/rim lighting and lower exposure.",
+      render_profile:
+        "bodyparts3d_calibration_low_exposure_v1" as const,
+    },
+    {
+      id: "C",
+      label: "Soft studio",
+      description:
+        "Scene-linear semantic color with soft directional studio lighting and AgX display transform.",
+      render_profile:
+        "bodyparts3d_calibration_soft_studio_v1" as const,
+    },
+    {
+      id: "D",
+      label: "Viewer-match attempt",
+      description:
+        "Scene-linear semantic color with directional intensities patterned after the Asset Library Three.js viewer and an AgX display transform.",
+      render_profile:
+        "bodyparts3d_calibration_viewer_match_v1" as const,
+    },
+  ];
+
+  try {
+    const inputPath =
+      path.join(workspace.path, "source.glb");
+    await writeFile(
+      /* turbopackIgnore: true */
+      inputPath,
+      Buffer.from(model.body),
+    );
+
+    const rendered: Array<{
+      id: string;
+      label: string;
+      description: string;
+      render_profile:
+        (typeof candidates)[number]["render_profile"];
+      data_url: string | null;
+      visual_assessment:
+        BodyParts3dThumbnailVisualAssessment | null;
+      error: string | null;
+    }> = [];
+    for (const candidate of candidates) {
+      const outputPath =
+        path.join(
+          workspace.path,
+          `calibration-${candidate.id}.glb`,
+        );
+      const thumbnailPath =
+        path.join(
+          workspace.path,
+          `calibration-${candidate.id}.png`,
+        );
+
+      try {
+        const { jobPath } =
+          await createNormalizeJob({
+            kind: "normalize_asset",
+            input_path: inputPath,
+            output_path: outputPath,
+            thumbnail_path: thumbnailPath,
+            target_extent_m:
+              Math.max(
+                ...asset.dimensions_m.map((value) =>
+                  Number.isFinite(value)
+                    ? Math.max(value, 0.001)
+                    : 0.001,
+                ),
+              ),
+            normalization_mode:
+              "preserve_geometry",
+            thumbnail_color_hex:
+              targetColorHex,
+            thumbnail_render_profile:
+              candidate.render_profile,
+            source_type: "manual",
+            result: null,
+            error: null,
+          });
+
+        const completed =
+          await runBlenderJob(jobPath);
+        if (
+          completed.kind !== "normalize_asset" ||
+          !completed.result
+        ) {
+          throw new Error(
+            `Blender did not return calibration candidate ${candidate.id}.`,
+          );
+        }
+
+        const thumbnailBytes =
+          await readFile(
+            /* turbopackIgnore: true */
+            thumbnailPath,
+          );
+        const assessment =
+          await assessBodyParts3dThumbnailPng(
+            thumbnailBytes,
+          );
+
+        rendered.push({
+          ...candidate,
+          data_url:
+            `data:image/png;base64,${thumbnailBytes.toString("base64")}`,
+          visual_assessment:
+            assessment,
+          error:
+            null,
+        });
+      } catch (caught) {
+        rendered.push({
+          ...candidate,
+          data_url:
+            null,
+          visual_assessment:
+            null,
+          error:
+            caught instanceof Error
+              ? caught.message
+              : String(caught),
+        });
+      }
+    }
+
+    return {
+      asset_id:
+        asset.asset_id,
+      source_asset_id:
+        asset.source_asset_id ?? null,
+      concept_name:
+        asset.collection_membership?.concept_name ?? null,
+      target_color_hex:
+        targetColorHex,
+      candidates:
+        rendered,
+      storage_mutated:
+        false as const,
+    };
+  } finally {
+    // Calibration candidates are returned inline and never uploaded to R2 or written into the asset registry.
+    await workspace.cleanup().catch(() => undefined);
+  }
 }
 
 async function repairThumbnailReference(
@@ -185,6 +408,9 @@ async function repairThumbnailReference(
 export async function backfillBodyParts3dThumbnail(input: {
   assetId: string;
   registryRevision: string;
+  forceRegenerate?: boolean;
+  appearancePreview?: boolean;
+  viewerMatchRefined?: boolean;
 }) {
   const asset =
     await getAssetBrowserRegistryAsset(
@@ -209,7 +435,7 @@ export async function backfillBodyParts3dThumbnail(input: {
     pendingAssetThumbnailObjectKey(asset.asset_id);
 
   const existing = await source.read(thumbnailKey);
-  if (existing) {
+  if (existing && input.forceRegenerate !== true) {
     await repairThumbnailReference(asset.asset_id, existing);
     return {
       asset_id: asset.asset_id,
@@ -263,6 +489,12 @@ export async function backfillBodyParts3dThumbnail(input: {
           "preserve_geometry",
         thumbnail_color_hex:
           anatomyThumbnailColor(asset),
+        thumbnail_render_profile:
+          input.viewerMatchRefined === true
+            ? "bodyparts3d_viewer_match_refined_v1"
+            : input.appearancePreview === true
+              ? "bodyparts3d_semantic_preview_v1"
+              : "legacy",
         source_type: "manual",
         result: null,
         error: null,
@@ -285,6 +517,15 @@ export async function backfillBodyParts3dThumbnail(input: {
         /* turbopackIgnore: true */
         thumbnailPath,
       );
+    const regeneratedAssessment =
+      await assessBodyParts3dThumbnailPng(thumbnailBytes);
+    if (regeneratedAssessment.status !== "healthy") {
+      throw new Error(
+        `Regenerated anatomy thumbnail still failed visual QA for ${asset.asset_id}: ` +
+          `${regeneratedAssessment.status} (visible=${regeneratedAssessment.visible_fraction.toFixed(5)}, ` +
+          `max-span=${regeneratedAssessment.max_span_fraction.toFixed(4)}). Existing R2 thumbnail was left unchanged.`,
+      );
+    }
 
     const uploaded =
       await source.uploadBytes({
@@ -301,6 +542,16 @@ export async function backfillBodyParts3dThumbnail(input: {
             asset.asset_id,
           "myway-thumbnail-palette":
             "myway_semantic_anatomy_palette_v1",
+          "myway-thumbnail-lighting":
+            input.viewerMatchRefined === true
+              ? "viewer_match_refined_v1"
+              : input.appearancePreview === true
+                ? "extent_scaled_semantic_preview_v1"
+                : "legacy_v1",
+          "myway-thumbnail-framing":
+            "mesh_vertex_alpha_refit_v3",
+          "myway-thumbnail-qa":
+            "alpha_bbox_v1",
         },
       });
 
@@ -333,7 +584,13 @@ export async function backfillBodyParts3dThumbnail(input: {
       asset_id:
         asset.asset_id,
       result:
-        "thumbnail_regenerated" as const,
+        input.viewerMatchRefined === true
+          ? "thumbnail_viewer_match_refined_regenerated" as const
+          : input.appearancePreview === true
+            ? "thumbnail_appearance_preview_regenerated" as const
+            : input.forceRegenerate === true
+              ? "thumbnail_visual_regenerated" as const
+              : "thumbnail_regenerated" as const,
       thumbnail_object_key:
         thumbnailKey,
       thumbnail_etag:
@@ -347,3 +604,64 @@ export async function backfillBodyParts3dThumbnail(input: {
     await workspace.cleanup().catch(() => undefined);
   }
 }
+type BodyParts3dThumbnailRepairResult = Awaited<
+  ReturnType<typeof backfillBodyParts3dThumbnail>
+>;
+
+function normalizeExplicitAssetIds(assetIds: string[]) {
+  const unique = new Set<string>();
+  const normalized: string[] = [];
+  for (const assetId of assetIds) {
+    const trimmed = assetId.trim();
+    if (!trimmed || unique.has(trimmed)) continue;
+    unique.add(trimmed);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+export async function backfillBodyParts3dThumbnailBatch(input: {
+  assetIds: string[];
+  registryRevision: string;
+  viewerMatchRefined?: boolean;
+}) {
+  const assetIds =
+    normalizeExplicitAssetIds(input.assetIds);
+  if (assetIds.length === 0) {
+    throw new Error(
+      "At least one explicit BodyParts3D asset ID is required.",
+    );
+  }
+  if (assetIds.length > 8) {
+    throw new Error(
+      `Explicit BodyParts3D sample batches are capped at 8 assets (received ${assetIds.length}).`,
+    );
+  }
+
+  const results: Array<{
+    asset_id: string;
+    result: BodyParts3dThumbnailRepairResult["result"];
+  }> = [];
+
+  for (const assetId of assetIds) {
+    const repair =
+      await backfillBodyParts3dThumbnail({
+        assetId,
+        registryRevision: input.registryRevision,
+        forceRegenerate: true,
+        viewerMatchRefined:
+          input.viewerMatchRefined === true,
+      });
+    results.push({
+      asset_id: repair.asset_id,
+      result: repair.result,
+    });
+  }
+
+  return {
+    asset_ids: assetIds,
+    results,
+    stop_on_first_failure: true as const,
+  };
+}
+

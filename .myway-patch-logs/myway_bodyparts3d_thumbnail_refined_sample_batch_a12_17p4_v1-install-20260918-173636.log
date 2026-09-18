@@ -1,0 +1,41 @@
+**********************
+PowerShell transcript start
+Start time: 20260918173636
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\7debcd0e2a\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 25052
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+[preflight] baseline sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+[preflight] baseline sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+[preflight] baseline sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+[preflight] baseline scripts/sandbox/verify-bodyparts3d-thumbnail-refined-sample-batch-a12-17p4.ts
+[preflight] STATE 0: exact expected baseline.
+Applied sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+Applied sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+Applied sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+Applied scripts/sandbox/verify-bodyparts3d-thumbnail-refined-sample-batch-a12-17p4.ts
+
+PS>TerminatingError(): "TypeScript verification failed with exit code 2."
+Patch validation failed. Restoring exact pre-patch bytes...
+[preflight] baseline sandbox/probe-lab/assets/bodyparts3d-thumbnail-maintenance.server.ts
+[preflight] baseline sandbox/probe-lab/assets/routes/bodyparts3d-thumbnails.ts
+[preflight] baseline sandbox/probe-lab/assets/ui/bodyparts3d-thumbnail-maintenance-lab.tsx
+[preflight] baseline scripts/sandbox/verify-bodyparts3d-thumbnail-refined-sample-batch-a12-17p4.ts
+[preflight] STATE 0: exact expected baseline.
+PS>TerminatingError(): "TypeScript verification failed with exit code 2."
+**********************
+PowerShell transcript end
+End time: 20260918173645
+**********************

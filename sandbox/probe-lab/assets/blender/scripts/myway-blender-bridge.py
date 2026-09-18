@@ -155,6 +155,136 @@ def world_bbox(objects):
     return minimum, maximum
 
 
+def world_bound_points(objects):
+    points = []
+    for obj in objects:
+        if hasattr(obj, "bound_box"):
+            points.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
+    if not points:
+        raise RuntimeError("The imported asset did not contain renderable geometry.")
+    return points
+
+
+def world_render_points(objects):
+    """World-space vertices referenced by renderable faces, excluding loose bbox outliers."""
+    points = []
+    for obj in objects:
+        mesh = getattr(obj, "data", None)
+        if mesh is None or not hasattr(mesh, "vertices"):
+            continue
+
+        used_indices = set()
+        polygons = getattr(mesh, "polygons", None)
+        if polygons is not None:
+            for polygon in polygons:
+                used_indices.update(int(index) for index in polygon.vertices)
+
+        if not used_indices:
+            used_indices.update(range(len(mesh.vertices)))
+
+        matrix = obj.matrix_world
+        points.extend(
+            matrix @ mesh.vertices[index].co
+            for index in sorted(used_indices)
+        )
+
+    if not points:
+        return world_bound_points(objects)
+    return points
+
+
+def render_alpha_bbox(alpha_threshold=16.0 / 255.0):
+    """Measure the visible subject in Blender's current Render Result."""
+    image = bpy.data.images.get("Render Result")
+    if image is None:
+        return None
+
+    width = int(image.size[0])
+    height = int(image.size[1])
+    if width <= 0 or height <= 0:
+        return None
+
+    pixels = image.pixels[:]
+    min_x = width
+    min_y = height
+    max_x = -1
+    max_y = -1
+    visible = 0
+
+    for y in range(height):
+        row = y * width * 4
+        for x in range(width):
+            alpha = pixels[row + x * 4 + 3]
+            if alpha <= alpha_threshold:
+                continue
+            visible += 1
+            min_x = min(min_x, x)
+            min_y = min(min_y, y)
+            max_x = max(max_x, x)
+            max_y = max(max_y, y)
+
+    if visible <= 0 or max_x < min_x or max_y < min_y:
+        return None
+
+    bbox_width = max_x - min_x + 1
+    bbox_height = max_y - min_y + 1
+    return {
+        "width": width,
+        "height": height,
+        "visible_pixels": visible,
+        "min_x": min_x,
+        "min_y": min_y,
+        "max_x": max_x,
+        "max_y": max_y,
+        "span_x": bbox_width / width,
+        "span_y": bbox_height / height,
+        "max_span": max(bbox_width / width, bbox_height / height),
+        "center_x": (min_x + max_x + 1) * 0.5,
+        "center_y": (min_y + max_y + 1) * 0.5,
+    }
+
+
+def refit_thumbnail_camera_from_alpha(camera, camera_data, alpha_bbox):
+    """Recenter + zoom an orthographic thumbnail from actual rendered alpha pixels."""
+    if not alpha_bbox:
+        return False
+
+    width = max(float(alpha_bbox["width"]), 1.0)
+    height = max(float(alpha_bbox["height"]), 1.0)
+    max_span = float(alpha_bbox["max_span"])
+    if max_span <= 0.0:
+        return False
+
+    offset_x = float(alpha_bbox["center_x"]) / width - 0.5
+    offset_y = float(alpha_bbox["center_y"]) / height - 0.5
+
+    # A healthy catalog thumbnail should fill most of one dimension while retaining
+    # enough breathing room for antialiasing and anatomy with irregular silhouettes.
+    target_span = 0.72
+    needs_zoom = max_span < 0.62
+    needs_center = abs(offset_x) > 0.06 or abs(offset_y) > 0.06
+    if not needs_zoom and not needs_center:
+        return False
+
+    current_scale = max(float(camera_data.ortho_scale), 1e-8)
+
+    if needs_center:
+        aspect = width / height
+        local_offset = Vector((
+            offset_x * current_scale * aspect,
+            offset_y * current_scale,
+            0.0,
+        ))
+        camera.location += camera.matrix_world.to_quaternion() @ local_offset
+
+    if needs_zoom:
+        scale_ratio = max(max_span / target_span, 0.12)
+        camera_data.ortho_scale = max(current_scale * scale_ratio, 1e-7)
+
+    bpy.context.view_layer.update()
+    return True
+
+
 def normalize_scene(target_extent):
     objects = asset_objects()
     meshes = mesh_objects()
@@ -717,10 +847,186 @@ def apply_thumbnail_color(color_hex):
         obj.data.materials.append(material)
 
 
+def srgb_channel_to_linear(value):
+    value = min(max(float(value), 0.0), 1.0)
+    if value <= 0.04045:
+        return value / 12.92
+    return ((value + 0.055) / 1.055) ** 2.4
+
+
+def thumbnail_hex_to_linear_rgb(color_hex):
+    if not color_hex:
+        return None
+    raw = str(color_hex).strip().lstrip("#")
+    if len(raw) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in raw):
+        raise RuntimeError(f"thumbnail_color_hex must be a six-digit RGB hex color, got: {color_hex}")
+    srgb = tuple(int(raw[index:index + 2], 16) / 255.0 for index in (0, 2, 4))
+    return tuple(srgb_channel_to_linear(channel) for channel in srgb)
+
+
+def apply_calibration_thumbnail_color(color_hex, render_profile):
+    linear_rgb = thumbnail_hex_to_linear_rgb(color_hex)
+    if linear_rgb is None:
+        return
+
+    material = bpy.data.materials.new("MyWayThumbnailCalibrationMaterial")
+    material.diffuse_color = (linear_rgb[0], linear_rgb[1], linear_rgb[2], 1.0)
+    material.use_nodes = True
+    principled = material.node_tree.nodes.get("Principled BSDF") if material.node_tree else None
+    if principled:
+        base = principled.inputs.get("Base Color")
+        if base:
+            base.default_value = (linear_rgb[0], linear_rgb[1], linear_rgb[2], 1.0)
+        roughness = principled.inputs.get("Roughness")
+        if roughness:
+            roughness.default_value = 0.60
+        metallic = principled.inputs.get("Metallic")
+        if metallic:
+            metallic.default_value = 0.0
+
+        if render_profile == "bodyparts3d_calibration_color_baseline_v1":
+            emission = principled.inputs.get("Emission Color") or principled.inputs.get("Emission")
+            if emission:
+                emission.default_value = (linear_rgb[0], linear_rgb[1], linear_rgb[2], 1.0)
+            emission_strength = principled.inputs.get("Emission Strength")
+            if emission_strength:
+                emission_strength.default_value = 1.0
+
+    for obj in mesh_objects():
+        if not getattr(obj, "data", None):
+            continue
+        obj.data.materials.clear()
+        obj.data.materials.append(material)
+
+
+def set_thumbnail_view_transform(scene, preferred, exposure=0.0):
+    try:
+        scene.view_settings.view_transform = preferred
+    except Exception:
+        try:
+            scene.view_settings.view_transform = "Standard"
+        except Exception:
+            pass
+    try:
+        scene.view_settings.look = "None"
+    except Exception:
+        pass
+    try:
+        scene.view_settings.exposure = float(exposure)
+    except Exception:
+        pass
+    try:
+        scene.view_settings.gamma = 1.0
+    except Exception:
+        pass
+
+
+def add_thumbnail_sun(scene, name, center, offset, energy, color, angle):
+    light_data = bpy.data.lights.new(name, type="SUN")
+    light_data.energy = float(energy)
+    light_data.color = color
+    light_data.angle = float(angle)
+    light = bpy.data.objects.new(name, light_data)
+    light.location = center + offset
+    light.rotation_euler = (
+        center - light.location
+    ).to_track_quat("-Z", "Y").to_euler()
+    scene.collection.objects.link(light)
+    return light
+
+
+def add_bodyparts3d_calibration_lights(scene, center, longest, render_profile):
+    if render_profile == "bodyparts3d_calibration_color_baseline_v1":
+        set_thumbnail_view_transform(scene, "Standard", 0.0)
+        return
+
+    if render_profile == "bodyparts3d_viewer_match_refined_v1":
+        # A.12.17P3: promote the visually closest D profile with a modest
+        # exposure/fill lift and a less contrasty key-to-fill ratio. The goal
+        # is to stay near the Three.js Asset Library viewer while preserving
+        # enough directional shading to reveal surface relief.
+        set_thumbnail_view_transform(scene, "AgX", 0.42)
+        light_extent = max(longest, 0.05)
+        add_thumbnail_sun(
+            scene,
+            "ViewerMatchRefinedKey",
+            center,
+            Vector((4.0, -6.0, 5.0)) * light_extent,
+            1.95,
+            (1.0, 0.97, 0.95),
+            0.24,
+        )
+        add_thumbnail_sun(
+            scene,
+            "ViewerMatchRefinedFill",
+            center,
+            Vector((-4.0, -2.0, 2.5)) * light_extent,
+            1.15,
+            (0.94, 0.97, 1.0),
+            0.36,
+        )
+        add_thumbnail_sun(
+            scene,
+            "ViewerMatchRefinedRim",
+            center,
+            Vector((0.0, 5.0, 3.0)) * light_extent,
+            0.38,
+            (0.88, 0.94, 1.0),
+            0.30,
+        )
+        return
+
+    if render_profile == "bodyparts3d_calibration_low_exposure_v1":
+        set_thumbnail_view_transform(scene, "Standard", -0.35)
+        key_energy, fill_energy, rim_energy = 0.75, 0.18, 0.24
+    elif render_profile == "bodyparts3d_calibration_soft_studio_v1":
+        set_thumbnail_view_transform(scene, "AgX", 0.0)
+        key_energy, fill_energy, rim_energy = 1.35, 0.48, 0.42
+    else:
+        set_thumbnail_view_transform(scene, "AgX", 0.25)
+        key_energy, fill_energy, rim_energy = 2.20, 0.85, 0.50
+
+    light_extent = max(longest, 0.05)
+    add_thumbnail_sun(
+        scene,
+        "CalibrationKey",
+        center,
+        Vector((4.0, -6.0, 5.0)) * light_extent,
+        key_energy,
+        (1.0, 0.94, 0.88),
+        0.20,
+    )
+    add_thumbnail_sun(
+        scene,
+        "CalibrationFill",
+        center,
+        Vector((-4.0, -2.0, 2.5)) * light_extent,
+        fill_energy,
+        (0.82, 0.90, 1.0),
+        0.32,
+    )
+    add_thumbnail_sun(
+        scene,
+        "CalibrationRim",
+        center,
+        Vector((0.0, 5.0, 3.0)) * light_extent,
+        rim_energy,
+        (0.75, 0.88, 1.0),
+        0.26,
+    )
+
+
 def make_thumbnail(thumbnail_path, dimensions, color_hex=None):
-    apply_thumbnail_color(color_hex)
     Path(thumbnail_path).parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
+    render_profile = str(scene.get("myway_thumbnail_render_profile", "legacy"))
+    if (
+        render_profile.startswith("bodyparts3d_calibration_")
+        or render_profile == "bodyparts3d_viewer_match_refined_v1"
+    ):
+        apply_calibration_thumbnail_color(color_hex, render_profile)
+    else:
+        apply_thumbnail_color(color_hex)
     available_engines = {
         item.identifier
         for item in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
@@ -735,34 +1041,125 @@ def make_thumbnail(thumbnail_path, dimensions, color_hex=None):
     scene.render.resolution_y = 512
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
     scene.render.film_transparent = True
 
-    longest = max(dimensions) if dimensions else 2.0
+    meshes = mesh_objects()
+    points = world_render_points(meshes)
+    minimum = Vector((
+        min(point.x for point in points),
+        min(point.y for point in points),
+        min(point.z for point in points),
+    ))
+    maximum = Vector((
+        max(point.x for point in points),
+        max(point.y for point in points),
+        max(point.z for point in points),
+    ))
+    center = (minimum + maximum) * 0.5
+    extents = maximum - minimum
+    longest = max(extents.x, extents.y, extents.z, 1e-6)
+
     camera_data = bpy.data.cameras.new("MyWayAssetCamera")
     camera = bpy.data.objects.new("MyWayAssetCamera", camera_data)
     scene.collection.objects.link(camera)
-    camera.location = (longest * 1.55, -longest * 1.75, longest * 1.2)
-    target = Vector((0, 0, max(dimensions[2] * 0.45, 0.2)))
-    camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
-    camera_data.lens = 52
+    camera_data.type = "ORTHO"
+    camera_data.clip_start = max(longest * 0.0001, 0.00001)
+    camera_data.clip_end = max(longest * 20.0, 10.0)
     scene.camera = camera
 
-    for name, location, energy, size in [
-        ("Key", (longest * 2, -longest * 2, longest * 3), 1100, longest * 2),
-        ("Fill", (-longest * 2, -longest, longest * 1.5), 650, longest * 2),
-        ("Rim", (0, longest * 2, longest * 2.5), 900, longest * 1.5),
-    ]:
+    # Choose the deterministic direction that gives the geometry's world-space
+    # bounds the largest projected card footprint. This avoids edge-on renders
+    # for thin fascia, vessels, nerves, membranes, and other anatomy elements.
+    candidate_directions = [
+        Vector((1.35, -1.70, 1.10)),
+        Vector((1.00, -0.22, 0.18)),
+        Vector((0.22, -1.00, 0.18)),
+        Vector((0.18, -0.22, 1.00)),
+        Vector((-1.00, -0.22, 0.18)),
+        Vector((0.22, 1.00, 0.18)),
+    ]
+    camera_distance = max(longest * 3.0, 0.25)
+    best = None
+
+    for direction in candidate_directions:
+        direction.normalize()
+        camera.location = center + direction * camera_distance
+        camera.rotation_euler = (
+            center - camera.location
+        ).to_track_quat("-Z", "Y").to_euler()
+        bpy.context.view_layer.update()
+        inverse = camera.matrix_world.inverted()
+        projected = [inverse @ point for point in points]
+        width = max(point.x for point in projected) - min(point.x for point in projected)
+        height = max(point.y for point in projected) - min(point.y for point in projected)
+        area = max(width, 1e-8) * max(height, 1e-8)
+        if best is None or area > best["area"]:
+            best = {
+                "area": area,
+                "location": camera.location.copy(),
+                "rotation": camera.rotation_euler.copy(),
+                "width": width,
+                "height": height,
+            }
+
+    if best is None:
+        raise RuntimeError("Could not determine a thumbnail camera framing.")
+
+    camera.location = best["location"]
+    camera.rotation_euler = best["rotation"]
+    camera_data.ortho_scale = max(
+        best["width"],
+        best["height"],
+        longest * 0.01,
+        1e-5,
+    ) * 1.24
+    bpy.context.view_layer.update()
+
+    light_extent = max(longest, 0.05)
+    if (
+        render_profile.startswith("bodyparts3d_calibration_")
+        or render_profile == "bodyparts3d_viewer_match_refined_v1"
+    ):
+        add_bodyparts3d_calibration_lights(
+            scene,
+            center,
+            longest,
+            render_profile,
+        )
+        light_specs = []
+    else:
+        light_specs = [
+            ("Key", Vector((2.0, -2.0, 3.0)), 1000, 1.5),
+            ("Fill", Vector((-2.0, -1.0, 1.5)), 600, 1.5),
+            ("Rim", Vector((0.0, 2.0, 2.5)), 800, 1.2),
+        ]
+
+    for name, offset, energy, size in light_specs:
         light_data = bpy.data.lights.new(name, type="AREA")
-        light_data.energy = energy
+        if render_profile == "bodyparts3d_semantic_preview_v1":
+            # Area-light size and distance already scale with anatomy extent. Scale total
+            # power by extent^2 as well so tiny BodyParts3D structures do not receive
+            # orders-of-magnitude more irradiance than meter-scale assets.
+            energy_scale = max(light_extent * light_extent, 0.0001)
+            light_data.energy = energy * energy_scale
+        else:
+            light_data.energy = energy
         light_data.shape = "DISK"
-        light_data.size = max(size, 1.0)
+        light_data.size = max(light_extent * size, 0.03)
         light = bpy.data.objects.new(name, light_data)
-        light.location = location
+        light.location = center + offset * light_extent
         scene.collection.objects.link(light)
 
     scene.render.filepath = str(thumbnail_path)
     bpy.ops.render.render(write_still=True)
 
+    # The mesh-vertex fit above avoids object-box inflation. A second pass then uses
+    # the pixels that actually rendered, which handles sparse curved membranes and
+    # other anatomy whose silhouette occupies only a fraction of its geometric bounds.
+    alpha_bbox = render_alpha_bbox()
+    if refit_thumbnail_camera_from_alpha(camera, camera_data, alpha_bbox):
+        bpy.ops.render.render(write_still=True)
 
 
 def make_analysis_renders(render_directory, public_url_root, dimensions):
@@ -2077,6 +2474,9 @@ def execute(job):
         else:
             dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
         profile = geometry_profile()
+        bpy.context.scene["myway_thumbnail_render_profile"] = str(
+            job.get("thumbnail_render_profile") or "legacy"
+        )
         export_glb(job["output_path"])
         make_thumbnail(job["thumbnail_path"], dimensions, job.get("thumbnail_color_hex"))
         return {

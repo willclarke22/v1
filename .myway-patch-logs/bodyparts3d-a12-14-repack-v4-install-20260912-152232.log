@@ -1,0 +1,45 @@
+**********************
+PowerShell transcript start
+Start time: 20260912152232
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\645f29cc31\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 21068
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+A.12.14 repack prepared.
+Verifier source SHA-256 preserved: 7c1fbab25583a932c7b500f6b5d8b4ce9f14025008601b422a29ee48f656b5c4
+Running repacked A.12.14 preflight...
+
+Applying repacked A.12.14 transaction...
+PREFLIGHT 0: exact post-A.12.13 semantic baseline matched (CRLF/LF and trailing-newline count canonicalized only).
+Verifying patch payload hashes...
+Creating exact-byte rollback backups...
+Applying A.12.14 source payload...
+Running TypeScript verification...
+
+Running A.12.14 visual-thumbnail verifier...
+
+PS>TerminatingError(): "A.12.14 visual-thumbnail verifier failed with exit code 1."
+
+A.12.14 validation failed. Restoring exact pre-patch bytes...
+PREFLIGHT 0: exact post-A.12.13 semantic baseline matched (CRLF/LF and trailing-newline count canonicalized only).
+Rollback verification passed: exact A.12.13 baseline restored.
+PS>TerminatingError(): "A.12.14 visual-thumbnail verifier failed with exit code 1."
+PS>TerminatingError(): "A.12.14 visual-thumbnail verifier failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20260912152243
+**********************

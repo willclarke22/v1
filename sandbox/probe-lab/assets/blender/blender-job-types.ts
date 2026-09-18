@@ -64,6 +64,13 @@ export type BlenderNormalizeJob = {
   source_scale?: number;
   /** Optional render-only flat tint. Applied after GLB export, so runtime geometry/materials remain unchanged. */
   thumbnail_color_hex?: string | null;
+  /** Optional thumbnail-only lighting profile. The BodyParts3D preview profile scales light power with scene extent so small anatomy is not washed out. */
+  thumbnail_render_profile?: "legacy" | "bodyparts3d_semantic_preview_v1"
+    | "bodyparts3d_calibration_color_baseline_v1"
+    | "bodyparts3d_calibration_low_exposure_v1"
+    | "bodyparts3d_calibration_soft_studio_v1"
+    | "bodyparts3d_calibration_viewer_match_v1"
+    | "bodyparts3d_viewer_match_refined_v1";
   source_type: "trellis" | "manual";
   created_at: string;
   updated_at: string;

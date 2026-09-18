@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   auditBodyParts3dThumbnailBatch,
   backfillBodyParts3dThumbnail,
+  backfillBodyParts3dThumbnailBatch,
+  renderBodyParts3dThumbnailCalibration,
 } from "../bodyparts3d-thumbnail-maintenance.server";
 
 export const runtime = "nodejs";
@@ -52,7 +54,69 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (action === "backfill_one") {
+    if (action === "render_appearance_calibration_one") {
+      const assetId =
+        typeof body.asset_id === "string"
+          ? body.asset_id.trim()
+          : "";
+
+      if (!assetId) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "asset_id is required.",
+          },
+          { status: 400 },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        action,
+        calibration:
+          await renderBodyParts3dThumbnailCalibration({
+            assetId,
+            registryRevision,
+          }),
+      });
+    }
+
+    if (action === "regenerate_viewer_match_refined_batch") {
+      const assetIds =
+        Array.isArray(body.asset_ids)
+          ? body.asset_ids
+              .filter((value): value is string => typeof value === "string")
+              .map((value) => value.trim())
+          : [];
+
+      if (assetIds.length === 0) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "asset_ids must include at least one anatomy asset ID.",
+          },
+          { status: 400 },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        action,
+        batch:
+          await backfillBodyParts3dThumbnailBatch({
+            assetIds,
+            registryRevision,
+            viewerMatchRefined: true,
+          }),
+      });
+    }
+
+    if (
+      action === "backfill_one" ||
+      action === "regenerate_visual_one" ||
+      action === "regenerate_appearance_preview_one" ||
+      action === "regenerate_viewer_match_refined_one"
+    ) {
       const assetId =
         typeof body.asset_id === "string"
           ? body.asset_id.trim()
@@ -75,6 +139,12 @@ export async function POST(request: NextRequest) {
           await backfillBodyParts3dThumbnail({
             assetId,
             registryRevision,
+            forceRegenerate:
+              action !== "backfill_one",
+            appearancePreview:
+              action === "regenerate_appearance_preview_one",
+            viewerMatchRefined:
+              action === "regenerate_viewer_match_refined_one",
           }),
       });
     }
@@ -83,7 +153,7 @@ export async function POST(request: NextRequest) {
       {
         ok: false,
         error:
-          "action must be audit_batch or backfill_one.",
+          "action must be audit_batch, backfill_one, regenerate_visual_one, regenerate_appearance_preview_one, regenerate_viewer_match_refined_one, regenerate_viewer_match_refined_batch, or render_appearance_calibration_one.",
       },
       { status: 400 },
     );

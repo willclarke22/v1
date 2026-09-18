@@ -26,6 +26,7 @@ function forbidMarker(source: string, marker: string, message: string) {
 
 const pilot = read("sandbox/probe-lab/assets/bodyparts3d-slp-pilot.ts");
 const library = read("sandbox/probe-lab/assets/ui/asset-library-lab.tsx");
+const viewer = read("sandbox/probe-lab/assets/ui/asset-library-viewer.tsx");
 
 for (const marker of [
   'schema_version: "myway_bodyparts3d_semantic_material_v1"',
@@ -43,8 +44,13 @@ for (const marker of [
   'material_class: "respiratory"',
   'material_class: "digestive"',
   "bodyParts3dSemanticMaterialForMember",
+  "bodyParts3dSemanticMaterialForSystem",
 ]) {
-  requireMarker(pilot, marker, "The BodyParts3D pilot must expose the semantic anatomy palette and member mapping.");
+  requireMarker(
+    pilot,
+    marker,
+    "The BodyParts3D pilot must expose the semantic anatomy palette and mappings.",
+  );
 }
 
 for (const memberId of [
@@ -61,38 +67,58 @@ for (const memberId of [
   "BP9222",
   "BP8636",
 ]) {
-  requireMarker(pilot, `representation_id: "${memberId}"`, `Pilot member ${memberId} must remain present.`);
+  requireMarker(
+    pilot,
+    `representation_id: "${memberId}"`,
+    `Pilot member ${memberId} must remain present.`,
+  );
 }
 
 for (const marker of [
-  'import {\n  BODYPARTS3D_SLP_COLLECTION_ID,\n  bodyParts3dSemanticMaterialForMember,',
-  "function SemanticMaterialAsset",
   "function bodyParts3dMaterialForAsset",
-  "<SemanticMaterialAsset src={asset.public_path} material={anatomyMaterial} />",
-  "const material = bodyParts3dSemanticMaterialForMember(membership.member_id);",
-  "Semantic anatomy",
-  "material overrides can replace them later.",
+  "bodyParts3dSemanticMaterialForMember(membership.member_id)",
+  "bodyParts3dSemanticMaterialForSystem(",
   'title={`Default anatomy material: ${anatomyMaterial.label}`}',
+  "backgroundColor: anatomyMaterial.base_color",
   '<MetadataRow label="Default anatomy material">',
+  '<AssetLibraryViewer',
+  'setReviewView("needs_review")',
 ]) {
-  requireMarker(library, marker, "The Asset Library must render semantic anatomy materials in Needs Review and collection inspection.");
+  requireMarker(
+    library,
+    marker,
+    "The Asset Library shell must expose semantic anatomy metadata and route selected anatomy into the 3D viewer.",
+  );
+}
+
+for (const marker of [
+  "function semanticMaterial",
+  "function SemanticMaterialAsset",
+  "const clone = gltf.scene.clone(true)",
+  "const nextMaterial = sourceMaterial.clone()",
+  "nextMaterial.color.set(material.base_color)",
+  "nextMaterial.roughness = material.roughness",
+  "nextMaterial.metalness = material.metalness",
+  "material ? <SemanticMaterialAsset",
+]) {
+  requireMarker(
+    viewer,
+    marker,
+    "The dedicated viewer must render semantic anatomy appearance from cloned scene/material instances without mutating stored GLBs.",
+  );
 }
 
 forbidMarker(
   library,
   "BODYPARTS3D_DIAGNOSTIC_COLORS",
-  "A.12.4 replaces the temporary diagnostic palette with semantic anatomy materials.",
+  "Temporary diagnostic colors must not return to the Asset Library shell.",
+);
+forbidMarker(
+  viewer,
+  "BODYPARTS3D_DIAGNOSTIC_COLORS",
+  "Temporary diagnostic colors must not return to the Asset Library viewer.",
 );
 
-requireMarker(
-  library,
-  "stored GLBs remain unchanged",
-  "The UI must make clear that display materials are runtime defaults rather than baked source changes.",
+console.log(
+  "PASS: A.12.4 semantic anatomy material invariant verified in the current split Asset Library architecture: palette/member mappings remain present; card/detail metadata expose the semantic material; the dedicated 3D viewer clones scene/material instances and applies semantic base color, roughness, and metalness without changing stored GLBs; Needs Review behavior remains intact.",
 );
-requireMarker(
-  library,
-  'setReviewView("needs_review")',
-  "BodyParts3D assets must continue to land in Needs Review.",
-);
-
-console.log("PASS: A.12.4 BodyParts3D semantic anatomy materials verified for Needs Review previews and shared-space inspection.");
