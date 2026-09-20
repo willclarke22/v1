@@ -1,4 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import {
@@ -8,6 +10,7 @@ import {
 } from "./asset-browser-snapshot.server";
 import { updateMyWayAsset } from "./asset-library.server";
 import {
+  BODYPARTS3D_EXPECTED_ELEMENT_COUNT,
   BODYPARTS3D_FULL_COLLECTION_ID,
   bodyParts3dSemanticMaterialForSystem,
   bodyParts3dSystemFromGroupTags,
@@ -604,6 +607,288 @@ export async function backfillBodyParts3dThumbnail(input: {
     await workspace.cleanup().catch(() => undefined);
   }
 }
+export type BodyParts3dFullAtlasThumbnailTarget = {
+  asset_id: string;
+  source_asset_id: string | null;
+  concept_name: string | null;
+};
+
+export async function listBodyParts3dFullAtlasThumbnailTargets(input: {
+  registryRevision: string;
+}) {
+  const snapshot =
+    await getAssetBrowserRegistrySnapshot(input.registryRevision);
+  const assets = snapshot.assets
+    .filter(isFullAtlasAsset)
+    .sort((left, right) =>
+      (left.source_asset_id ?? left.asset_id).localeCompare(
+        right.source_asset_id ?? right.asset_id,
+      ),
+    );
+
+  if (assets.length !== BODYPARTS3D_EXPECTED_ELEMENT_COUNT) {
+    throw new Error(
+      `Full-atlas refined regeneration expected ${BODYPARTS3D_EXPECTED_ELEMENT_COUNT.toLocaleString()} BodyParts3D assets but found ${assets.length.toLocaleString()}. No regeneration was started.`,
+    );
+  }
+
+  return {
+    total: assets.length,
+    items: assets.map((asset): BodyParts3dFullAtlasThumbnailTarget => ({
+      asset_id: asset.asset_id,
+      source_asset_id: asset.source_asset_id ?? null,
+      concept_name: asset.collection_membership?.concept_name ?? null,
+    })),
+  };
+}
+
+const FULL_ATLAS_REFINED_SESSION_ROOT = path.join(
+  os.tmpdir(),
+  "myway-bodyparts3d-refined-thumbnail-regeneration",
+);
+const FULL_ATLAS_REFINED_SESSION_ID_PATTERN =
+  /^[a-zA-Z0-9-]{8,80}$/;
+const activeFullAtlasRefinedSessions = new Set<string>();
+
+type BodyParts3dFullAtlasRefinedSessionV1 = {
+  schema_version: "myway_bodyparts3d_full_atlas_refined_thumbnail_session_v1";
+  session_id: string;
+  created_at: string;
+  updated_at: string;
+  registry_revision: string;
+  total: number;
+  next_index: number;
+  regenerated: number;
+  failed: number;
+  phase: "prepared" | "running" | "error" | "complete";
+  current_asset_id: string | null;
+  current_label: string | null;
+  last_error: string | null;
+  queue: BodyParts3dFullAtlasThumbnailTarget[];
+};
+
+function fullAtlasRefinedSessionDirectory(sessionId: string) {
+  if (!FULL_ATLAS_REFINED_SESSION_ID_PATTERN.test(sessionId)) {
+    throw new Error("Invalid BodyParts3D refined thumbnail session id.");
+  }
+  return path.join(FULL_ATLAS_REFINED_SESSION_ROOT, sessionId);
+}
+
+function fullAtlasRefinedSessionStatePath(sessionId: string) {
+  return path.join(
+    fullAtlasRefinedSessionDirectory(sessionId),
+    "state.json",
+  );
+}
+
+async function readFullAtlasRefinedSession(sessionId: string) {
+  const statePath = fullAtlasRefinedSessionStatePath(sessionId);
+  let raw: string;
+  try {
+    raw = await readFile(statePath, "utf8");
+  } catch (caught) {
+    if ((caught as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        `Saved BodyParts3D refined thumbnail session is no longer available: ${sessionId}`,
+      );
+    }
+    throw caught;
+  }
+
+  const parsed = JSON.parse(raw) as BodyParts3dFullAtlasRefinedSessionV1;
+  if (
+    parsed.schema_version !==
+      "myway_bodyparts3d_full_atlas_refined_thumbnail_session_v1" ||
+    parsed.session_id !== sessionId ||
+    parsed.total !== BODYPARTS3D_EXPECTED_ELEMENT_COUNT ||
+    parsed.queue.length !== parsed.total
+  ) {
+    throw new Error(
+      "Saved BodyParts3D refined thumbnail session state is invalid.",
+    );
+  }
+  return parsed;
+}
+
+async function writeFullAtlasRefinedSession(
+  session: BodyParts3dFullAtlasRefinedSessionV1,
+) {
+  session.updated_at = new Date().toISOString();
+  const directory = fullAtlasRefinedSessionDirectory(
+    session.session_id,
+  );
+  await mkdir(directory, { recursive: true });
+  const statePath = fullAtlasRefinedSessionStatePath(
+    session.session_id,
+  );
+  const temporaryPath = `${statePath}.tmp`;
+  await writeFile(
+    temporaryPath,
+    `${JSON.stringify(session, null, 2)}
+`,
+    "utf8",
+  );
+  await rename(temporaryPath, statePath);
+}
+
+function fullAtlasRefinedSessionProgress(
+  session: BodyParts3dFullAtlasRefinedSessionV1,
+) {
+  const nextItem = session.queue[session.next_index] ?? null;
+  return {
+    schema_version: session.schema_version,
+    session_id: session.session_id,
+    phase: session.phase,
+    created_at: session.created_at,
+    updated_at: session.updated_at,
+    total: session.total,
+    completed: session.next_index,
+    regenerated: session.regenerated,
+    failed: session.failed,
+    remaining: Math.max(0, session.total - session.next_index),
+    next_index: session.next_index,
+    current_asset_id:
+      session.current_asset_id ?? nextItem?.asset_id ?? null,
+    current_label:
+      session.current_label ??
+      nextItem?.concept_name ??
+      nextItem?.source_asset_id ??
+      nextItem?.asset_id ??
+      null,
+    last_error: session.last_error,
+  };
+}
+
+export async function prepareBodyParts3dFullAtlasRefinedThumbnailSession(
+  input: {
+    registryRevision: string;
+    queue?: Awaited<ReturnType<typeof listBodyParts3dFullAtlasThumbnailTargets>>;
+  },
+) {
+  const queue =
+    input.queue ??
+    await listBodyParts3dFullAtlasThumbnailTargets(input);
+  const sessionId = randomUUID();
+  const now = new Date().toISOString();
+  const session: BodyParts3dFullAtlasRefinedSessionV1 = {
+    schema_version:
+      "myway_bodyparts3d_full_atlas_refined_thumbnail_session_v1",
+    session_id: sessionId,
+    created_at: now,
+    updated_at: now,
+    registry_revision: input.registryRevision,
+    total: queue.total,
+    next_index: 0,
+    regenerated: 0,
+    failed: 0,
+    phase: "prepared",
+    current_asset_id: null,
+    current_label: null,
+    last_error: null,
+    queue: queue.items,
+  };
+  await writeFullAtlasRefinedSession(session);
+  return {
+    queue,
+    session: fullAtlasRefinedSessionProgress(session),
+  };
+}
+
+export async function bodyParts3dFullAtlasRefinedThumbnailSessionStatus(
+  sessionId: string,
+) {
+  const session = await readFullAtlasRefinedSession(sessionId);
+  return fullAtlasRefinedSessionProgress(session);
+}
+
+export async function runBodyParts3dFullAtlasRefinedThumbnailStep(input: {
+  sessionId: string;
+  registryRevision: string;
+}) {
+  if (activeFullAtlasRefinedSessions.has(input.sessionId)) {
+    throw new Error(
+      "This BodyParts3D refined thumbnail session is already processing its current asset. Wait for that request to finish, then resume.",
+    );
+  }
+
+  activeFullAtlasRefinedSessions.add(input.sessionId);
+  try {
+    const session = await readFullAtlasRefinedSession(input.sessionId);
+    if (session.next_index >= session.total) {
+      session.phase = "complete";
+      session.current_asset_id = null;
+      session.current_label = null;
+      session.last_error = null;
+      await writeFullAtlasRefinedSession(session);
+      return fullAtlasRefinedSessionProgress(session);
+    }
+
+    const item = session.queue[session.next_index]!;
+    session.phase = "running";
+    session.current_asset_id = item.asset_id;
+    session.current_label =
+      item.concept_name ?? item.source_asset_id ?? item.asset_id;
+    session.last_error = null;
+    await writeFullAtlasRefinedSession(session);
+
+    try {
+      const repair = await backfillBodyParts3dThumbnail({
+        assetId: item.asset_id,
+        registryRevision: input.registryRevision,
+        forceRegenerate: true,
+        viewerMatchRefined: true,
+      });
+      if (
+        repair.result !==
+        "thumbnail_viewer_match_refined_regenerated"
+      ) {
+        throw new Error(
+          `Unexpected refined result for ${item.asset_id}: ${repair.result}.`,
+        );
+      }
+
+      session.next_index += 1;
+      session.regenerated += 1;
+      session.phase =
+        session.next_index >= session.total
+          ? "complete"
+          : "prepared";
+      session.current_asset_id = null;
+      session.current_label = null;
+      session.last_error = null;
+      await writeFullAtlasRefinedSession(session);
+      return fullAtlasRefinedSessionProgress(session);
+    } catch (caught) {
+      session.failed += 1;
+      session.phase = "error";
+      session.last_error =
+        caught instanceof Error ? caught.message : String(caught);
+      await writeFullAtlasRefinedSession(session);
+      throw caught;
+    }
+  } finally {
+    activeFullAtlasRefinedSessions.delete(input.sessionId);
+  }
+}
+
+export async function cancelBodyParts3dFullAtlasRefinedThumbnailSession(
+  sessionId: string,
+) {
+  if (activeFullAtlasRefinedSessions.has(sessionId)) {
+    throw new Error(
+      "The current refined thumbnail step is still running. Wait for it to finish before resetting the saved session.",
+    );
+  }
+  await rm(fullAtlasRefinedSessionDirectory(sessionId), {
+    recursive: true,
+    force: true,
+  });
+  return {
+    cancelled: true as const,
+    session_id: sessionId,
+  };
+}
+
 type BodyParts3dThumbnailRepairResult = Awaited<
   ReturnType<typeof backfillBodyParts3dThumbnail>
 >;

@@ -4,7 +4,12 @@ import {
   auditBodyParts3dThumbnailBatch,
   backfillBodyParts3dThumbnail,
   backfillBodyParts3dThumbnailBatch,
+  bodyParts3dFullAtlasRefinedThumbnailSessionStatus,
+  cancelBodyParts3dFullAtlasRefinedThumbnailSession,
+  listBodyParts3dFullAtlasThumbnailTargets,
+  prepareBodyParts3dFullAtlasRefinedThumbnailSession,
   renderBodyParts3dThumbnailCalibration,
+  runBodyParts3dFullAtlasRefinedThumbnailStep,
 } from "../bodyparts3d-thumbnail-maintenance.server";
 
 export const runtime = "nodejs";
@@ -51,6 +56,71 @@ export async function POST(request: NextRequest) {
           offset,
           limit,
         })),
+      });
+    }
+
+    if (action === "prepare_full_atlas_refined_regeneration") {
+      const queue =
+        await listBodyParts3dFullAtlasThumbnailTargets({
+          registryRevision,
+        });
+      const prepared =
+        await prepareBodyParts3dFullAtlasRefinedThumbnailSession({
+          registryRevision,
+          queue,
+        });
+      return NextResponse.json({
+        ok: true,
+        action,
+        ...prepared,
+      });
+    }
+
+    if (
+      action === "full_atlas_refined_status" ||
+      action === "full_atlas_refined_step" ||
+      action === "full_atlas_refined_cancel"
+    ) {
+      const sessionId =
+        typeof body.session_id === "string"
+          ? body.session_id.trim()
+          : "";
+      if (!sessionId) {
+        return NextResponse.json(
+          { ok: false, error: "session_id is required." },
+          { status: 400 },
+        );
+      }
+
+      if (action === "full_atlas_refined_status") {
+        return NextResponse.json({
+          ok: true,
+          action,
+          session:
+            await bodyParts3dFullAtlasRefinedThumbnailSessionStatus(
+              sessionId,
+            ),
+        });
+      }
+
+      if (action === "full_atlas_refined_cancel") {
+        return NextResponse.json({
+          ok: true,
+          action,
+          ...(await cancelBodyParts3dFullAtlasRefinedThumbnailSession(
+            sessionId,
+          )),
+        });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        action,
+        session:
+          await runBodyParts3dFullAtlasRefinedThumbnailStep({
+            sessionId,
+            registryRevision,
+          }),
       });
     }
 
@@ -153,7 +223,7 @@ export async function POST(request: NextRequest) {
       {
         ok: false,
         error:
-          "action must be audit_batch, backfill_one, regenerate_visual_one, regenerate_appearance_preview_one, regenerate_viewer_match_refined_one, regenerate_viewer_match_refined_batch, or render_appearance_calibration_one.",
+          "action must be audit_batch, backfill_one, regenerate_visual_one, regenerate_appearance_preview_one, regenerate_viewer_match_refined_one, regenerate_viewer_match_refined_batch, prepare_full_atlas_refined_regeneration, or render_appearance_calibration_one; durable full-atlas resume also accepts full_atlas_refined_status, full_atlas_refined_step, and full_atlas_refined_cancel.",
       },
       { status: 400 },
     );

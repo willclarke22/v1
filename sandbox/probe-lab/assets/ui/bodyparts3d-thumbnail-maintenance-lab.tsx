@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useMemo, useRef, useState } from "react";
 
 type AuditStatus =
@@ -74,11 +75,16 @@ type AuditResponse = {
   };
   calibration?: CalibrationResult;
   batch?: RefinedBatchResult;
+  queue?: FullAtlasRefinedQueue;
+  session?: FullAtlasRefinedSession;
   error?: string;
 };
 
 
+const BODYPARTS3D_EXPECTED_UI_TOTAL = 2234;
 const BULK_CHECKPOINT_SIZE = 4;
+const FULL_ATLAS_REFINED_SESSION_KEY =
+  "myway_bodyparts3d_full_atlas_refined_thumbnail_session_v1";
 const BULK_YIELD_MS = 250;
 const DEFAULT_REFINED_BATCH_IDS = [
   "epiglottis_man_56eea5e0",
@@ -113,6 +119,34 @@ function parseExplicitAssetIds(value: string) {
   }
   return normalized;
 }
+
+type FullAtlasRefinedQueueItem = {
+  asset_id: string;
+  source_asset_id: string | null;
+  concept_name: string | null;
+};
+
+type FullAtlasRefinedQueue = {
+  total: number;
+  items: FullAtlasRefinedQueueItem[];
+};
+
+type FullAtlasRefinedSession = {
+  schema_version: string;
+  session_id: string;
+  phase: "prepared" | "running" | "error" | "complete";
+  created_at: string;
+  updated_at: string;
+  total: number;
+  completed: number;
+  regenerated: number;
+  failed: number;
+  remaining: number;
+  next_index: number;
+  current_asset_id: string | null;
+  current_label: string | null;
+  last_error: string | null;
+};
 
 type BulkProgress = {
   total: number;
@@ -194,6 +228,19 @@ export function BodyParts3dThumbnailMaintenanceLab({
     useState(false);
   const [bulkProgress, setBulkProgress] =
     useState<BulkProgress | null>(null);
+  const [fullAtlasRunning, setFullAtlasRunning] =
+    useState(false);
+  const [fullAtlasSessionId, setFullAtlasSessionId] =
+    useState<string | null>(null);
+  const fullAtlasPauseRequested = useRef(false);
+  const [fullAtlasPausePending, setFullAtlasPausePending] =
+    useState(false);
+  const [fullAtlasQueue, setFullAtlasQueue] =
+    useState<FullAtlasRefinedQueueItem[]>([]);
+  const [fullAtlasNextIndex, setFullAtlasNextIndex] =
+    useState(0);
+  const [fullAtlasProgress, setFullAtlasProgress] =
+    useState<BulkProgress | null>(null);
 
   const counts = useMemo(() => {
     const next = {
@@ -241,9 +288,86 @@ export function BodyParts3dThumbnailMaintenanceLab({
     [sampleBatchAssetIds],
   );
 
+  const fullAtlasCanResume =
+    Boolean(fullAtlasSessionId) &&
+    (!fullAtlasProgress ||
+      fullAtlasProgress.completed < fullAtlasProgress.total);
+
   const auditComplete =
     auditTotal > 0 &&
     auditItems.length === auditTotal;
+
+  function applyFullAtlasSession(
+    session: FullAtlasRefinedSession,
+  ) {
+    setFullAtlasSessionId(session.session_id);
+    setFullAtlasNextIndex(session.next_index);
+    setFullAtlasProgress({
+      total: session.total,
+      completed: session.completed,
+      regenerated: session.regenerated,
+      failed: session.failed,
+      current_asset_id: session.current_asset_id,
+      current_label: session.current_label,
+    });
+  }
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(
+      FULL_ATLAS_REFINED_SESSION_KEY,
+    );
+    if (!stored) return;
+
+    setFullAtlasSessionId(stored);
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch(
+          "/api/sandbox/probe-lab/assets/bodyparts3d-thumbnails",
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "full_atlas_refined_status",
+              session_id: stored,
+            }),
+          },
+        );
+        const json = await readJson(response);
+        if (!active || !json.session) return;
+        applyFullAtlasSession(json.session);
+        if (json.session.phase === "complete") {
+          window.localStorage.removeItem(
+            FULL_ATLAS_REFINED_SESSION_KEY,
+          );
+          setFullAtlasSessionId(null);
+          setNotice(
+            "Recovered the saved full-atlas refined thumbnail session and confirmed it is complete.",
+          );
+        } else {
+          setNotice(
+            `Recovered the interrupted full-atlas refined thumbnail session at ${json.session.completed.toLocaleString()} / ${json.session.total.toLocaleString()}. Press Resume full-atlas refined regeneration when the connection is stable.`,
+          );
+        }
+      } catch (caught) {
+        if (!active) return;
+        setNotice(
+          "A saved full-atlas refined thumbnail session is still recorded in this browser, but its server checkpoint could not be reached. The saved session id was kept; retry Resume when the connection or dev server is available.",
+        );
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+        );
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function audit() {
     if (running) return;
@@ -649,6 +773,204 @@ export function BodyParts3dThumbnailMaintenanceLab({
     setBulkPauseRequested(true);
   }
 
+  function pauseFullAtlasRegeneration() {
+    if (!fullAtlasRunning) return;
+    fullAtlasPauseRequested.current = true;
+    setFullAtlasPausePending(true);
+  }
+
+  // A.12.17P5 compatibility: the durable server step still executes the same
+  // refined one-asset contract previously requested as action: "regenerate_viewer_match_refined_one".
+  async function fullAtlasSessionRequest(
+    action:
+      | "full_atlas_refined_status"
+      | "full_atlas_refined_step",
+    sessionId: string,
+  ) {
+    const response = await fetch(
+      "/api/sandbox/probe-lab/assets/bodyparts3d-thumbnails",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          session_id: sessionId,
+          registry_revision: registryRevision,
+        }),
+      },
+    );
+    const json = await readJson(response);
+    if (!json.session) {
+      throw new Error(
+        `BodyParts3D refined thumbnail ${action} did not return saved-session progress.`,
+      );
+    }
+    applyFullAtlasSession(json.session);
+    return json.session;
+  }
+
+  async function runFullAtlasRefinedLoop(sessionId: string) {
+    let stepsThisLoop = 0;
+    let latest = await fullAtlasSessionRequest(
+      "full_atlas_refined_status",
+      sessionId,
+    );
+
+    while (
+      latest.phase !== "complete" &&
+      latest.remaining > 0 &&
+      !fullAtlasPauseRequested.current
+    ) {
+      latest = await fullAtlasSessionRequest(
+        "full_atlas_refined_step",
+        sessionId,
+      );
+      stepsThisLoop += 1;
+
+      if (
+        stepsThisLoop > 0 &&
+        stepsThisLoop % BULK_CHECKPOINT_SIZE === 0
+      ) {
+        await yieldToBrowser();
+      }
+    }
+
+    if (latest.phase === "complete" || latest.remaining <= 0) {
+      window.localStorage.removeItem(
+        FULL_ATLAS_REFINED_SESSION_KEY,
+      );
+      setFullAtlasSessionId(null);
+      const message =
+        `Full-atlas refined thumbnail regeneration complete: ${latest.completed.toLocaleString()} / ${latest.total.toLocaleString()} BodyParts3D atlas thumbnail(s) regenerated with GLB-matched colors.`;
+      setNotice(message);
+      onChanged?.(message);
+      return;
+    }
+
+    if (fullAtlasPauseRequested.current) {
+      setNotice(
+        `Full-atlas refined thumbnail regeneration paused at ${latest.completed.toLocaleString()} / ${latest.total.toLocaleString()}. The server checkpoint and browser session id were saved; Resume continues from the next unfinished asset.`,
+      );
+    }
+  }
+
+  async function regenerateFullAtlasRefinedThumbnails() {
+    if (
+      running ||
+      fullAtlasRunning ||
+      previewRunning ||
+      refinedRunning ||
+      refinedBatchRunning ||
+      calibrationRunning
+    ) {
+      return;
+    }
+
+    fullAtlasPauseRequested.current = false;
+    setFullAtlasPausePending(false);
+    setFullAtlasRunning(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      let sessionId =
+        fullAtlasSessionId ??
+        window.localStorage.getItem(
+          FULL_ATLAS_REFINED_SESSION_KEY,
+        );
+
+      if (!sessionId) {
+        const response = await fetch(
+          "/api/sandbox/probe-lab/assets/bodyparts3d-thumbnails",
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              action: "prepare_full_atlas_refined_regeneration",
+              registry_revision: registryRevision,
+            }),
+          },
+        );
+        const json = await readJson(response);
+        const nextQueue = json.queue?.items ?? [];
+        const nextTotal =
+          typeof json.queue?.total === "number"
+            ? json.queue.total
+            : nextQueue.length;
+        if (
+          !json.session ||
+          !nextQueue.length ||
+          nextTotal !== nextQueue.length
+        ) {
+          throw new Error(
+            "The full BodyParts3D atlas regeneration session was empty or internally inconsistent.",
+          );
+        }
+        sessionId = json.session.session_id;
+        setFullAtlasQueue(nextQueue);
+        applyFullAtlasSession(json.session);
+        window.localStorage.setItem(
+          FULL_ATLAS_REFINED_SESSION_KEY,
+          sessionId,
+        );
+      }
+
+      await runFullAtlasRefinedLoop(sessionId);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+      setNotice(
+        "The full-atlas refined thumbnail loop is paused. Its saved server checkpoint and browser session id were kept. When the connection or dev server is stable, press Resume full-atlas refined regeneration; completed thumbnails will not restart from asset 1.",
+      );
+    } finally {
+      setFullAtlasRunning(false);
+      setFullAtlasPausePending(false);
+    }
+  }
+
+  async function resetFullAtlasRefinedSession() {
+    const sessionId =
+      fullAtlasSessionId ??
+      window.localStorage.getItem(
+        FULL_ATLAS_REFINED_SESSION_KEY,
+      );
+    if (fullAtlasRunning) return;
+
+    if (sessionId) {
+      await fetch(
+        "/api/sandbox/probe-lab/assets/bodyparts3d-thumbnails",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "full_atlas_refined_cancel",
+            session_id: sessionId,
+          }),
+        },
+      ).catch(() => undefined);
+    }
+
+    window.localStorage.removeItem(
+      FULL_ATLAS_REFINED_SESSION_KEY,
+    );
+    setFullAtlasSessionId(null);
+    setFullAtlasQueue([]);
+    setFullAtlasNextIndex(0);
+    setFullAtlasProgress(null);
+    setNotice(
+      "Saved full-atlas refined thumbnail session cleared. Existing regenerated thumbnails were not changed.",
+    );
+  }
+
   async function regenerateAllVisualIssues() {
     if (
       running ||
@@ -868,7 +1190,7 @@ export function BodyParts3dThumbnailMaintenanceLab({
         One-asset preview only remains available for direct comparison with the earlier A.12.17P1 experiment.
         A.12.17P4 adds an explicit small sample-batch path that reuses the same refined profile across a few
         manually listed atlas assets so color matching can be judged across multiple GLB categories before the
-        bulk path is changed. Existing audit and bulk regeneration behavior remains unchanged.
+        bulk path is changed. A.12.17P5 promotes that same refined profile to an explicit full-atlas regeneration flow with a dedicated progress bar, pause/resume within the current page session, and sequential stop-on-first-failure behavior. Existing audit and bulk regeneration behavior remains unchanged; the new full-atlas refined flow is separate from that older visual-issue path. A.12.17P6 adds a durable server checkpoint plus a browser-saved session id so a lost connection, page reload, or dev-server interruption can recover the saved run and continue from the next unfinished atlas asset instead of starting again at asset 1.
       </p>
 
       <div
@@ -921,6 +1243,65 @@ export function BodyParts3dThumbnailMaintenanceLab({
           </button>
           <span style={{ fontSize: 13, opacity: 0.82 }}>
             Explicit sample batch only · sequential overwrite path · stopping on first failure · bulk regeneration remains unchanged.
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <div
+          style={{
+            alignItems: "center",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <button
+            className="asset-library-secondary-button"
+            disabled={
+              Boolean(running) ||
+              fullAtlasRunning ||
+              previewRunning ||
+              refinedRunning ||
+              refinedBatchRunning ||
+              calibrationRunning
+            }
+            onClick={() => void regenerateFullAtlasRefinedThumbnails()}
+            type="button"
+          >
+            {fullAtlasCanResume
+              ? `Resume full-atlas refined regeneration (${Math.max(0, (fullAtlasProgress?.total ?? BODYPARTS3D_EXPECTED_UI_TOTAL) - (fullAtlasProgress?.completed ?? fullAtlasNextIndex)).toLocaleString()} remaining)`
+              : "Regenerate all 2,234 atlas thumbnails with GLB-matched colors"}
+          </button>
+          {fullAtlasRunning ? (
+            <button
+              className="asset-library-secondary-button"
+              disabled={fullAtlasPausePending}
+              onClick={pauseFullAtlasRegeneration}
+              type="button"
+            >
+              {fullAtlasPausePending
+                ? "Pausing after current thumbnail…"
+                : "Pause full-atlas regeneration"}
+            </button>
+          ) : null}
+          {fullAtlasSessionId && !fullAtlasRunning ? (
+            <button
+              className="asset-library-secondary-button"
+              onClick={() => void resetFullAtlasRefinedSession()}
+              type="button"
+            >
+              Clear saved full-atlas session
+            </button>
+          ) : null}
+          <span style={{ fontSize: 13, opacity: 0.82 }}>
+            Full atlas only · refined viewer-match profile · sequential overwrite path · stop on first failure.
           </span>
         </div>
       </div>
@@ -1040,6 +1421,46 @@ export function BodyParts3dThumbnailMaintenanceLab({
               </article>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {fullAtlasProgress ? (
+        <div style={{ marginTop: 14 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <strong>
+              Full-atlas refined regeneration · {fullAtlasProgress.completed.toLocaleString()} / {fullAtlasProgress.total.toLocaleString()} completed
+            </strong>
+            <span>
+              {(
+                (fullAtlasProgress.completed /
+                  Math.max(1, fullAtlasProgress.total)) *
+                100
+              ).toFixed(1)}%
+            </span>
+          </div>
+          <progress
+            max={fullAtlasProgress.total}
+            value={fullAtlasProgress.completed}
+            style={{ width: "100%", height: 18, marginTop: 8 }}
+          />
+          <small style={{ display: "block", marginTop: 8, opacity: 0.82 }}>
+            Regenerated {fullAtlasProgress.regenerated.toLocaleString()} · failed {fullAtlasProgress.failed.toLocaleString()} · remaining {Math.max(0, fullAtlasProgress.total - fullAtlasProgress.completed).toLocaleString()}
+          </small>
+          {fullAtlasProgress.current_label ? (
+            <small style={{ display: "block", marginTop: 6, opacity: 0.82 }}>
+              Current: {fullAtlasProgress.current_label}
+            </small>
+          ) : null}
+          <small style={{ display: "block", marginTop: 6, opacity: 0.74 }}>
+            This run uses the refined viewer-match profile validated against the sample batch. Processing remains sequential. After every successful thumbnail the server checkpoint advances atomically, while the session id is stored in browser localStorage, so Resume can recover after a connection loss or page reload without starting over.
+          </small>
         </div>
       ) : null}
 
