@@ -3,12 +3,21 @@ import type { VisualLearningTurnModelRequest } from "./visual-learning-turn-requ
 export type VisualLearningTurnModelProvider = "scaffold" | "openai" | "nvidia" | "deepseek" | "glm";
 export type VisualGenerationPreset = "reliable" | "cinematic";
 export type VisualProviderFallback = "none" | VisualLearningTurnModelProvider;
+export type VisualGlmReasoningEffort = "low" | "high" | "max";
+export type VisualProviderRequestProfile =
+  | "standard"
+  | "glm53_native_reasoning"
+  | "glm53_hosted_compatibility";
+export type VisualClearThinkingPolicy =
+  | "not_applicable"
+  | "not_sent_hosted_api_schema";
 
 export type VisualProviderFailureKind =
   | "local_abort_timeout"
   | "provider_504"
   | "provider_429"
   | "provider_5xx"
+  | "provider_model_unavailable"
   | "provider_http_error"
   | "provider_network_error"
   | "empty_response"
@@ -24,6 +33,11 @@ export type VisualProviderAttemptDiagnostic = {
   stream_enabled: boolean;
   max_tokens: number | null;
   reasoning_budget: number | null;
+  reasoning_effort: VisualGlmReasoningEffort | null;
+  temperature: number | null;
+  top_p: number | null;
+  request_profile: VisualProviderRequestProfile;
+  clear_thinking_policy: VisualClearThinkingPolicy;
   timeout_ms: number;
   request_chars: number;
   message_count: number;
@@ -62,9 +76,16 @@ export type VisualLearningTurnProviderResult = {
   request_payload_preview?: Record<string, unknown>;
 };
 
-type ChatCompletionMessage = {
+export type VisualProviderChatMessage = {
   role: "system" | "user";
   content: string;
+};
+
+type VisualProviderChatRequest = {
+  messages: VisualProviderChatMessage[];
+  prompt_stats: {
+    total_chars: number;
+  };
 };
 
 type ChatPostResult = {
@@ -88,6 +109,8 @@ type ChatProviderConfig = {
   topP?: number;
   maxTokens: number;
   reasoningBudget: number;
+  reasoningEffort?: VisualGlmReasoningEffort;
+  clearThinkingPolicy?: VisualClearThinkingPolicy;
   tokenField: "max_tokens" | "max_completion_tokens";
 };
 
@@ -97,6 +120,7 @@ type VisualModelCallOptions = {
   retry_transient_errors?: unknown;
   fallback_provider?: unknown;
   max_attempts?: number;
+  timeout_ms?: number;
 };
 
 class VisualProviderError extends Error {
@@ -207,6 +231,41 @@ function numberFromEnv(name: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function numberInRangeFromEnv(name: string, fallback: number, min: number, max: number) {
+  const parsed = numberFromEnv(name, fallback);
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function visualExperienceGlmReasoningEffort(
+  preset: VisualGenerationPreset,
+): VisualGlmReasoningEffort {
+  const configured = process.env.MYWAY_VISUAL_EXPERIENCE_GLM_REASONING_EFFORT?.trim().toLowerCase();
+  if (configured === "low" || configured === "high" || configured === "max") {
+    return configured;
+  }
+  return preset === "cinematic" ? "max" : "high";
+}
+
+function visualExperienceGlmTemperature() {
+  return numberInRangeFromEnv(
+    "MYWAY_GLM_TEMPERATURE",
+    numberInRangeFromEnv("MYWAY_NVIDIA_TEMPERATURE", 0.25, 0, 1),
+    0,
+    1,
+  );
+}
+
+function visualExperienceGlmTopP() {
+  // Keep nucleus sampling neutral by default. GLM-5.3's hosted endpoint documents
+  // top_p=1 as the default and advises against tuning both sampling controls.
+  return numberInRangeFromEnv(
+    "MYWAY_GLM_TOP_P",
+    numberInRangeFromEnv("MYWAY_NVIDIA_TOP_P", 1, 0, 1),
+    0,
+    1,
+  );
+}
+
 function endpoint(baseUrl: string) {
   return `${baseUrl.replace(/\/$/, "")}/chat/completions`;
 }
@@ -311,6 +370,7 @@ function getStreamingDeltaText(value: unknown): string {
 function classifyHttpStatus(status: number): VisualProviderFailureKind {
   if (status === 504) return "provider_504";
   if (status === 429) return "provider_429";
+  if (status === 404 || status === 410) return "provider_model_unavailable";
   if (status >= 500) return "provider_5xx";
   return "provider_http_error";
 }
@@ -327,6 +387,16 @@ function isTransientFailure(kind: VisualProviderFailureKind) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function requestProfileForAttempt(
+  config: ChatProviderConfig,
+  body: Record<string, unknown>,
+): VisualProviderRequestProfile {
+  if (config.provider !== "glm") return "standard";
+  return typeof body.reasoning_effort === "string"
+    ? "glm53_native_reasoning"
+    : "glm53_hosted_compatibility";
 }
 
 function makeAttemptDiagnostic(args: {
@@ -356,6 +426,17 @@ function makeAttemptDiagnostic(args: {
     stream_enabled: args.streamEnabled,
     max_tokens: typeof args.body.max_tokens === "number" ? args.body.max_tokens : typeof args.body.max_completion_tokens === "number" ? args.body.max_completion_tokens : null,
     reasoning_budget: typeof args.body.reasoning_budget === "number" ? args.body.reasoning_budget : null,
+    reasoning_effort:
+      args.body.reasoning_effort === "low" ||
+      args.body.reasoning_effort === "high" ||
+      args.body.reasoning_effort === "max"
+        ? args.body.reasoning_effort
+        : null,
+    temperature: typeof args.body.temperature === "number" ? args.body.temperature : null,
+    top_p: typeof args.body.top_p === "number" ? args.body.top_p : null,
+    request_profile: requestProfileForAttempt(args.config, args.body),
+    clear_thinking_policy:
+      args.config.clearThinkingPolicy ?? "not_applicable",
     timeout_ms: args.timeoutMs,
     request_chars: args.requestChars,
     message_count: args.messageCount,
@@ -682,12 +763,12 @@ async function postChatCompletionsWithRetry(args: {
 
 function makeBaseBody(args: {
   config: ChatProviderConfig;
-  modelRequest: VisualLearningTurnModelRequest;
+  modelRequest: VisualProviderChatRequest;
   streamEnabled: boolean;
 }) {
   const body: Record<string, unknown> = {
     model: args.config.model,
-    messages: args.modelRequest.messages as ChatCompletionMessage[],
+    messages: args.modelRequest.messages as VisualProviderChatMessage[],
     stream: args.streamEnabled,
   };
 
@@ -700,40 +781,105 @@ function makeBaseBody(args: {
   if (typeof args.config.temperature === "number") body.temperature = args.config.temperature;
   if (typeof args.config.topP === "number") body.top_p = args.config.topP;
   if (args.config.reasoningBudget > 0) body.reasoning_budget = args.config.reasoningBudget;
+  if (args.config.reasoningEffort) body.reasoning_effort = args.config.reasoningEffort;
 
   return body;
 }
 
 async function callChatProvider(
-  modelRequest: VisualLearningTurnModelRequest,
+  modelRequest: VisualProviderChatRequest,
   config: ChatProviderConfig,
   options: Required<Pick<VisualModelCallOptions, "generation_preset">> & VisualModelCallOptions,
 ) {
+  const startedAt = Date.now();
   const generationPreset = normalizeGenerationPreset(options.generation_preset);
   const streamEnabled = normalizeStreaming(options.enable_streaming);
   const retryTransientErrors = normalizeRetry(options.retry_transient_errors);
-  const timeoutMs = visualExperienceTimeoutMs(generationPreset);
+  const timeoutMs =
+    typeof options.timeout_ms === "number" && Number.isFinite(options.timeout_ms)
+      ? Math.max(5_000, Math.min(180_000, Math.floor(options.timeout_ms)))
+      : visualExperienceTimeoutMs(generationPreset);
   const maxAttempts = getMaxAttempts(options, retryTransientErrors);
   const body = makeBaseBody({ config, modelRequest, streamEnabled });
   const requestChars = JSON.stringify(body).length;
   const messageCount = modelRequest.messages.length;
 
-  const result = await postChatCompletionsWithRetry({
-    config,
-    body,
-    providerLabel: config.providerLabel,
-    timeoutMs,
-    generationPreset,
-    streamEnabled,
-    retryTransientErrors,
-    maxAttempts,
-    requestChars,
-    messageCount,
-  });
+  let result: ChatPostResult;
+  let finalBody = body;
+
+  try {
+    result = await postChatCompletionsWithRetry({
+      config,
+      body,
+      providerLabel: config.providerLabel,
+      timeoutMs,
+      generationPreset,
+      streamEnabled,
+      retryTransientErrors,
+      maxAttempts,
+      requestChars,
+      messageCount,
+    });
+  } catch (error) {
+    const nativeAttempts = errorAttempts(error);
+    const lastNativeAttempt = nativeAttempts[nativeAttempts.length - 1];
+    const shouldUseHostedCompatibilityProfile =
+      config.provider === "glm" &&
+      typeof body.reasoning_effort === "string" &&
+      lastNativeAttempt?.http_status === 422;
+
+    if (!shouldUseHostedCompatibilityProfile) throw error;
+
+    // NVIDIA's GLM-5.3 model card documents reasoning_effort, while the current
+    // hosted chat-completions schema does not list that field. Prefer the native
+    // control, but if the hosted endpoint rejects it with 422, immediately retry
+    // once without the extra field. GLM-5.3 defaults to max reasoning server-side,
+    // so cinematic turns still retain the intended reasoning depth.
+    const compatibilityBody = { ...body };
+    delete compatibilityBody.reasoning_effort;
+    const compatibilityRequestChars = JSON.stringify(compatibilityBody).length;
+
+    try {
+      const compatibilityResult = await postChatCompletionsWithRetry({
+        config,
+        body: compatibilityBody,
+        providerLabel: `${config.providerLabel} hosted-compatibility`,
+        timeoutMs,
+        generationPreset,
+        streamEnabled,
+        retryTransientErrors: false,
+        maxAttempts: 1,
+        requestChars: compatibilityRequestChars,
+        messageCount,
+      });
+      const compatibilityAttempts = compatibilityResult.attempts.map((attempt, index) => ({
+        ...attempt,
+        attempt_number: nativeAttempts.length + index + 1,
+      }));
+      result = {
+        ...compatibilityResult,
+        duration_ms: Date.now() - startedAt,
+        attempts: [...nativeAttempts, ...compatibilityAttempts],
+      };
+      finalBody = compatibilityBody;
+    } catch (compatibilityError) {
+      const compatibilityAttempts = errorAttempts(compatibilityError).map((attempt, index) => ({
+        ...attempt,
+        attempt_number: nativeAttempts.length + index + 1,
+      }));
+      throw new VisualProviderAttemptsError({
+        message:
+          `${config.providerLabel} native reasoning request was rejected with 422, ` +
+          `and the hosted-compatibility retry also failed: ${errorMessage(compatibilityError)}`,
+        attempts: [...nativeAttempts, ...compatibilityAttempts],
+        final_failure_kind: errorFailureKind(compatibilityError),
+      });
+    }
+  }
 
   return {
     result,
-    body,
+    body: finalBody,
     diagnostics: {
       generation_preset: generationPreset,
       stream_enabled: streamEnabled,
@@ -748,6 +894,26 @@ async function callChatProvider(
       attempts: result.attempts,
     } satisfies VisualProviderDiagnostics,
   };
+}
+
+const DEFAULT_VISUAL_EXPERIENCE_GLM_MODEL = "z-ai/glm-5.3";
+const RETIRED_VISUAL_EXPERIENCE_GLM_MODELS = new Map<string, string>([
+  ["z-ai/glm-5.2", DEFAULT_VISUAL_EXPERIENCE_GLM_MODEL],
+]);
+
+function visualExperienceGlmModel() {
+  const configured = (
+    process.env.MYWAY_VISUAL_EXPERIENCE_GLM_MODEL ??
+    process.env.MYWAY_GLM_MODEL ??
+    DEFAULT_VISUAL_EXPERIENCE_GLM_MODEL
+  ).trim();
+  return RETIRED_VISUAL_EXPERIENCE_GLM_MODELS.get(configured.toLowerCase()) ?? configured;
+}
+
+function visualExperienceGlmProviderLabel(model: string) {
+  return model === DEFAULT_VISUAL_EXPERIENCE_GLM_MODEL
+    ? "NVIDIA/GLM-5.3"
+    : `NVIDIA/GLM (${model})`;
 }
 
 function getOpenAIConfig(preset: VisualGenerationPreset): ChatProviderConfig {
@@ -781,22 +947,25 @@ function getNvidiaProviderConfig(provider: "nvidia" | "deepseek" | "glm", preset
   const url = endpoint(process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1");
 
   if (provider === "glm") {
+    const model = visualExperienceGlmModel();
     return {
       provider,
       providerUsed: "nvidia",
-      providerLabel: "NVIDIA/GLM-5.2",
-      model:
-        process.env.MYWAY_VISUAL_EXPERIENCE_GLM_MODEL ??
-        process.env.MYWAY_GLM_MODEL ??
-        "z-ai/glm-5.2",
+      providerLabel: visualExperienceGlmProviderLabel(model),
+      model,
       url,
       apiKey,
-      // GLM-5.2 is used as the no-extra-paid-cost NVIDIA fallback. Keep JSON prompt-first for broad endpoint compatibility.
+      // GLM-5.3 is the current no-extra-paid-cost NVIDIA reasoning endpoint.
+      // Prefer its native reasoning_effort control. The hosted API currently omits
+      // clear_thinking/chat_template_kwargs from the documented schema, so do not
+      // send that field until NVIDIA exposes it for this endpoint.
       useResponseFormat: false,
-      temperature: numberFromEnv("MYWAY_GLM_TEMPERATURE", numberFromEnv("MYWAY_NVIDIA_TEMPERATURE", 0.25)),
-      topP: numberFromEnv("MYWAY_GLM_TOP_P", numberFromEnv("MYWAY_NVIDIA_TOP_P", 0.9)),
+      temperature: visualExperienceGlmTemperature(),
+      topP: visualExperienceGlmTopP(),
       maxTokens: visualExperienceProviderMaxTokens("MYWAY_VISUAL_EXPERIENCE_GLM_MAX_TOKENS", preset),
-      reasoningBudget: numberFromEnv("MYWAY_VISUAL_EXPERIENCE_GLM_REASONING_BUDGET", 0),
+      reasoningBudget: 0,
+      reasoningEffort: visualExperienceGlmReasoningEffort(preset),
+      clearThinkingPolicy: "not_sent_hosted_api_schema",
       tokenField: "max_tokens",
     };
   }
@@ -928,6 +1097,112 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+export type VisualOrchestrationCalibrationModel =
+  | "z-ai/glm-5.3"
+  | "z-ai/glm-5.3-flash";
+
+export type VisualOrchestrationCalibrationResult =
+  | {
+      ok: true;
+      model: VisualOrchestrationCalibrationModel;
+      raw_text: string;
+      duration_ms: number;
+      request_body: Record<string, unknown>;
+      diagnostics: VisualProviderDiagnostics;
+    }
+  | {
+      ok: false;
+      model: VisualOrchestrationCalibrationModel;
+      error: string;
+      final_failure_kind: VisualProviderFailureKind;
+      request_body: Record<string, unknown>;
+      attempts: VisualProviderAttemptDiagnostic[];
+    };
+
+function normalizeCalibrationReasoningEffort(value: unknown): VisualGlmReasoningEffort {
+  return value === "high" || value === "max" ? value : "low";
+}
+
+function normalizeCalibrationModel(value: unknown): VisualOrchestrationCalibrationModel {
+  return value === "z-ai/glm-5.3-flash" ? value : "z-ai/glm-5.3";
+}
+
+/**
+ * Shared provider entry point for the Visual Experience Orchestration Lab.
+ * It deliberately reuses the production GLM transport/diagnostics path but
+ * disables retries/fallbacks so each benchmark run measures one bounded call.
+ */
+export async function callVisualOrchestrationCalibrationModel(args: {
+  messages: VisualProviderChatMessage[];
+  model?: unknown;
+  reasoning_effort?: unknown;
+  max_tokens: number;
+  timeout_ms?: number;
+  temperature?: number;
+  top_p?: number;
+}): Promise<VisualOrchestrationCalibrationResult> {
+  const model = normalizeCalibrationModel(args.model);
+  const reasoningEffort = normalizeCalibrationReasoningEffort(args.reasoning_effort);
+  const configBase = getNvidiaProviderConfig("glm", "reliable");
+  const config: ChatProviderConfig = {
+    ...configBase,
+    model,
+    providerLabel:
+      model === "z-ai/glm-5.3-flash"
+        ? "NVIDIA/GLM-5.3-Flash"
+        : "NVIDIA/GLM-5.3",
+    maxTokens: Math.max(64, Math.min(4_000, Math.floor(args.max_tokens))),
+    reasoningEffort,
+    temperature:
+      typeof args.temperature === "number"
+        ? Math.max(0, Math.min(1, args.temperature))
+        : 0.1,
+    topP:
+      typeof args.top_p === "number"
+        ? Math.max(0, Math.min(1, args.top_p))
+        : 1,
+    useResponseFormat: false,
+  };
+  const request: VisualProviderChatRequest = {
+    messages: args.messages,
+    prompt_stats: {
+      total_chars: args.messages.reduce((sum, message) => sum + message.content.length, 0),
+    },
+  };
+  const plannedBody = makeBaseBody({
+    config,
+    modelRequest: request,
+    streamEnabled: false,
+  });
+
+  try {
+    const called = await callChatProvider(request, config, {
+      generation_preset: "reliable",
+      enable_streaming: false,
+      retry_transient_errors: false,
+      max_attempts: 1,
+      timeout_ms: args.timeout_ms ?? 90_000,
+    });
+    return {
+      ok: true,
+      model,
+      raw_text: called.result.raw_text,
+      duration_ms: called.result.duration_ms,
+      request_body: called.body,
+      diagnostics: called.diagnostics,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      model,
+      error: errorMessage(error),
+      final_failure_kind: errorFailureKind(error),
+      request_body: plannedBody,
+      attempts: errorAttempts(error),
+    };
+  }
+}
+
 export function getVisualLearningTurnProvider(value: unknown): VisualLearningTurnModelProvider {
   return normalizeProviderName(value);
 }
@@ -947,6 +1222,24 @@ export function getVisualLearningTurnProviderStatus() {
       cinematic_timeout_ms: visualExperienceTimeoutMs("cinematic"),
       max_attempts_default: getMaxAttempts({}, normalizeRetry(undefined)),
     },
+    glm53_request_profiles: {
+      reliable: {
+        model: visualExperienceGlmModel(),
+        reasoning_effort: visualExperienceGlmReasoningEffort("reliable"),
+        temperature: visualExperienceGlmTemperature(),
+        top_p: visualExperienceGlmTopP(),
+        clear_thinking_policy: "not_sent_hosted_api_schema" as const,
+        native_reasoning_422_compatibility_retry: true,
+      },
+      cinematic: {
+        model: visualExperienceGlmModel(),
+        reasoning_effort: visualExperienceGlmReasoningEffort("cinematic"),
+        temperature: visualExperienceGlmTemperature(),
+        top_p: visualExperienceGlmTopP(),
+        clear_thinking_policy: "not_sent_hosted_api_schema" as const,
+        native_reasoning_422_compatibility_retry: true,
+      },
+    },
     env: {
       has_openai_key: Boolean(process.env.MYWAY_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY),
       has_nvidia_key: Boolean(process.env.NVIDIA_API_KEY),
@@ -962,7 +1255,7 @@ export function getVisualLearningTurnProviderStatus() {
         try {
           return getNvidiaProviderConfig("glm", reliable).model;
         } catch {
-          return process.env.MYWAY_VISUAL_EXPERIENCE_GLM_MODEL ?? "z-ai/glm-5.2";
+          return visualExperienceGlmModel();
         }
       })(),
       nvidia_default_model: process.env.MYWAY_VISUAL_EXPERIENCE_NVIDIA_MODEL ?? process.env.MYWAY_NVIDIA_FULL_LOOP_MODEL ?? "deepseek-ai/deepseek-v4-pro",
@@ -1038,25 +1331,41 @@ export async function callVisualLearningTurnModel(args: {
       finalErrorMessage: null,
     });
 
+    const primarySuccessAttempt =
+      primary.diagnostics.attempts.find((attempt) => attempt.status === "success") ?? null;
+    const nativeReasoningCompatibilityFallbackUsed =
+      primary.diagnostics.attempts.some(
+        (attempt) =>
+          attempt.request_profile === "glm53_native_reasoning" &&
+          attempt.http_status === 422,
+      ) &&
+      primarySuccessAttempt?.request_profile === "glm53_hosted_compatibility";
+
     return {
       provider,
-      provider_used: primary.diagnostics.attempts[0]?.provider_used ?? (provider === "openai" ? "openai" : "nvidia"),
-      model: primary.diagnostics.attempts.find((attempt) => attempt.status === "success")?.model ?? getProviderConfig(provider, generationPreset).model,
+      provider_used: primarySuccessAttempt?.provider_used ?? (provider === "openai" ? "openai" : "nvidia"),
+      model: primarySuccessAttempt?.model ?? getProviderConfig(provider, generationPreset).model,
       raw_text: primary.result.raw_text,
       duration_ms: diagnostics.total_duration_ms,
       provider_fallback_used: false,
       provider_call_error: null,
       diagnostics,
       request_payload_preview: {
-        model: getProviderConfig(provider, generationPreset).model,
+        model: primarySuccessAttempt?.model ?? getProviderConfig(provider, generationPreset).model,
         provider_requested: provider,
         provider_fallback_used: false,
         generation_preset: generationPreset,
         stream_enabled: streamEnabled,
         retry_transient_errors: retryTransientErrors,
-        max_tokens: primary.diagnostics.attempts[0]?.max_tokens ?? null,
-        reasoning_budget: primary.diagnostics.attempts[0]?.reasoning_budget ?? null,
-        timeout_ms: primary.diagnostics.attempts[0]?.timeout_ms ?? null,
+        max_tokens: primarySuccessAttempt?.max_tokens ?? null,
+        reasoning_budget: primarySuccessAttempt?.reasoning_budget ?? null,
+        reasoning_effort: primarySuccessAttempt?.reasoning_effort ?? null,
+        temperature: primarySuccessAttempt?.temperature ?? null,
+        top_p: primarySuccessAttempt?.top_p ?? null,
+        request_profile: primarySuccessAttempt?.request_profile ?? null,
+        clear_thinking_policy: primarySuccessAttempt?.clear_thinking_policy ?? null,
+        native_reasoning_compatibility_fallback_used: nativeReasoningCompatibilityFallbackUsed,
+        timeout_ms: primarySuccessAttempt?.timeout_ms ?? null,
         message_count: args.model_request.messages.length,
         prompt_chars: args.model_request.prompt_stats.total_chars,
         response_chars: primary.result.response_chars,
@@ -1114,6 +1423,18 @@ export async function callVisualLearningTurnModel(args: {
           retry_transient_errors: retryTransientErrors,
           max_tokens: successAttempt?.max_tokens ?? null,
           reasoning_budget: successAttempt?.reasoning_budget ?? null,
+          reasoning_effort: successAttempt?.reasoning_effort ?? null,
+          temperature: successAttempt?.temperature ?? null,
+          top_p: successAttempt?.top_p ?? null,
+          request_profile: successAttempt?.request_profile ?? null,
+          clear_thinking_policy: successAttempt?.clear_thinking_policy ?? null,
+          native_reasoning_compatibility_fallback_used:
+            fallback.diagnostics.attempts.some(
+              (attempt) =>
+                attempt.request_profile === "glm53_native_reasoning" &&
+                attempt.http_status === 422,
+            ) &&
+            successAttempt?.request_profile === "glm53_hosted_compatibility",
           timeout_ms: successAttempt?.timeout_ms ?? null,
           message_count: args.model_request.messages.length,
           prompt_chars: args.model_request.prompt_stats.total_chars,

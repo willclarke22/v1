@@ -2353,23 +2353,21 @@ export function directorPlanToLegacySemanticBeats(
       return {
         id: moment.id,
         title: moment.title,
+        // Legacy semantic beats cite orientation-segment ids. Explanation-piece ids
+        // belong to the canonical Director moment and are a different namespace.
+        // Prefer the caller-provided orientation ids whenever they exist so strict
+        // scaffold/model output cannot become invalid during compatibility derivation.
         source_orientation_segment_ids:
-          moment
-            .source_explanation_piece_ids
-            .length
-            ? moment
-                .source_explanation_piece_ids
-            : orientationIds.length
-              ? [
-                  orientationIds[
-                    Math.min(
-                      momentIndex,
-                      orientationIds.length -
-                        1,
-                    )
-                  ],
-                ]
-              : [],
+          orientationIds.length
+            ? [
+                orientationIds[
+                  Math.min(
+                    momentIndex,
+                    orientationIds.length - 1,
+                  )
+                ],
+              ]
+            : moment.source_explanation_piece_ids,
         duration_ms:
           moment.duration_ms,
         active_entity_ids:

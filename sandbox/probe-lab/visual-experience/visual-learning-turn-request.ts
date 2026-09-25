@@ -15,6 +15,7 @@ import {
   unclearVisualLearningTurnOutputExample,
 } from "./visual-learning-turn-examples";
 import { SHARED_CONFUSION_LABELS, SHARED_INSIGHT_LABELS } from "./diagnostic-relationships";
+import { buildVisualExperienceDirectorAuthoringManifest } from "./director-authoring-manifest";
 import {
   DIRECTOR_BEHAVIOURS,
   DIRECTOR_CAMERA_MOVEMENTS,
@@ -47,7 +48,7 @@ export type VisualLearningTurnRequestBody = {
   fallback_provider?: "none" | "scaffold" | "deepseek" | "glm" | string;
   use_fallback_on_invalid?: boolean;
   example?: "krebs" | "unclear" | string;
-  asset_collection_mode?: "bodyparts3d_slp_pilot" | null;
+  asset_collection_mode?: "bodyparts3d_slp_pilot" | "bodyparts3d_full_atlas" | null;
 };
 
 export type VisualLearningTurnModelRequest = {
@@ -469,6 +470,11 @@ function buildUserPrompt(input: VisualLearningTurnInput, body: VisualLearningTur
   const outputPolicy = compactPolicy(input);
 
   const outputShapeForPrompt = VISUAL_LEARNING_SEMANTIC_DRAFT_RESPONSE_CONTRACT;
+  const directorAuthoringManifest = buildVisualExperienceDirectorAuthoringManifest({
+    learner_message: context.learner_message,
+    preferred_style: context.preferred_style,
+    asset_collection_mode: body.asset_collection_mode ?? null,
+  });
 
   return `Create a MyWay visual learning semantic draft from this input.
 
@@ -490,25 +496,36 @@ ${JSON.stringify(
       recent_user_messages: [],
     },
     output_policy: outputPolicy,
-    sandbox_asset_context: body.asset_collection_mode === "bodyparts3d_slp_pilot"
+    sandbox_asset_context: body.asset_collection_mode
       ? {
-          mode: "bodyparts3d_slp_pilot",
-          note: "These are real BodyParts3D SLP pilot assets currently available to this sandbox run. Refer to them by semantic name only; MyWay binds asset ids after your output. Prefer these structures when they are pedagogically useful, but do not force every one into the scene.",
-          available_semantic_assets: [
-            "tongue", "mandible", "hyoid bone", "epiglottis", "thyroid cartilage",
-            "right arytenoid cartilage", "left arytenoid cartilage",
-            "right vocal ligament", "left vocal ligament", "trachea", "esophagus",
-            "superior pharyngeal constrictor",
-          ],
+          mode: body.asset_collection_mode,
+          note:
+            body.asset_collection_mode === "bodyparts3d_full_atlas"
+              ? "The complete BodyParts3D 4.0 anatomy atlas is available to this sandbox run. Refer to anatomical structures by semantic name only; MyWay resolves exact atlas members after your output. Use only the structures needed to solve the learner's root problem, and preserve anatomical/spatial truth."
+              : "The BodyParts3D SLP pilot collection is available to this sandbox run. Refer to structures by semantic name only; MyWay binds exact asset ids after your output.",
+          collection_semantics:
+            body.asset_collection_mode === "bodyparts3d_full_atlas"
+              ? {
+                  collection: "BodyParts3D 4.0 full human anatomy atlas",
+                  scope: "2,234 official element meshes",
+                  shared_collection_space: true,
+                  preserve_relative_anatomical_placement: true,
+                  review_state: "Needs Review sandbox exception only",
+                }
+              : {
+                  collection: "BodyParts3D 4.0 SLP pilot",
+                  shared_collection_space: true,
+                  preserve_relative_anatomical_placement: true,
+                  review_state: "Needs Review sandbox exception only",
+                },
         }
       : null,
+    director_authoring_manifest: directorAuthoringManifest,
   },
-  null,
-  2,
 )}
 
 OUTPUT_JSON_SHAPE:
-${JSON.stringify(outputShapeForPrompt, null, 2)}
+${JSON.stringify(outputShapeForPrompt)}
 
 RULES:
 - Return only JSON matching myway_visual_learning_semantic_draft_v2.
@@ -526,6 +543,10 @@ RULES:
 - Do not omit an entity or simplify the teaching sequence because a final asset may be missing.
 - For physical actors, include capability_needs and anchor_needs inside the entity's director metadata when useful; MyWay will preserve those for late binding.
 - Use semantic behaviours even when the current Three.js renderer cannot execute the premium version yet. Include a simpler fallback_behaviour when possible.
+- The director_authoring_manifest.capabilities array in MODEL_INPUT_JSON is a turn-specific production-active capability palette derived from the canonical Director registry.
+- Intentionally request only capability ids present in that palette. Do not invent omitted ids. If an entry exposes fallback_capability_id, use it only when that id also appears in the palette.
+- Choose Director capabilities because they make the root_problem -> target_takeaway transformation visually clear; never add a capability merely for spectacle.
+- Never copy qualification-demo coordinates, asset operators, pair-resolution rules, collision solutions, or Builder placement details into the plan.
 - Prefer causal clarity over spectacle, and prefer a controlled abstraction over a misleading literal scene.
 - probe.full_prompt should be workbook-style and should test the target_takeaway.`;
 }

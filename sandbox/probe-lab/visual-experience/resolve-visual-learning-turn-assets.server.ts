@@ -1,5 +1,9 @@
-import { BODYPARTS3D_SLP_COLLECTION_ID } from "../assets/bodyparts3d-slp-pilot";
+import {
+  BODYPARTS3D_FULL_COLLECTION_ID,
+  BODYPARTS3D_SLP_COLLECTION_ID,
+} from "../assets/bodyparts3d-slp-pilot";
 import type { MyWayAssetRecord } from "../assets/asset-types";
+import { assetMatchesSemanticPhrase } from "../assets/asset-stable-identity";
 import {
   loadReviewedAssetResolverSnapshot,
   resolveReviewedAsset,
@@ -56,33 +60,168 @@ function entitiesFromOutput(
 }
 
 type AttachVisualAssetOptions = {
-  sandbox_asset_collection_mode?: "bodyparts3d_slp_pilot" | null;
+  sandbox_asset_collection_mode?: "bodyparts3d_slp_pilot" | "bodyparts3d_full_atlas" | null;
 };
 
 function normalizedSemanticName(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
 }
 
-function findSandboxBodyParts3dPilotAsset(
+function findSandboxBodyParts3dCollectionAsset(
   assets: MyWayAssetRecord[],
   entity: SemanticSceneEntity,
+  collectionId: string,
 ) {
   const wanted = normalizedSemanticName(entity.display_name);
   const tags = new Set((entity.visual_need.semantic_tags ?? []).map(normalizedSemanticName));
   const candidates = assets.filter((asset) =>
-    asset.collection_membership?.collection_id === BODYPARTS3D_SLP_COLLECTION_ID &&
+    asset.collection_membership?.collection_id === collectionId &&
     asset.safe_to_use_in_sandbox &&
     asset.status !== "rejected"
   );
-  return candidates.find((asset) => {
+
+  const exact = candidates.find((asset) => {
     const names = [
       asset.collection_membership?.concept_name ?? "",
+      asset.verified_canonical_label ?? "",
+      ...(asset.verified_aliases ?? []),
       asset.canonical_label,
       asset.display_name,
       ...asset.aliases,
     ].map(normalizedSemanticName).filter(Boolean);
-    return names.includes(wanted) || names.some((name) => tags.has(name));
+    return names.includes(wanted);
+  });
+  if (exact) return exact;
+
+  return candidates.find((asset) => {
+    const names = [
+      asset.collection_membership?.concept_name ?? "",
+      asset.verified_canonical_label ?? "",
+      ...(asset.verified_aliases ?? []),
+      asset.canonical_label,
+      asset.display_name,
+      ...asset.aliases,
+      ...asset.semantic_tags,
+    ].map(normalizedSemanticName).filter(Boolean);
+    return names.some((name) => tags.has(name));
   }) ?? null;
+}
+
+
+export type SandboxBodyParts3dSemanticResolution = {
+  semantic_name: string;
+  status:
+    | "exact_unique"
+    | "exact_multiple"
+    | "phrase_unique"
+    | "phrase_multiple"
+    | "not_found";
+  candidate_count: number;
+  candidates: Array<{
+    asset_id: string;
+    canonical_label: string;
+    display_name: string;
+    collection_member_id: string | null;
+    concept_id: string | null;
+    concept_name: string | null;
+    scene_review_status: string;
+    runtime_collection_space: string | null;
+    runtime_transform: {
+      position: number[];
+      rotation: number[];
+      scale: number[];
+    } | null;
+  }>;
+};
+
+function bodyParts3dCandidateSummary(asset: MyWayAssetRecord) {
+  return {
+    asset_id: asset.asset_id,
+    canonical_label: asset.canonical_label,
+    display_name: asset.display_name,
+    collection_member_id: asset.collection_membership?.member_id ?? null,
+    concept_id: asset.collection_membership?.concept_id ?? null,
+    concept_name: asset.collection_membership?.concept_name ?? null,
+    scene_review_status: asset.scene_review_status ?? "pending",
+    runtime_collection_space:
+      asset.collection_membership?.runtime_collection_space ?? null,
+    runtime_transform: asset.collection_membership
+      ? {
+          position: [...asset.collection_membership.runtime_transform.position],
+          rotation: [...asset.collection_membership.runtime_transform.rotation],
+          scale: [...asset.collection_membership.runtime_transform.scale],
+        }
+      : null,
+  };
+}
+
+function bodyParts3dExactSemanticMatch(asset: MyWayAssetRecord, wanted: string) {
+  const names = [
+    asset.collection_membership?.concept_name ?? "",
+    asset.verified_canonical_label ?? "",
+    ...(asset.verified_aliases ?? []),
+    asset.canonical_label,
+    asset.display_name,
+    ...asset.aliases,
+  ]
+    .map(normalizedSemanticName)
+    .filter(Boolean);
+  return names.includes(wanted);
+}
+
+/**
+ * Calibration-only semantic resolver for the Orchestration Lab. It never asks
+ * the model for asset ids and never silently chooses the first bilateral or
+ * otherwise ambiguous anatomy match. Candidate sets stay explicit so semantic
+ * intelligence can be judged separately from deterministic atlas resolution.
+ */
+export async function resolveSandboxBodyParts3dSemanticConcepts(
+  semanticNames: string[],
+  mode: "bodyparts3d_slp_pilot" | "bodyparts3d_full_atlas" =
+    "bodyparts3d_full_atlas",
+): Promise<SandboxBodyParts3dSemanticResolution[]> {
+  const collectionId =
+    mode === "bodyparts3d_full_atlas"
+      ? BODYPARTS3D_FULL_COLLECTION_ID
+      : BODYPARTS3D_SLP_COLLECTION_ID;
+  const snapshot = await loadReviewedAssetResolverSnapshot();
+  const collectionAssets = snapshot.registry.assets.filter(
+    (asset) =>
+      asset.collection_membership?.collection_id === collectionId &&
+      asset.safe_to_use_in_sandbox &&
+      asset.status !== "rejected",
+  );
+
+  return semanticNames.map((semanticName) => {
+    const wanted = normalizedSemanticName(semanticName);
+    const exact = wanted
+      ? collectionAssets.filter((asset) => bodyParts3dExactSemanticMatch(asset, wanted))
+      : [];
+    const phrase =
+      exact.length > 0 || !wanted
+        ? []
+        : collectionAssets.filter((asset) =>
+            assetMatchesSemanticPhrase(asset, semanticName),
+          );
+    const matched = exact.length > 0 ? exact : phrase;
+    const status: SandboxBodyParts3dSemanticResolution["status"] =
+      exact.length === 1
+        ? "exact_unique"
+        : exact.length > 1
+          ? "exact_multiple"
+          : phrase.length === 1
+            ? "phrase_unique"
+            : phrase.length > 1
+              ? "phrase_multiple"
+              : "not_found";
+
+    return {
+      semantic_name: semanticName,
+      status,
+      candidate_count: matched.length,
+      candidates: matched.slice(0, 8).map(bodyParts3dCandidateSummary),
+    };
+  });
 }
 
 function bindingForAsset(entity: SemanticSceneEntity, asset: MyWayAssetRecord, reason: string): RenderBinding {
@@ -99,6 +238,23 @@ function bindingForAsset(entity: SemanticSceneEntity, asset: MyWayAssetRecord, r
       default_rotation: asset.default_rotation,
       ground_offset_m: asset.ground_offset_m,
       match_score: null,
+      collection_membership: asset.collection_membership
+        ? {
+            schema_version: asset.collection_membership.schema_version,
+            collection_id: asset.collection_membership.collection_id,
+            collection_name: asset.collection_membership.collection_name,
+            collection_version: asset.collection_membership.collection_version,
+            member_id: asset.collection_membership.member_id,
+            concept_id: asset.collection_membership.concept_id,
+            concept_name: asset.collection_membership.concept_name,
+            runtime_collection_space: asset.collection_membership.runtime_collection_space,
+            runtime_transform: {
+              position: [...asset.collection_membership.runtime_transform.position],
+              rotation: [...asset.collection_membership.runtime_transform.rotation],
+              scale: [...asset.collection_membership.runtime_transform.scale],
+            },
+          }
+        : null,
       reason,
     },
   };
@@ -179,16 +335,33 @@ export async function attachApprovedAssetsToVisualTurn(
       continue;
     }
 
-    if (options.sandbox_asset_collection_mode === "bodyparts3d_slp_pilot") {
-      const pilotAsset = findSandboxBodyParts3dPilotAsset(sharedSnapshot.registry.assets, entity);
-      if (pilotAsset) {
+    if (
+      options.sandbox_asset_collection_mode === "bodyparts3d_slp_pilot" ||
+      options.sandbox_asset_collection_mode === "bodyparts3d_full_atlas"
+    ) {
+      const collectionId =
+        options.sandbox_asset_collection_mode === "bodyparts3d_full_atlas"
+          ? BODYPARTS3D_FULL_COLLECTION_ID
+          : BODYPARTS3D_SLP_COLLECTION_ID;
+      const collectionLabel =
+        options.sandbox_asset_collection_mode === "bodyparts3d_full_atlas"
+          ? "BodyParts3D full atlas"
+          : "BodyParts3D SLP pilot";
+      const collectionAsset = findSandboxBodyParts3dCollectionAsset(
+        sharedSnapshot.registry.assets,
+        entity,
+        collectionId,
+      );
+      if (collectionAsset) {
         resolvedEntityIds.add(entity.id);
         bindings.push(bindingForAsset(
           entity,
-          pilotAsset,
-          `Sandbox-only BodyParts3D pilot binding to Needs Review asset ${pilotAsset.asset_id}. This does not approve the asset, verify its identity, or generate an embedding.`,
+          collectionAsset,
+          `Sandbox-only ${collectionLabel} binding to Needs Review asset ${collectionAsset.asset_id}. This does not approve the asset, change its review state, or synthesize missing semantic verification.`,
         ));
-        warnings.push(`${entity.display_name}: BodyParts3D pilot used a Needs Review asset under the explicit sandbox collection exception.`);
+        warnings.push(
+          `${entity.display_name}: ${collectionLabel} used a Needs Review asset under the explicit sandbox collection exception; canonical collection-space metadata was preserved for scene reconstruction.`,
+        );
         continue;
       }
     }
@@ -278,6 +451,23 @@ export async function attachApprovedAssetsToVisualTurn(
           match_score:
             result.match_score ??
             null,
+          collection_membership: result.asset.collection_membership
+            ? {
+                schema_version: result.asset.collection_membership.schema_version,
+                collection_id: result.asset.collection_membership.collection_id,
+                collection_name: result.asset.collection_membership.collection_name,
+                collection_version: result.asset.collection_membership.collection_version,
+                member_id: result.asset.collection_membership.member_id,
+                concept_id: result.asset.collection_membership.concept_id,
+                concept_name: result.asset.collection_membership.concept_name,
+                runtime_collection_space: result.asset.collection_membership.runtime_collection_space,
+                runtime_transform: {
+                  position: [...result.asset.collection_membership.runtime_transform.position],
+                  rotation: [...result.asset.collection_membership.runtime_transform.rotation],
+                  scale: [...result.asset.collection_membership.runtime_transform.scale],
+                },
+              }
+            : null,
           reason:
             result.selection_reason
               ?.summary ??

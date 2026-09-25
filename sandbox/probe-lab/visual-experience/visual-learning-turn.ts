@@ -404,6 +404,21 @@ export type RegisteredVisualAssetBinding = {
   default_rotation: [number, number, number];
   ground_offset_m: number;
   match_score?: number | null;
+  collection_membership?: {
+    schema_version: "myway_asset_collection_membership_v1";
+    collection_id: string;
+    collection_name: string;
+    collection_version: string | null;
+    member_id: string;
+    concept_id: string | null;
+    concept_name: string;
+    runtime_collection_space: "glb_y_up_meters";
+    runtime_transform: {
+      position: [number, number, number];
+      rotation: [number, number, number];
+      scale: [number, number, number];
+    };
+  } | null;
   reason: string;
 };
 

@@ -30,6 +30,21 @@ export type PreparedSemanticSceneEntity = SemanticSceneEntity & {
     default_rotation: Vec3;
     ground_offset_m: number;
     match_score?: number | null;
+    collection_membership?: {
+      schema_version: "myway_asset_collection_membership_v1";
+      collection_id: string;
+      collection_name: string;
+      collection_version: string | null;
+      member_id: string;
+      concept_id: string | null;
+      concept_name: string;
+      runtime_collection_space: "glb_y_up_meters";
+      runtime_transform: {
+        position: Vec3;
+        rotation: Vec3;
+        scale: Vec3;
+      };
+    } | null;
   } | null;
   unit_count: number;
   is_active: boolean;
@@ -102,6 +117,7 @@ type RenderBindingRecord = {
     default_rotation?: unknown;
     ground_offset_m?: unknown;
     match_score?: unknown;
+    collection_membership?: unknown;
   } | null;
 };
 
@@ -175,6 +191,43 @@ function resolvedAssetFromBinding(
       Number.isFinite(Number(source.match_score))
         ? Number(source.match_score)
         : null,
+    collection_membership: (() => {
+      const membership = asRecord(source.collection_membership);
+      const transform = asRecord(membership?.runtime_transform);
+      const position = tuple3(transform?.position);
+      const rotation = tuple3(transform?.rotation);
+      const scale = tuple3(transform?.scale);
+      if (
+        membership?.schema_version !== "myway_asset_collection_membership_v1" ||
+        typeof membership.collection_id !== "string" ||
+        typeof membership.collection_name !== "string" ||
+        typeof membership.member_id !== "string" ||
+        typeof membership.concept_name !== "string" ||
+        membership.runtime_collection_space !== "glb_y_up_meters" ||
+        !position ||
+        !rotation ||
+        !scale
+      ) {
+        return null;
+      }
+      return {
+        schema_version: "myway_asset_collection_membership_v1" as const,
+        collection_id: membership.collection_id,
+        collection_name: membership.collection_name,
+        collection_version:
+          typeof membership.collection_version === "string"
+            ? membership.collection_version
+            : null,
+        member_id: membership.member_id,
+        concept_id:
+          typeof membership.concept_id === "string"
+            ? membership.concept_id
+            : null,
+        concept_name: membership.concept_name,
+        runtime_collection_space: "glb_y_up_meters" as const,
+        runtime_transform: { position, rotation, scale },
+      };
+    })(),
   };
 }
 

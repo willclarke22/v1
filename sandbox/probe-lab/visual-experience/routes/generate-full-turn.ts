@@ -230,7 +230,26 @@ export async function POST(request: Request) {
     let fallbackUsed = providerResult.provider_used === "scaffold" && provider !== "scaffold";
     let fallbackReason = providerCallError;
 
-    if (parseResult.ok) {
+    if (providerResult.provider_used === "scaffold") {
+      // The deterministic scaffold is already canonical MyWay output. Do not run it
+      // back through the model-normalization lane: that can translate canonical
+      // explanation-piece ids into legacy compatibility views and create namespace
+      // mismatches after a provider outage. Validate/resolve the scaffold directly.
+      parsedOutput = scaffoldOutput;
+      semanticDraftUsed = false;
+      const attempted = safeValidateAndResolve(scaffoldOutput, input);
+      modelValidation = attempted.validation;
+      modelResolveError = attempted.error;
+      if (!attempted.ok) {
+        throw new Error(
+          `Deterministic scaffold failed its own validation/resolution: ${attempted.error}`,
+        );
+      }
+      finalOutput = scaffoldOutput;
+      finalResolved = attempted.resolved;
+      fallbackUsed = provider !== "scaffold";
+      fallbackReason = providerCallError;
+    } else if (parseResult.ok) {
       parsedOutput = parseResult.value;
 
       let candidateOutput: VisualLearningTurnOutput;
@@ -257,7 +276,7 @@ export async function POST(request: Request) {
       if (attempted.ok) {
         finalOutput = candidateOutput;
         finalResolved = attempted.resolved;
-        fallbackUsed = providerResult.provider_used === "scaffold" && provider !== "scaffold";
+        fallbackUsed = false;
         fallbackReason = providerCallError;
       } else if (shouldUseFallbackOnInvalid(body)) {
         fallbackUsed = true;

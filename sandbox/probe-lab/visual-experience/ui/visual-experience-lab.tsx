@@ -1,8 +1,9 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SemanticScenePlayer } from "./scene-player";
+import { OrchestrationLab } from "./orchestration-lab";
 import { getSemanticSceneTimelineBeats, prepareSemanticSceneFromTurnResult } from "./scene-player/semantic-scene-layout";
 import {
   extractResourcePlanFromLabResult,
@@ -26,7 +27,13 @@ type RequestBody = {
   preferred_style: string;
   force_clarification: boolean;
   use_fallback_on_invalid: boolean;
-  asset_collection_mode: "bodyparts3d_slp_pilot" | null;
+  asset_collection_mode: "bodyparts3d_slp_pilot" | "bodyparts3d_full_atlas" | null;
+};
+
+type GenerationLaunchStatus = {
+  phase: "preflighting" | "calling_provider" | "complete" | "error";
+  message: string;
+  details: Record<string, unknown>;
 };
 
 const defaultRequestBody: RequestBody = {
@@ -61,6 +68,17 @@ const slpAnatomyPilotRequestBody: RequestBody = {
   jargon_level: "light",
   asset_collection_mode: "bodyparts3d_slp_pilot",
 };
+
+const fullAtlasAnatomyRequestBody: RequestBody = {
+  ...defaultRequestBody,
+  provider: "glm",
+  learner_message:
+    "I understand the names of the structures, but I can't picture how the tongue, hyoid, epiglottis, larynx, trachea, pharynx, and esophagus are arranged or how that spatial relationship protects the airway during swallowing.",
+  user_interests: "speech-language pathology, anatomy, swallowing, voice",
+  jargon_level: "light",
+  asset_collection_mode: "bodyparts3d_full_atlas",
+};
+
 
 const shellStyle: CSSProperties = {
   minHeight: "100vh",
@@ -528,12 +546,27 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
 }
 
 export function VisualExperienceLab() {
+  const [activeTab, setActiveTab] = useState<"full-turn" | "orchestration">("full-turn");
   const [body, setBody] = useState<RequestBody>(defaultRequestBody);
   const [debugResult, setDebugResult] = useState<JsonValue | undefined>();
   const [resolveResult, setResolveResult] = useState<JsonValue | undefined>();
   const [generateResult, setGenerateResult] = useState<JsonValue | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationLaunch, setGenerationLaunch] = useState<GenerationLaunchStatus | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "orchestration") setActiveTab("orchestration");
+  }, []);
+
+  function chooseTab(tab: "full-turn" | "orchestration") {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === "full-turn") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", "orchestration");
+    window.history.replaceState(null, "", url.toString());
+  }
 
   const currentPayload = useMemo(
     () => {
@@ -573,9 +606,174 @@ export function VisualExperienceLab() {
     }
   }
 
+  async function runGenerateFullTurn() {
+    setIsLoading(true);
+    setError(null);
+    setGenerationLaunch({
+      phase: "preflighting",
+      message: "Checking the server-resolved provider contract before any external model call.",
+      details: {
+        provider_requested: body.provider,
+        generation_preset: "cinematic",
+        stream_enabled: body.enable_streaming,
+        retry_transient_errors: body.retry_transient_errors,
+        fallback_provider: body.fallback_provider,
+        asset_collection_mode: body.asset_collection_mode,
+      },
+    });
+
+    try {
+      const debugJson = await postJson(
+        "/api/sandbox/probe-lab/visual-experience/full-turn-debug",
+        currentPayload,
+      );
+      const debugRoot = asRecord(debugJson);
+      const providerStatus = getRecord(debugRoot, "provider_status");
+      const modelRequest = getRecord(debugRoot, "model_request");
+      const promptStats = getRecord(modelRequest, "prompt_stats");
+      const glmProfiles = getRecord(providerStatus, "glm53_request_profiles");
+      const glmCinematic = getRecord(glmProfiles, "cinematic");
+
+      if (body.provider === "glm") {
+        const resolvedModel = text(glmCinematic?.model);
+        if (resolvedModel !== "z-ai/glm-5.3") {
+          throw new Error(
+            `GLM launch preflight expected z-ai/glm-5.3 but the server resolved ${resolvedModel || "no model"}.`,
+          );
+        }
+      }
+
+      setGenerationLaunch({
+        phase: "calling_provider",
+        message: "Launch preflight passed. The external provider call is starting now.",
+        details: {
+          provider_requested: body.provider,
+          model:
+            body.provider === "glm"
+              ? glmCinematic?.model ?? null
+              : getRecord(providerStatus, "env")?.[
+                  body.provider === "deepseek"
+                    ? "deepseek_model"
+                    : body.provider === "openai"
+                      ? "openai_model"
+                      : "nvidia_default_model"
+                ] ?? null,
+          generation_preset: "cinematic",
+          reasoning_effort:
+            body.provider === "glm" ? glmCinematic?.reasoning_effort ?? null : null,
+          temperature:
+            body.provider === "glm" ? glmCinematic?.temperature ?? null : null,
+          top_p:
+            body.provider === "glm" ? glmCinematic?.top_p ?? null : null,
+          clear_thinking_policy:
+            body.provider === "glm" ? glmCinematic?.clear_thinking_policy ?? null : null,
+          native_reasoning_422_compatibility_retry:
+            body.provider === "glm"
+              ? glmCinematic?.native_reasoning_422_compatibility_retry ?? null
+              : null,
+          stream_enabled: body.enable_streaming,
+          retry_transient_errors: body.retry_transient_errors,
+          fallback_provider: body.fallback_provider,
+          prompt_chars: promptStats?.total_chars ?? null,
+          message_count: Array.isArray(modelRequest?.messages)
+            ? modelRequest.messages.length
+            : null,
+          asset_collection_mode: body.asset_collection_mode,
+        },
+      });
+
+      const json = await postJson(
+        "/api/sandbox/probe-lab/visual-experience/generate-full-turn",
+        currentPayload,
+      );
+      setGenerateResult(json);
+
+      const resultRoot = asRecord(json);
+      const preview = getRecord(resultRoot, "provider_request_payload_preview");
+      const modelDiagnostics = getRecord(resultRoot, "model_call_diagnostics");
+      const attempts = getArray(modelDiagnostics, "attempts")
+        .map((attempt) => asRecord(attempt))
+        .filter((attempt): attempt is Record<string, unknown> => Boolean(attempt));
+      const successfulAttempt =
+        attempts.find((attempt) => attempt.status === "success") ?? null;
+
+      setGenerationLaunch({
+        phase: "complete",
+        message: "Provider call completed. These are the actual server-side request settings/results.",
+        details: {
+          provider_used: resultRoot?.provider_used ?? null,
+          model: resultRoot?.provider_model ?? preview?.model ?? null,
+          request_profile:
+            preview?.request_profile ?? successfulAttempt?.request_profile ?? null,
+          reasoning_effort:
+            preview?.reasoning_effort ?? successfulAttempt?.reasoning_effort ?? null,
+          temperature:
+            preview?.temperature ?? successfulAttempt?.temperature ?? null,
+          top_p:
+            preview?.top_p ?? successfulAttempt?.top_p ?? null,
+          clear_thinking_policy:
+            preview?.clear_thinking_policy ??
+            successfulAttempt?.clear_thinking_policy ??
+            null,
+          native_reasoning_compatibility_fallback_used:
+            preview?.native_reasoning_compatibility_fallback_used ?? false,
+          stream_enabled: modelDiagnostics?.stream_enabled ?? body.enable_streaming,
+          prompt_chars: preview?.prompt_chars ?? null,
+          request_chars: successfulAttempt?.request_chars ?? null,
+          first_token_ms: preview?.first_token_ms ?? successfulAttempt?.first_token_ms ?? null,
+          attempt_count: modelDiagnostics?.attempt_count ?? attempts.length,
+          provider_fallback_used: resultRoot?.provider_fallback_used ?? false,
+          fallback_used: resultRoot?.fallback_used ?? false,
+        },
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setError(message);
+      setGenerationLaunch((current) => ({
+        phase: "error",
+        message: "Generation stopped before a successful full turn.",
+        details: {
+          ...(current?.details ?? {}),
+          error: message,
+        },
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <main style={shellStyle}>
       <div style={{ maxWidth: 1440, margin: "0 auto", display: "grid", gap: 20 }}>
+        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }} aria-label="Visual Experience workbench tabs">
+          <button
+            type="button"
+            onClick={() => chooseTab("full-turn")}
+            style={{
+              ...buttonStyle,
+              background: activeTab === "full-turn" ? "rgba(56,189,248,0.18)" : buttonStyle.background,
+              borderColor: activeTab === "full-turn" ? "rgba(56,189,248,0.52)" : "rgba(255,255,255,0.18)",
+            }}
+          >
+            Full Turn
+          </button>
+          <button
+            type="button"
+            onClick={() => chooseTab("orchestration")}
+            style={{
+              ...buttonStyle,
+              background: activeTab === "orchestration" ? "rgba(129,140,248,0.2)" : buttonStyle.background,
+              borderColor: activeTab === "orchestration" ? "rgba(129,140,248,0.55)" : "rgba(255,255,255,0.18)",
+            }}
+          >
+            Orchestration Lab
+          </button>
+        </nav>
+
+        {activeTab === "orchestration" ? (
+          <OrchestrationLab />
+        ) : (
+          <>
         <header style={{ display: "grid", gap: 8 }}>
           <Pill>Visual Experience · Step 13 prompt + diagnostics</Pill>
           <h1 style={{ margin: 0, fontSize: "clamp(2rem, 5vw, 4.2rem)", letterSpacing: -1.5 }}>
@@ -590,10 +788,10 @@ export function VisualExperienceLab() {
           <section style={{ ...cardStyle, display: "grid", gap: 16 }}>
             <h2 style={{ margin: 0 }}>Request controls</h2>
 
-            <Field label="Provider" hint="DeepSeek and GLM-5.2 both use NVIDIA_API_KEY. OpenAI is manual-only and is never used as an automatic fallback.">
+            <Field label="Provider" hint="DeepSeek and GLM-5.3 both use NVIDIA_API_KEY. Generate full turn now performs a server-side launch preflight before the external call; cinematic GLM-5.3 requests use max reasoning. OpenAI is manual-only and is never used as an automatic fallback.">
               <select value={body.provider} onChange={(event) => setBody((current) => ({ ...current, provider: event.target.value as RequestBody["provider"] }))} style={inputStyle}>
                 <option value="deepseek">DeepSeek V4 Pro via NVIDIA</option>
-                <option value="glm">GLM-5.2 via NVIDIA</option>
+                <option value="glm">GLM-5.3 via NVIDIA</option>
                 <option value="openai">OpenAI (manual only, paid)</option>
                 <option value="scaffold">scaffold fallback</option>
               </select>
@@ -601,7 +799,7 @@ export function VisualExperienceLab() {
 
             <Field label="Fallback provider" hint="Used only if the primary provider fails before returning usable model text. The generation mode is always cinematic in Step 13.">
               <select value={body.fallback_provider} onChange={(event) => setBody((current) => ({ ...current, fallback_provider: event.target.value as RequestBody["fallback_provider"] }))} style={inputStyle}>
-                <option value="glm">GLM-5.2</option>
+                <option value="glm">GLM-5.3</option>
                 <option value="scaffold">scaffold</option>
                 <option value="none">none</option>
               </select>
@@ -618,14 +816,29 @@ export function VisualExperienceLab() {
               </label>
             </div>
 
-            <label style={{ display: "flex", gap: 10, alignItems: "center", color: "rgba(255,255,255,0.74)" }}>
-              <input
-                type="checkbox"
-                checked={body.asset_collection_mode === "bodyparts3d_slp_pilot"}
-                onChange={(event) => setBody((current) => ({ ...current, asset_collection_mode: event.target.checked ? "bodyparts3d_slp_pilot" : null }))}
-              />
-              Use BodyParts3D SLP pilot assets, including Needs Review members, for this sandbox run only
-            </label>
+            <Field
+              label="Sandbox asset collection"
+              hint="Needs Review collections stay review-honest. The full atlas option lets MyWay resolve the complete BodyParts3D collection without silently approving its members."
+            >
+              <select
+                value={body.asset_collection_mode ?? ""}
+                onChange={(event) =>
+                  setBody((current) => ({
+                    ...current,
+                    asset_collection_mode:
+                      event.target.value === "bodyparts3d_slp_pilot" ||
+                      event.target.value === "bodyparts3d_full_atlas"
+                        ? event.target.value
+                        : null,
+                  }))
+                }
+                style={inputStyle}
+              >
+                <option value="">Reviewed/default asset resolver</option>
+                <option value="bodyparts3d_full_atlas">BodyParts3D full atlas · 2,234 elements</option>
+                <option value="bodyparts3d_slp_pilot">BodyParts3D SLP pilot · compatibility test</option>
+              </select>
+            </Field>
 
             <Field label="Learner message">
               <textarea
@@ -690,7 +903,7 @@ export function VisualExperienceLab() {
             </label>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <button disabled={isLoading} onClick={() => run("/api/sandbox/probe-lab/visual-experience/generate-full-turn", setGenerateResult)} style={primaryButtonStyle}>
+              <button disabled={isLoading} onClick={runGenerateFullTurn} style={primaryButtonStyle}>
                 {isLoading ? "Running…" : "Generate full turn"}
               </button>
               <button disabled={isLoading} onClick={() => run("/api/sandbox/probe-lab/visual-experience/full-turn-debug", setDebugResult)} style={buttonStyle}>
@@ -701,8 +914,43 @@ export function VisualExperienceLab() {
               </button>
             </div>
 
+            {generationLaunch ? (
+              <div
+                style={{
+                  borderRadius: 16,
+                  padding: 14,
+                  display: "grid",
+                  gap: 10,
+                  background:
+                    generationLaunch.phase === "error"
+                      ? "rgba(248,113,113,0.12)"
+                      : generationLaunch.phase === "complete"
+                        ? "rgba(34,197,94,0.1)"
+                        : "rgba(56,189,248,0.1)",
+                  border:
+                    generationLaunch.phase === "error"
+                      ? "1px solid rgba(248,113,113,0.28)"
+                      : generationLaunch.phase === "complete"
+                        ? "1px solid rgba(34,197,94,0.24)"
+                        : "1px solid rgba(56,189,248,0.24)",
+                }}
+              >
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <strong>Generation launch contract</strong>
+                  <Pill>{generationLaunch.phase}</Pill>
+                </div>
+                <p style={{ margin: 0, color: "rgba(255,255,255,0.76)", lineHeight: 1.55 }}>
+                  {generationLaunch.message}
+                </p>
+                <pre style={{ ...jsonPreStyle, maxHeight: 260 }}>
+                  {JSON.stringify(generationLaunch.details, null, 2)}
+                </pre>
+              </div>
+            ) : null}
+
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               <button onClick={() => setBody(defaultRequestBody)} style={buttonStyle}>Krebs example</button>
+              <button onClick={() => setBody(fullAtlasAnatomyRequestBody)} style={buttonStyle}>Full-atlas anatomy proof</button>
               <button onClick={() => setBody(slpAnatomyPilotRequestBody)} style={buttonStyle}>SLP anatomy pilot</button>
               <button onClick={() => setBody(unclearRequestBody)} style={buttonStyle}>Unclear example</button>
             </div>
@@ -738,6 +986,8 @@ export function VisualExperienceLab() {
             value={relationshipPreviewJson}
           />
         </div>
+          </>
+        )}
       </div>
     </main>
   );

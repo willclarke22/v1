@@ -26,6 +26,7 @@ const smart = read("sandbox/probe-lab/assets/smart-asset-intake.server.ts");
 const route = read("sandbox/probe-lab/assets/routes/bodyparts3d-pilot.ts");
 const importer = read("sandbox/probe-lab/assets/ui/bodyparts3d-slp-pilot-import-lab.tsx");
 const library = read("sandbox/probe-lab/assets/ui/asset-library-lab.tsx");
+const browser = read("sandbox/probe-lab/assets/routes/library-browser.ts");
 
 for (const marker of [
   'BODYPARTS3D_FULL_COLLECTION_ID = "bodyparts3d_4_0_full_atlas"',
@@ -95,15 +96,36 @@ for (const marker of [
   "functional movement constraints are a separate later layer",
 ]) requireMarker(importer, marker, "The full-atlas UI must expose progress, pause/resume, and the fixed no-enrichment policy.");
 
+// A.12.9 retired the special-case full-atlas card toggle, and A.12.12 later
+// virtualized the ordinary Asset Library browser. Preserve the original A.12.5
+// invariant (full-atlas organization + semantic anatomy color + bounded card
+// mounting) without requiring UI controls that successor phases intentionally
+// removed.
 for (const marker of [
   "BODYPARTS3D_FULL_COLLECTION_ID",
   "bodyParts3dSemanticMaterialForSystem",
   "bodyParts3dSystemFromGroupTags",
+  "function AssetCardThumbnail({ asset }",
+  "new IntersectionObserver(",
+  "content-visibility: auto;",
+  'limit: "30"',
+  "Previous 30",
+  "Next 30",
+]) requireMarker(library, marker, "Needs Review must keep the full atlas organized and semantically colored while using the current bounded/virtualized card browser.");
+
+for (const marker of [
   "showBodyParts3dFullCards",
-  "Collapse atlas element cards",
-  "Show atlas element cards",
-  "2,234 unique BodyParts3D element assets",
-]) requireMarker(library, marker, "Needs Review must keep the full atlas organized and semantically colored without mounting thousands of cards by default.");
+  "BodyParts3dCollectionInspector",
+  "2,234 unique BodyParts3D element assets are registered in Needs Review. The element cards are collapsed by default",
+]) forbidMarker(library, marker, "Legacy special-case atlas browsing must remain retired after the scalable Asset Library migration.");
+
+for (const marker of [
+  "const DEFAULT_LIMIT = 30;",
+  "const MAX_LIMIT = 60;",
+  "function browserCardSummary(asset: ListedAsset)",
+  "const assets = page.map((entry) => browserCardSummary(entry.asset));",
+  "search_text: searchableText(asset)",
+]) requireMarker(browser, marker, "The current Asset Library browser must bound full-atlas browsing through compact server-side results.");
 
 forbidMarker(
   server,
@@ -111,4 +133,4 @@ forbidMarker(
   "The full-atlas importer must not bypass the explicit OFF/OFF policy by queueing enrichment directly.",
 );
 
-console.log("PASS: A.12.5 full BodyParts3D atlas import is indexed, resumable, progress-visible, semantically colored, and remains in Needs Review with Omni Vision/embeddings off.");
+console.log("PASS: A.12.5 successor-safe full BodyParts3D atlas import is indexed, resumable, progress-visible, semantically colored, remains in Needs Review with Omni Vision/embeddings off, and uses the later bounded/virtualized Asset Library browser rather than the retired atlas-card toggle.");

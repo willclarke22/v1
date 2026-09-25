@@ -6,9 +6,16 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import type { PreparedSemanticScene, PreparedSemanticSceneEntity } from "./semantic-scene-layout";
-import { ResolvedAssetModel } from "@/sandbox/probe-lab/scenes/ui";
+import {
+  DirectorShotCameraController,
+  DirectorShotLightingRig,
+  ResolvedAssetModel,
+} from "@/sandbox/probe-lab/scenes/ui";
 import type { ResolvedSceneAssetBinding } from "@/sandbox/probe-lab/scenes/resolved-scene";
-import { buildVisualExperienceSharedDirectorSnapshot } from "./shared-director-runtime-adapter";
+import {
+  buildVisualExperienceDirectorRuntimeContext,
+  buildVisualExperienceSharedDirectorSnapshot,
+} from "./shared-director-runtime-adapter";
 import type { Vec3 } from "./directed-scene-compiler";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -25,6 +32,15 @@ function ease(value: number) {
   const clamped = Math.max(0, Math.min(1, value));
   return clamped * clamped * (3 - 2 * clamped);
 }
+
+type VisualExperienceDirectorActorSample = {
+  actor_id: string;
+  position: Vec3;
+  rotation: Vec3;
+  scale: Vec3;
+  visible: boolean;
+};
+
 
 function materialForEntity(entity: PreparedSemanticSceneEntity, opacity = 1) {
   const isGlow = entity.event_types.includes("glow") || entity.motion_tracks.some((track) => track.kind === "glow");
@@ -378,19 +394,28 @@ function PrimitiveEntity({
   progress,
   storyMode,
   isPlaying,
+  directorSample,
 }: {
   entity: PreparedSemanticSceneEntity;
   onSelectEntity?: (entityId: string) => void;
   progress: number;
   storyMode: boolean;
   isPlaying: boolean;
+  directorSample?: VisualExperienceDirectorActorSample | null;
 }) {
   if (entity.render_role === "connector" || entity.render_role === "rod_connector") return null;
 
   const material = materialForEntity(entity, actionOpacity(entity, progress));
-  const desiredScale = animatedScale(entity, progress);
-  const rotation = animatedRotation(entity, progress);
-  const targetPosition = useMemo(() => new THREE.Vector3(...animatedPosition(entity, progress)), [entity, progress]);
+  const legacyScale = animatedScale(entity, progress);
+  const desiredScale = directorSample
+    ? directorSample.scale
+    : [legacyScale, legacyScale, legacyScale] as Vec3;
+  const rotation = directorSample?.rotation ?? animatedRotation(entity, progress);
+  const resolvedPosition = directorSample?.position ?? animatedPosition(entity, progress);
+  const targetPosition = useMemo(
+    () => new THREE.Vector3(...resolvedPosition),
+    [resolvedPosition[0], resolvedPosition[1], resolvedPosition[2]],
+  );
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
@@ -400,8 +425,10 @@ function PrimitiveEntity({
     groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, rotation[0], damp);
     groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, rotation[1], damp);
     groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, rotation[2], damp);
-    const nextScale = THREE.MathUtils.lerp(groupRef.current.scale.x, desiredScale, damp);
-    groupRef.current.scale.setScalar(nextScale);
+    groupRef.current.scale.x = THREE.MathUtils.lerp(groupRef.current.scale.x, desiredScale[0], damp);
+    groupRef.current.scale.y = THREE.MathUtils.lerp(groupRef.current.scale.y, desiredScale[1], damp);
+    groupRef.current.scale.z = THREE.MathUtils.lerp(groupRef.current.scale.z, desiredScale[2], damp);
+    groupRef.current.visible = directorSample?.visible !== false;
   });
 
   const clickProps = {
@@ -791,6 +818,20 @@ export function SemanticSceneCanvas({
       ),
     [normalizedProgress, scene],
   );
+  const directorRuntime = useMemo(
+    () => buildVisualExperienceDirectorRuntimeContext(scene),
+    [scene],
+  );
+  const directorSamplesByActor = useMemo(
+    () =>
+      new Map(
+        sharedDirectorSnapshot.samples.map((sample) => [
+          sample.actor_id,
+          sample as VisualExperienceDirectorActorSample,
+        ]),
+      ),
+    [sharedDirectorSnapshot],
+  );
   const captionText = storyMode
     ? storyCaption || ""
     : scene.active_narration_text || scene.orientation_text || scene.target_takeaway;
@@ -807,7 +848,7 @@ export function SemanticSceneCanvas({
         background: "radial-gradient(circle at top, rgba(14,165,233,0.18), rgba(2,6,23,0.96) 62%)",
       }}
     >
-      {sharedDirectorSnapshot.status === "shared_runtime_shadow" ? (
+      {sharedDirectorSnapshot.status === "shared_runtime_primary" ? (
         <div
           style={{
             position: "absolute",
@@ -824,9 +865,9 @@ export function SemanticSceneCanvas({
             fontWeight: 700,
             letterSpacing: "0.04em",
           }}
-          title="Phase 1B.5A shadow-samples this beat through the canonical Director/UMP runtime. Visual Experience rendering remains on its existing player until parity is visually qualified."
+          title="Canonical Director V2 / Universal Motion Program execution is authoritative for this Visual Experience moment. The legacy player remains only as the no-Director fallback."
         >
-          Shared Director bridge · {sharedDirectorSnapshot.sampled_actor_count} actors
+          Shared Director runtime · {sharedDirectorSnapshot.sampled_actor_count} actors
         </div>
       ) : null}
       <Canvas
@@ -835,11 +876,31 @@ export function SemanticSceneCanvas({
         onPointerMissed={() => onSelectEntity?.(null)}
       >
         <color attach="background" args={["#07111f"]} />
-        <ambientLight intensity={1.02} />
-        <directionalLight position={[4, 6, 5]} intensity={2.45} />
-        <directionalLight position={[-4, 2, -5]} intensity={0.8} />
+        {directorRuntime ? (
+          <>
+            <DirectorShotLightingRig
+              moment={directorRuntime.moment}
+              actors={directorRuntime.actors}
+              progress={normalizedProgress}
+              sceneState={directorRuntime.sceneState}
+            />
+            <DirectorShotCameraController
+              moment={directorRuntime.moment}
+              actors={directorRuntime.actors}
+              progress={normalizedProgress}
+              isPlaying={Boolean(isPlaying)}
+              sceneState={directorRuntime.sceneState}
+            />
+          </>
+        ) : (
+          <>
+            <ambientLight intensity={1.02} />
+            <directionalLight position={[4, 6, 5]} intensity={2.45} />
+            <directionalLight position={[-4, 2, -5]} intensity={0.8} />
+            <CameraRig scene={scene} isPlaying={Boolean(isPlaying)} storyMode={Boolean(storyMode)} />
+          </>
+        )}
         <gridHelper args={[7, 14, "#334155", "#1e293b"]} position={[0, -2.28, 0]} />
-        <CameraRig scene={scene} isPlaying={Boolean(isPlaying)} storyMode={Boolean(storyMode)} />
         <RelationshipLines scene={scene} progress={easedProgress} />
         <ConnectorLines scene={scene} progress={easedProgress} />
         <TraceLines scene={scene} progress={easedProgress} />
@@ -851,10 +912,11 @@ export function SemanticSceneCanvas({
             progress={easedProgress}
             storyMode={Boolean(storyMode)}
             isPlaying={Boolean(isPlaying)}
+            directorSample={directorSamplesByActor.get(entity.id) ?? null}
           />
         ))}
         <BeatActionHints scene={scene} progress={easedProgress} />
-        <OrbitControls makeDefault enablePan enableZoom enableRotate enabled={!isPlaying} />
+        <OrbitControls makeDefault enablePan enableZoom enableRotate enabled={!directorRuntime && !isPlaying} />
       </Canvas>
 
       {scene.faithfulness_warnings.length ? (
@@ -927,4 +989,3 @@ export function SemanticSceneCanvas({
     </div>
   );
 }
-
