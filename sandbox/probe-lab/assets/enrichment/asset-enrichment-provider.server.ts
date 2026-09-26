@@ -357,3 +357,89 @@ export function embedAssetAppearance(text: string) {
 export function embedAppearanceQuery(text: string) {
   return embedAppearanceText(text, "query");
 }
+
+async function embedTextBatch(
+  texts: string[],
+  inputType: "passage" | "query",
+) {
+  const normalized = texts.map((text) => text.trim()).filter(Boolean);
+  if (!normalized.length) {
+    throw new Error("At least one non-empty embedding input is required.");
+  }
+  if (normalized.length > 16) {
+    throw new Error(`Embedding batches are capped at 16 inputs; received ${normalized.length}.`);
+  }
+
+  const endpoint = `${baseUrl(
+    process.env.MYWAY_ASSET_EMBED_BASE_URL ??
+      process.env.NVIDIA_EMBED_BASE_URL ??
+      process.env.NVIDIA_BASE_URL,
+  )}/embeddings`;
+  const model =
+    process.env.MYWAY_ASSET_EMBED_MODEL?.trim() ||
+    "nvidia/nemotron-3-embed-1b";
+  const response = await postJson(
+    endpoint,
+    {
+      input: normalized,
+      model,
+      input_type: inputType,
+      encoding_format: "float",
+      truncate: "END",
+    },
+    120_000,
+  );
+
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("The embedding endpoint returned an invalid batch response.");
+  }
+  const data = (response as Record<string, unknown>).data;
+  if (!Array.isArray(data) || data.length !== normalized.length) {
+    throw new Error(
+      `The embedding endpoint returned ${Array.isArray(data) ? data.length : 0} vectors for ${normalized.length} inputs.`,
+    );
+  }
+
+  const entries = data.map((item, fallbackIndex) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("The embedding endpoint returned an invalid batch vector entry.");
+    }
+    const record = item as Record<string, unknown>;
+    const rawVector = record.embedding;
+    if (!Array.isArray(rawVector)) {
+      throw new Error("The embedding endpoint did not return a float vector.");
+    }
+    const vector = rawVector.map(Number);
+    if (!vector.length || vector.some((entry) => !Number.isFinite(entry))) {
+      throw new Error("The embedding endpoint returned a malformed float vector.");
+    }
+    const indexValue = Number(record.index);
+    const index = Number.isInteger(indexValue) ? indexValue : fallbackIndex;
+    return { index, vector };
+  });
+
+  entries.sort((left, right) => left.index - right.index);
+  if (
+    entries.some((entry, index) => entry.index !== index) ||
+    entries.some((entry) => entry.vector.length !== entries[0]!.vector.length)
+  ) {
+    throw new Error("The embedding endpoint returned inconsistent batch vector indices or dimensions.");
+  }
+
+  return {
+    model,
+    vectors: entries.map((entry) => entry.vector),
+  };
+}
+
+export function embedAssetSemanticSearchTexts(texts: string[]) {
+  return embedTextBatch(texts, "passage");
+}
+
+export async function embedSemanticSearchQuery(text: string) {
+  const result = await embedTextBatch([text], "query");
+  return {
+    model: result.model,
+    vector: result.vectors[0]!,
+  };
+}

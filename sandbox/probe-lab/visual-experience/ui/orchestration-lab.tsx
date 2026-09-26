@@ -89,12 +89,19 @@ function SearchBenchPanel({ title, benchValue }: { title: string; benchValue: un
   if (!bench) return null;
   const index = asRecord(bench.index);
   const metrics = asRecord(bench.metrics);
+  const preparation = asRecord(index?.preparation);
   const queries = Array.isArray(bench.queries) ? bench.queries : [];
   const summary: Array<{ label: string; value: string }> = [
     { label: "Strategy", value: String(bench.strategy ?? "—") },
     { label: "Documents", value: String(index?.document_count ?? "—") },
-    { label: "Index build ms", value: String(index?.build_duration_ms ?? "—") },
-    { label: "Search ms", value: String(metrics?.total_search_duration_ms ?? "—") },
+    { label: "Prepared cache", value: index?.cache_hit === true ? "hit" : "miss" },
+    { label: "Prepare ms", value: String(preparation?.total_prepare_duration_ms ?? "—") },
+    { label: "Registry ms", value: String(preparation?.registry_snapshot_duration_ms ?? "—") },
+    { label: "Catalog ms", value: String(preparation?.catalog_read_duration_ms ?? "—") },
+    { label: "Documents ms", value: String(preparation?.search_document_build_duration_ms ?? "—") },
+    { label: "BM25 build ms", value: String(preparation?.lexical_index_build_duration_ms ?? "—") },
+    { label: "Query score ms", value: String(metrics?.query_scoring_duration_ms ?? "—") },
+    { label: "Total search ms", value: String(metrics?.total_search_duration_ms ?? "—") },
     { label: "Provider calls", value: String(bench.provider_calls ?? "—") },
     { label: "Embedding calls", value: String(bench.embedding_calls ?? "—") },
   ];
@@ -104,7 +111,7 @@ function SearchBenchPanel({ title, benchValue }: { title: string; benchValue: un
       <div>
         <strong>{title}</strong>
         <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.56)", lineHeight: 1.5 }}>
-          Search Document V1 + lexical BM25 only. No embedding or external model call is used by this retrieval step.
+          Search Document V1 + direction-aware lexical BM25 V2. Prepared corpus/index caching is measured separately; no embedding or external model call is used.
         </p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
@@ -170,6 +177,78 @@ function SearchBenchPanel({ title, benchValue }: { title: string; benchValue: un
   );
 }
 
+
+function SemanticComparisonPanel({ comparisonValue }: { comparisonValue: unknown }) {
+  const comparison = asRecord(comparisonValue);
+  if (!comparison) return null;
+  const pilot = asRecord(comparison.pilot);
+  const metrics = asRecord(comparison.metrics);
+  const vectorResults = Array.isArray(comparison.vector_pilot) ? comparison.vector_pilot : [];
+  const hybridResults = Array.isArray(comparison.hybrid_pilot) ? comparison.hybrid_pilot : [];
+  const summary: Array<{ label: string; value: string }> = [
+    { label: "Model", value: String(comparison.model ?? "—") },
+    { label: "Pilot vectors", value: `${String(pilot?.vector_count ?? "—")} / ${String(pilot?.target_count ?? "—")}` },
+    { label: "Pilot complete", value: pilot?.complete === true ? "yes" : "no" },
+    { label: "Vector cache", value: pilot?.vector_cache_hit === true ? "hit" : "miss" },
+    { label: "Lexical ms", value: String(metrics?.lexical_full_duration_ms ?? "—") },
+    { label: "Vector load ms", value: String(metrics?.vector_load_duration_ms ?? "—") },
+    { label: "Query embed ms", value: String(metrics?.query_embedding_duration_ms ?? "—") },
+    { label: "Vector rank ms", value: String(metrics?.vector_ranking_duration_ms ?? "—") },
+    { label: "Total ms", value: String(metrics?.total_duration_ms ?? "—") },
+  ];
+
+  const renderResults = (title: string, items: unknown[], scoreKey: "similarity" | "hybrid_score") => (
+    <div style={{ display: "grid", gap: 8 }}>
+      <strong>{title}</strong>
+      {items.length ? items.map((itemValue, itemIndex) => {
+        const item = asRecord(itemValue);
+        return (
+          <div
+            key={`${title}-${String(item?.asset_id ?? itemIndex)}`}
+            style={{ borderRadius: 11, padding: 10, background: "rgba(2,6,23,0.48)", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+              <strong>{String(item?.rank ?? itemIndex + 1)}. {String(item?.canonical_identity ?? item?.display_name ?? "unknown asset")}</strong>
+              <span style={{ color: "#7dd3fc" }}>{scoreKey === "similarity" ? "similarity" : "hybrid"} {String(item?.[scoreKey] ?? "—")}</span>
+            </div>
+            <div style={{ marginTop: 4, color: "rgba(255,255,255,0.48)", fontSize: 11 }}>
+              {String(item?.asset_id ?? "—")} · {String(item?.laterality ?? "unspecified")} · {String(item?.system ?? "—")}
+            </div>
+            {scoreKey === "hybrid_score" ? (
+              <div style={{ marginTop: 5, color: "rgba(255,255,255,0.58)", fontSize: 11 }}>
+                lexical rank {String(item?.lexical_rank ?? "—")} / score {String(item?.lexical_score ?? "—")} · vector rank {String(item?.vector_rank ?? "—")} / similarity {String(item?.vector_similarity ?? "—")}
+              </div>
+            ) : null}
+          </div>
+        );
+      }) : <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>No semantic candidates available yet.</div>}
+    </div>
+  );
+
+  return (
+    <section style={{ ...card, display: "grid", gap: 14 }}>
+      <div>
+        <strong>Semantic embedding pilot comparison</strong>
+        <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.56)", lineHeight: 1.5 }}>
+          Nemotron passage/query embeddings are candidate-generation evidence only. The vector side is intentionally limited to the durable 96-asset pilot; lexical retrieval still searches the full prepared atlas.
+        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+        {summary.map((metric) => (
+          <div key={metric.label} style={{ borderRadius: 10, padding: 10, background: "rgba(255,255,255,0.045)" }}>
+            <div style={{ color: "rgba(255,255,255,0.44)", fontSize: 10 }}>{metric.label}</div>
+            <strong style={{ fontSize: 12 }}>{metric.value}</strong>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
+        {renderResults("Vector pilot", vectorResults, "similarity")}
+        {renderResults("Hybrid pilot", hybridResults, "hybrid_score")}
+      </div>
+    </section>
+  );
+}
+
 export function OrchestrationLab() {
   const [stage, setStage] = useState<Stage>(1);
   const [learnerMessage, setLearnerMessage] = useState(
@@ -189,6 +268,10 @@ export function OrchestrationLab() {
   const [standaloneSearchResult, setStandaloneSearchResult] = useState<JsonValue | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [pilotResult, setPilotResult] = useState<JsonValue | null>(null);
+  const [isPilotBusy, setIsPilotBusy] = useState(false);
+  const [pilotError, setPilotError] = useState<string | null>(null);
+  const [semanticComparison, setSemanticComparison] = useState<JsonValue | null>(null);
 
   const currentResult = results[stage];
   const metrics = asRecord(value(currentResult, "metrics"));
@@ -206,6 +289,76 @@ export function OrchestrationLab() {
     { label: "Search ms", value: String(metrics?.lexical_search_duration_ms ?? "—") },
     { label: "Schema", value: validation ? (validation.valid ? "valid" : "invalid") : "—" },
   ];
+
+  async function runPilotAction(
+    action: "pilot_prepare" | "pilot_status" | "pilot_step" | "pilot_run_window" | "pilot_reset",
+    extra: Record<string, unknown> = {},
+  ) {
+    setIsPilotBusy(true);
+    setPilotError(null);
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/visual-experience/semantic-embedding-pilot",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            asset_collection_mode: assetMode,
+            ...extra,
+          }),
+        },
+      );
+      const json = (await response.json().catch(() => null)) as JsonValue;
+      setPilotResult(json);
+      if (!response.ok || asRecord(json)?.ok === false) {
+        setPilotError(
+          String(asRecord(json)?.error ?? `Semantic embedding pilot returned HTTP ${response.status}.`),
+        );
+      }
+      return json;
+    } catch (caught) {
+      setPilotError(caught instanceof Error ? caught.message : String(caught));
+      return null;
+    } finally {
+      setIsPilotBusy(false);
+    }
+  }
+
+  async function runSemanticComparison() {
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/visual-experience/semantic-embedding-pilot",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "semantic_compare",
+            semantic_name: searchConcept,
+            visual_role: searchRole,
+            semantic_tags: searchTags.split(",").map((value) => value.trim()).filter(Boolean),
+            asset_collection_mode: assetMode,
+            limit: 8,
+          }),
+        },
+      );
+      const json = (await response.json().catch(() => null)) as JsonValue;
+      const comparison = value(json, "semantic_comparison") as JsonValue | null;
+      setSemanticComparison(comparison);
+      setStandaloneSearchResult({
+        search_bench: value(comparison, "lexical_full"),
+      });
+      if (!response.ok) {
+        setSearchError(String(asRecord(json)?.error ?? `Semantic comparison returned HTTP ${response.status}.`));
+      }
+    } catch (caught) {
+      setSearchError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setIsSearching(false);
+    }
+  }
 
   async function runStandaloneSearch() {
     setIsSearching(true);
@@ -413,7 +566,7 @@ export function OrchestrationLab() {
           <span style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>SEARCH BENCH · PHASE A/B</span>
           <h2 style={{ margin: "4px 0 0" }}>Test asset retrieval without calling GLM</h2>
           <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>
-            This isolates retrieval latency from GLM-5.3 latency. Search Document V1 uses identity, aliases, BodyParts3D named concepts, IS-A/PART-OF evidence, system/laterality, tags and affordances. Embeddings remain off.
+            This isolates retrieval latency from GLM-5.3 latency. Search Document V1 uses identity, aliases, BodyParts3D named concepts, IS-A/PART-OF evidence, system/laterality, tags and affordances. The lexical baseline stays local; the optional semantic comparison uses the bounded embedding pilot.
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 0.75fr) minmax(260px, 1.5fr)", gap: 10 }}>
@@ -434,13 +587,49 @@ export function OrchestrationLab() {
           <button disabled={isSearching || !searchConcept.trim()} onClick={runStandaloneSearch} style={{ ...button, background: "rgba(14,165,233,0.18)", borderColor: "rgba(56,189,248,0.45)" }}>
             {isSearching ? "Searching…" : "Run lexical search only"}
           </button>
-          <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>No GLM call · no embedding call</span>
+          <button disabled={isSearching || !searchConcept.trim()} onClick={runSemanticComparison} style={{ ...button, background: "rgba(99,102,241,0.2)", borderColor: "rgba(129,140,248,0.5)" }}>
+            {isSearching ? "Searching…" : "Run lexical + semantic comparison"}
+          </button>
+          <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Lexical baseline: No GLM call · no embedding call · semantic comparison: 1 query-embedding call</span>
         </div>
         {searchError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{searchError}</div> : null}
         <SearchBenchPanel
           title="Standalone lexical Search Bench"
           benchValue={value(standaloneSearchResult, "search_bench")}
         />
+        <SemanticComparisonPanel comparisonValue={semanticComparison} />
+      </section>
+
+      <section style={{ ...card, display: "grid", gap: 14 }}>
+        <div>
+          <span style={{ color: "#a5b4fc", fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>SEMANTIC RETRIEVAL · 96-ASSET PILOT</span>
+          <h2 style={{ margin: "4px 0 0" }}>Build a resumable semantic-vector pilot</h2>
+          <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>
+            This is separate from BodyParts3D import and appearance enrichment. It embeds deterministic Search Document V1 passages with passage mode, four assets per provider request, durable per-vector checkpoints, source/model hash reuse, and transient-error backoff.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_prepare")} style={button}>
+            Prepare / resume pilot
+          </button>
+          <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_step")} style={button}>
+            Index next 4
+          </button>
+          <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_run_window", { max_batches: 6 })} style={{ ...button, background: "rgba(99,102,241,0.18)" }}>
+            Index / resume next 24
+          </button>
+          <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_status")} style={button}>
+            Refresh status
+          </button>
+          <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_reset")} style={{ ...button, color: "#fecaca" }}>
+            Clear pilot session
+          </button>
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>
+          {isPilotBusy ? "Pilot request running…" : "Target: 96 representative assets · batch size: 4 · full-atlas import embeddings remain OFF"}
+        </div>
+        {pilotError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{pilotError}</div> : null}
+        <Panel title="Semantic embedding pilot state" value={pilotResult} />
       </section>
 
       <section style={{ ...card, display: "grid", gap: 10 }}>

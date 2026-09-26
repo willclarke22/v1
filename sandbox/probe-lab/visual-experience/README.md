@@ -163,3 +163,43 @@ The Orchestration Lab now keeps the original Stage 2 exact/phrase BodyParts3D re
 The first Search Bench strategy is intentionally lexical-only (`myway_asset_lexical_bm25_v1`). It uses a cached weighted BM25-style inverted index with identity/concept phrase bonuses. Stage 2/3 runs automatically search the semantic requirements produced by GLM, and the standalone search-only control can benchmark a concept/role/tags packet without making another GLM call. The response exposes index-build/search latency, matched terms, evidence fields, and ranked real asset candidates.
 
 This phase deliberately makes **zero embedding calls** and **zero extra model calls**. Full BodyParts3D import continues to keep Omni Vision and embeddings OFF. Appearance embeddings remain a separate existing concept. Semantic-retrieval embeddings, a representative 50–100 asset pilot, hybrid fusion, reranking, resumable full-atlas backfill, and a dedicated ANN/vector index remain later benchmark-driven phases.
+
+### Search Bench V3 lexical hardening
+
+The active lexical strategy is now `myway_asset_lexical_bm25_v2` while the V1 marker remains as a compatibility constant for historical verification. BodyParts3D hierarchy evidence is directional: asset concepts receive direct upward parent relations plus weak one-hop/two-hop ancestor context, but broad parent concepts no longer copy every child-specific term onto unrelated assets. This prevents high-fanout anatomy nodes from leaking terms such as `hip` into unrelated skull bones.
+
+The prepared Search Document corpus and BM25 index are checked against the five-minute TTL **before** registry/catalog reads. Warm searches therefore measure resident retrieval rather than repeatedly paying cloud/registry/catalog preparation cost. Search Bench output breaks preparation into cache lookup, registry snapshot, catalog read, ontology-map construction, search-document construction, BM25-index construction, query scoring, and total search duration.
+
+This remains the clean lexical/ontology baseline before the semantic-retrieval embedding pilot. It still performs zero embedding calls and zero extra model calls, and it intentionally does not hard-code functional paraphrase answers that should be solved by the later semantic layer.
+
+## Semantic retrieval embedding pilot
+
+The Orchestration Lab now keeps the fast lexical/ontology baseline and adds a
+separate bounded semantic-retrieval experiment. The pilot intentionally does
+not change BodyParts3D import: full-atlas Omni Vision and import-time embedding
+generation remain OFF.
+
+The pilot selects 96 deterministic, representative BodyParts3D search
+documents, guarantees benchmark-relevant anatomy is included, then fills the
+remaining sample across anatomical systems. Semantic retrieval text is derived
+from Search Document V1 metadata/ontology only; it does not reuse the
+appearance embedding text.
+
+`nvidia/nemotron-3-embed-1b` is used through the existing asset embedding
+provider contract with `input_type: "passage"` for indexed asset documents and
+`input_type: "query"` for search requirements. Indexing is limited to four
+passages per provider request. Every successful vector is written immediately
+to the durable semantic-search embedding namespace and checkpointed in a
+durable pilot state. Existing vectors are reused when model and source-text
+hashes still match. Transient provider failures use bounded exponential
+backoff and leave completed work resumable.
+
+The Search Bench can compare:
+- full-atlas lexical BM25 V2;
+- semantic cosine ranking over whatever portion of the 96-asset pilot is
+  durably indexed;
+- a transparent hybrid pilot score combining lexical and semantic evidence.
+
+Vectors remain retrieval evidence only. MyWay still owns ambiguity, review
+state, grouping/region realization, geometry/directability checks, exact asset
+binding, and runtime execution.

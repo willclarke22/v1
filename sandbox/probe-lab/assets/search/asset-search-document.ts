@@ -35,7 +35,14 @@ export type AssetSearchDocumentAssetLike = {
 export type AssetSearchDomainEvidenceV1 = {
   concept_ids?: string[];
   concept_names?: string[];
+  /**
+   * Legacy direct relationship bucket retained for Search Bench V1 verifier
+   * compatibility. V3 callers should prefer direct_relation_terms.
+   */
   relation_terms?: string[];
+  direct_relation_terms?: string[];
+  ontology_1hop_terms?: string[];
+  ontology_2hop_terms?: string[];
   system?: string | null;
   laterality?: "left" | "right" | "bilateral" | "midline" | "unspecified";
 };
@@ -53,7 +60,14 @@ export type AssetSearchDocumentV1 = {
   source_asset_id: string | null;
   concept_ids: string[];
   concept_names: string[];
+  /**
+   * Legacy alias for direct_relation_terms. It intentionally excludes broad
+   * descendant expansion so historical consumers do not regain ontology leak.
+   */
   relation_terms: string[];
+  direct_relation_terms: string[];
+  ontology_1hop_terms: string[];
+  ontology_2hop_terms: string[];
   affordances: string[];
   contains: string[];
   collection_id: string | null;
@@ -126,7 +140,15 @@ export function buildAssetSearchDocumentV1(
     membership?.concept_id,
     ...(evidence.concept_ids ?? []),
   ], 64);
-  const relationTerms = unique(evidence.relation_terms ?? [], 96);
+  const directRelationTerms = unique(
+    evidence.direct_relation_terms ?? evidence.relation_terms ?? [],
+    64,
+  );
+  const ontology1HopTerms = unique(evidence.ontology_1hop_terms ?? [], 48);
+  const ontology2HopTerms = unique(evidence.ontology_2hop_terms ?? [], 32);
+  // relation_terms remains the legacy direct-relation alias. Do not merge
+  // broader ontology terms back into it; that was the V1 leakage source.
+  const relationTerms = directRelationTerms;
   const semanticTags = unique(asset.semantic_tags ?? [], 48);
   const affordances = unique(asset.affordances ?? [], 48);
   const contains = unique(asset.contains ?? [], 48);
@@ -150,7 +172,9 @@ export function buildAssetSearchDocumentV1(
     clean(asset.domain) ? `domain ${clean(asset.domain)}` : "",
     semanticTags.length ? `semantic tags ${semanticTags.join(" | ")}` : "",
     conceptNames.length ? `named concepts ${conceptNames.join(" | ")}` : "",
-    relationTerms.length ? `relationships ${relationTerms.join(" | ")}` : "",
+    directRelationTerms.length ? `direct relationships ${directRelationTerms.join(" | ")}` : "",
+    ontology1HopTerms.length ? `ontology one hop ${ontology1HopTerms.join(" | ")}` : "",
+    ontology2HopTerms.length ? `ontology two hop ${ontology2HopTerms.join(" | ")}` : "",
     affordances.length ? `affordances ${affordances.join(" | ")}` : "",
     contains.length ? `contains ${contains.join(" | ")}` : "",
     system ? `system ${system}` : "",
@@ -172,6 +196,9 @@ export function buildAssetSearchDocumentV1(
     concept_ids: conceptIds,
     concept_names: conceptNames,
     relation_terms: relationTerms,
+    direct_relation_terms: directRelationTerms,
+    ontology_1hop_terms: ontology1HopTerms,
+    ontology_2hop_terms: ontology2HopTerms,
     affordances,
     contains,
     collection_id: membership?.collection_id ?? null,

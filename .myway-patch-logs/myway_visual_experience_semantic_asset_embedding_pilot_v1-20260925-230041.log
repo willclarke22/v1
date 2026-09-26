@@ -1,0 +1,56 @@
+**********************
+PowerShell transcript start
+Start time: 20260925230041
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\2242ebbb54\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 29268
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUCCESS: myway_visual_experience_semantic_asset_embedding_pilot_v1 applied and validated.
+Open Orchestration Lab, prepare the 96-asset pilot, then index in resumable four-asset batches.
+BodyParts3D import-time embeddings remain OFF. Generate a fresh dump before the next source patch.
+**********************
+PowerShell transcript end
+End time: 20260925230239
+**********************

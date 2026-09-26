@@ -1,6 +1,8 @@
 import type { AssetSearchDocumentV1 } from "./asset-search-document";
 
-export const ASSET_LEXICAL_SEARCH_VERSION = "myway_asset_lexical_bm25_v1" as const;
+export const LEGACY_ASSET_LEXICAL_SEARCH_VERSION =
+  "myway_asset_lexical_bm25_v1" as const;
+export const ASSET_LEXICAL_SEARCH_VERSION = "myway_asset_lexical_bm25_v2" as const;
 
 export type AssetSearchRequirementV1 = {
   semantic_name: string;
@@ -38,6 +40,9 @@ export type AssetLexicalSearchIndexV1 = {
   postings: Map<string, Array<{ document_index: number; weighted_tf: number }>>;
   document_frequency: Map<string, number>;
   average_weighted_length: number;
+  canonical_exact: Map<string, number[]>;
+  alias_exact: Map<string, number[]>;
+  concept_exact: Map<string, number[]>;
 };
 
 const STOP_WORDS = new Set([
@@ -86,7 +91,11 @@ function indexDocument(document: AssetSearchDocumentV1): IndexedDocument {
   addWeightedTerms(termWeights, fieldTokens, "concept_names", document.concept_names, 4.5);
   addWeightedTerms(termWeights, fieldTokens, "source_display_name", [document.source_display_name ?? ""], 2.5);
   addWeightedTerms(termWeights, fieldTokens, "semantic_tags", document.semantic_tags, 2.5);
-  addWeightedTerms(termWeights, fieldTokens, "relation_terms", document.relation_terms, 2.25);
+  // V3 separates direct relationship evidence from progressively weaker
+  // upward ontology context. relation_terms is the legacy direct alias.
+  addWeightedTerms(termWeights, fieldTokens, "relation_terms", document.direct_relation_terms, 1.5);
+  addWeightedTerms(termWeights, fieldTokens, "ontology_1hop_terms", document.ontology_1hop_terms, 0.35);
+  addWeightedTerms(termWeights, fieldTokens, "ontology_2hop_terms", document.ontology_2hop_terms, 0.08);
   addWeightedTerms(termWeights, fieldTokens, "affordances", document.affordances, 1.75);
   addWeightedTerms(termWeights, fieldTokens, "contains", document.contains, 1.5);
   addWeightedTerms(termWeights, fieldTokens, "domain", [document.domain], 0.75);
@@ -96,12 +105,23 @@ function indexDocument(document: AssetSearchDocumentV1): IndexedDocument {
   return { document, weighted_length: Math.max(1, weightedLength), term_weights: termWeights, field_tokens: fieldTokens };
 }
 
+function addExactLookup(target: Map<string, number[]>, value: string, documentIndex: number) {
+  const key = normalizeAssetSearchText(value);
+  if (!key) return;
+  const entries = target.get(key) ?? [];
+  if (!entries.includes(documentIndex)) entries.push(documentIndex);
+  target.set(key, entries);
+}
+
 export function buildAssetLexicalSearchIndexV1(
   documents: AssetSearchDocumentV1[],
 ): AssetLexicalSearchIndexV1 {
   const indexed = documents.filter((document) => document.search_eligible).map(indexDocument);
   const postings = new Map<string, Array<{ document_index: number; weighted_tf: number }>>();
   const documentFrequency = new Map<string, number>();
+  const canonicalExact = new Map<string, number[]>();
+  const aliasExact = new Map<string, number[]>();
+  const conceptExact = new Map<string, number[]>();
   let totalLength = 0;
 
   indexed.forEach((entry, documentIndex) => {
@@ -112,6 +132,9 @@ export function buildAssetLexicalSearchIndexV1(
       postings.set(term, list);
       documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1);
     }
+    addExactLookup(canonicalExact, entry.document.canonical_identity, documentIndex);
+    for (const alias of entry.document.aliases) addExactLookup(aliasExact, alias, documentIndex);
+    for (const concept of entry.document.concept_names) addExactLookup(conceptExact, concept, documentIndex);
   });
 
   return {
@@ -120,6 +143,9 @@ export function buildAssetLexicalSearchIndexV1(
     postings,
     document_frequency: documentFrequency,
     average_weighted_length: indexed.length ? totalLength / indexed.length : 1,
+    canonical_exact: canonicalExact,
+    alias_exact: aliasExact,
+    concept_exact: conceptExact,
   };
 }
 
@@ -152,7 +178,6 @@ function exactIdentityMatch(document: AssetSearchDocumentV1, semanticName: strin
     document.canonical_identity,
     ...document.aliases,
     ...document.concept_names,
-    ...document.relation_terms,
   ].join(" "));
   if (wanted.length >= 4 && corpus.includes(wanted)) {
     return { kind: "phrase" as const, bonus: 38 };
@@ -201,13 +226,23 @@ export function searchAssetLexicalIndexV1(
   }
 
   const candidates = new Set<number>(scores.keys());
-  index.documents.forEach((entry, documentIndex) => {
+  const exactKey = normalizeAssetSearchText(requirement.semantic_name);
+  const exactCandidates = exactKey
+    ? unique([
+        ...(index.canonical_exact.get(exactKey) ?? []).map(String),
+        ...(index.alias_exact.get(exactKey) ?? []).map(String),
+        ...(index.concept_exact.get(exactKey) ?? []).map(String),
+      ]).map(Number)
+    : [];
+  for (const documentIndex of exactCandidates) {
+    const entry = index.documents[documentIndex];
+    if (!entry) continue;
     const exact = exactIdentityMatch(entry.document, requirement.semantic_name);
     if (exact.bonus > 0) {
       candidates.add(documentIndex);
       scores.set(documentIndex, (scores.get(documentIndex) ?? 0) + exact.bonus);
     }
-  });
+  }
 
   return Array.from(candidates)
     .map((documentIndex) => {
