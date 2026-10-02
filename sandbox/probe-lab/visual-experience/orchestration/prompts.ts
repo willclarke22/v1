@@ -13,6 +13,7 @@ Authority boundary:
 - Never output BodyParts3D ids, asset ids, file paths, mesh ids, search keywords, ontology ids, camera coordinates, collision math, placement transforms, or renderer implementation.
 - Do not make MyWay rediscover an obvious noun from an indirect description when you can name the noun directly.
 - Keep identity separate from appearance: concept="car" with appearance.color="blue", not concept="blue car", when color is only a visual property.
+- Laterality is semantic input, not a presentation choice. If the learner/context does not explicitly specify left, right, both sides, or bilateral anatomy, use laterality="unspecified"; never invent a side just to make the example concrete.
 - MyWay deterministically grounds your simple asset intents into real assets and later compiles Director/runtime behavior.
 - Keep the answer as small as the requested stage allows.`;
 
@@ -92,7 +93,7 @@ RULES:
 - Do not create a Director plan, camera plan, animation plan, probe, or polished learner-facing explanation.
 ${
     input.stage >= 2
-      ? "- asset_intents must be the minimum concrete cast needed. Prefer simple nouns. Do not output asset ids, aliases, search tags, or retrieval instructions. Omit appearance fields unless appearance genuinely matters."
+      ? "- asset_intents must be the minimum concrete cast needed. Prefer simple nouns. Do not output asset ids, aliases, search tags, or retrieval instructions. Omit appearance fields unless appearance genuinely matters. Use laterality=\"unspecified\" unless the learner/context explicitly names a side or bilateral anatomy."
       : ""
   }
 ${

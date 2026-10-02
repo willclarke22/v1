@@ -10,6 +10,10 @@ import type {
   VisualAssetIntentRole,
 } from "./contracts";
 
+export type VisualAssetIntentPolicyContext = {
+  learner_message?: string;
+};
+
 export type VisualAssetIntentGroundingRequest = {
   intent: VisualAssetIntent;
   lexical_requirement: AssetSearchRequirementV1;
@@ -37,7 +41,7 @@ function importance(value: unknown): VisualAssetIntentImportance {
   return value === "preferred" || value === "optional" ? value : "required";
 }
 
-function laterality(value: unknown): VisualAssetIntentLaterality {
+function normalizeLaterality(value: unknown): VisualAssetIntentLaterality {
   return value === "left" || value === "right" || value === "bilateral" ? value : "unspecified";
 }
 
@@ -52,7 +56,35 @@ function appearance(value: unknown): VisualAssetIntent["appearance"] | undefined
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
-export function normalizeVisualAssetIntents(value: unknown): VisualAssetIntent[] {
+function explicitLateralityFromLearnerMessage(
+  learnerMessage: string | undefined,
+): VisualAssetIntentLaterality | null {
+  const normalized = text(learnerMessage).toLowerCase();
+  if (!normalized) return null;
+  const hasLeft = /\b(left|left-sided|left side)\b/.test(normalized);
+  const hasRight = /\b(right|right-sided|right side)\b/.test(normalized);
+  const hasBilateral = /\b(bilateral|both sides|both legs|both arms|left and right|right and left)\b/.test(normalized);
+  if (hasBilateral || (hasLeft && hasRight)) return "bilateral";
+  if (hasLeft) return "left";
+  if (hasRight) return "right";
+  return null;
+}
+
+export function effectiveVisualAssetIntentLaterality(
+  requestedLaterality: VisualAssetIntentLaterality,
+  context: VisualAssetIntentPolicyContext = {},
+): VisualAssetIntentLaterality {
+  if (context.learner_message === undefined) return requestedLaterality;
+  const explicit = explicitLateralityFromLearnerMessage(context.learner_message);
+  if (!explicit) return "unspecified";
+  if (explicit === "bilateral") return "bilateral";
+  return requestedLaterality === explicit ? requestedLaterality : explicit;
+}
+
+export function normalizeVisualAssetIntents(
+  value: unknown,
+  context: VisualAssetIntentPolicyContext = {},
+): VisualAssetIntent[] {
   const output = asRecord(value);
   if (!output) return [];
   if (Array.isArray(output.asset_intents)) {
@@ -65,7 +97,7 @@ export function normalizeVisualAssetIntents(value: unknown): VisualAssetIntent[]
         role: role(record.role),
         importance: importance(record.importance),
         quantity: Math.max(1, Math.min(12, Math.round(Number(record.quantity) || 1))),
-        laterality: laterality(record.laterality),
+        laterality: effectiveVisualAssetIntentLaterality(normalizeLaterality(record.laterality), context),
         ...(appearance(record.appearance) ? { appearance: appearance(record.appearance) } : {}),
       }];
     });
@@ -89,9 +121,10 @@ export function normalizeVisualAssetIntents(value: unknown): VisualAssetIntent[]
 
 export function compileVisualAssetIntentGroundingRequests(
   value: unknown,
+  context: VisualAssetIntentPolicyContext = {},
 ): VisualAssetIntentGroundingRequest[] {
   const output = asRecord(value);
-  const intents = normalizeVisualAssetIntents(value);
+  const intents = normalizeVisualAssetIntents(value, context);
   const relationships = Array.isArray(output?.relationships)
     ? output.relationships.map(asRecord).filter((item): item is Record<string, unknown> => Boolean(item))
     : [];

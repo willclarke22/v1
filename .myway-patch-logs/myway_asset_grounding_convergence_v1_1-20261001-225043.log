@@ -1,0 +1,37 @@
+**********************
+PowerShell transcript start
+Start time: 20261001225043
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 24108
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+
+
+
+
+
+
+
+
+SUCCESS: Asset Grounding Convergence V1.1 applied.
+Postflight: STATE 10
+Generate a fresh sandbox dump before any further source patch.
+**********************
+PowerShell transcript end
+End time: 20261001225156
+**********************

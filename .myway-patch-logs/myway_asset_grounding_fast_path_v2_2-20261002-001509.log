@@ -1,0 +1,32 @@
+**********************
+PowerShell transcript start
+Start time: 20261002001509
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 40672
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+
+
+
+
+Asset Grounding Fast Path V2.2 applied and verified.
+Backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_grounding_fast_path_v2_2-20261002-001509
+**********************
+PowerShell transcript end
+End time: 20261002001613
+**********************
