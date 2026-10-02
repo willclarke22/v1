@@ -1,0 +1,52 @@
+**********************
+PowerShell transcript start
+Start time: 20260929203721
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 24160
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+STATE 0: exact baseline for myway_asset_semantic_evidence_pilot_v1_5. Safe to apply.
+[1/9] Next route type generation
+
+[2/9] TypeScript noEmit
+
+[3/9] Asset Semantic Evidence Pilot verifier
+
+[4/9] Historical reranker verifier
+
+[5/9] Historical semantic retrieval V2 verifier
+
+[6/9] Historical Search Bench V2 verifier
+
+[7/9] Historical Search Bench V3 verifier
+
+[8/9] Historical Semantic Embedding Pilot V1 verifier
+
+[9/9] Historical Orchestration Lab Stage 1-3 verifier
+
+[build] Production build
+
+STATE 10: myway_asset_semantic_evidence_pilot_v1_5 is already fully applied.
+
+SUCCESS: Asset Semantic Evidence Pilot V1 patch applied.
+Preflight/postflight state: 0 -> 10
+No NVIDIA/provider call was made during installation.
+No model-authored permanent evidence was written to the Asset Library.
+Next: send the complete terminal output before running the new evidence audit/A-B controls.
+Generate a fresh sandbox dump before the next source patch.
+**********************
+PowerShell transcript end
+End time: 20260929203825
+**********************

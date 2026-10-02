@@ -1,0 +1,40 @@
+**********************
+PowerShell transcript start
+Start time: 20260929104253
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 11824
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+STATE 0: exact baseline for myway_semantic_retrieval_reranker_pilot_v1_1. Safe to apply.
+
+
+
+
+
+
+
+
+
+STATE 10: myway_semantic_retrieval_reranker_pilot_v1_1 is already fully applied.
+
+SUCCESS: Semantic Retrieval Reranker Pilot V1 patch applied.
+Preflight/postflight state: 0 -> 10
+No NVIDIA provider call was made during installation.
+Next: open Orchestration Lab, publish the query-ready snapshot, probe the reranker, then run RRF -> reranker.
+Generate a fresh sandbox dump before the next source patch.
+**********************
+PowerShell transcript end
+End time: 20260929104826
+**********************

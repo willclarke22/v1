@@ -203,3 +203,87 @@ The Search Bench can compare:
 Vectors remain retrieval evidence only. MyWay still owns ambiguity, review
 state, grouping/region realization, geometry/directability checks, exact asset
 binding, and runtime execution.
+
+## Search Query / Search Document V2 candidate-generation benchmark
+
+The next bounded retrieval experiment keeps every V1 baseline intact and adds a
+separate V2 representation/indexing lane. `SearchQueryPacketV2` deterministically
+compiles a semantic visual requirement into distinct identity-hint, full-intent,
+and relationship/role query views plus structured anchors and execution constraints.
+No exact asset id is authored by the model or query compiler.
+
+`AssetSearchDocumentV2` derives separate identity, relationship, and optional
+trusted role/use passages from Search Document V1. Relationship statements keep
+source/provenance and graph distance. The role/use view is emitted only when
+existing affordance/contains metadata supports it; V2 does not synthesize anatomy-
+specific functional prose. Review state and runtime availability remain structured
+execution facts rather than embedding authority.
+
+The V2 semantic pilot deliberately reuses the same deterministic 96 source assets
+but writes its multi-view vectors to a new `semantic-search-v2` durable namespace.
+Identity and relationship passages are always indexed; a role passage is indexed
+only when supported. Passage batches remain capped at four so the V1 operational
+behavior remains comparable and resumable.
+
+Comparison compiles three query embeddings and exposes independent lexical,
+identity-vector, full-intent-vector, relationship-vector, and graph-anchor channels.
+Candidate generation is a union problem, not a final selector: channels are
+combined with Reciprocal Rank Fusion while preserving each channel rank as evidence.
+The existing V1 fixed 35/65 hybrid remains available as a historical baseline and
+is not promoted into the V2 grounding formula.
+
+V2 also expands comparison timing so query compilation, pilot preparation/state,
+document building, full/pilot lexical work, vector loading, query embedding wall
+time, ranking, graph evidence, fusion, accounted time, unaccounted time, request
+parsing, and route wrapper overhead are separately visible. This patch intentionally
+adds no reranker, no GLM retrieval call, and no 2,234-asset semantic backfill. A
+subsequent patch should evaluate the reranker only after V2 candidate recall and
+latency are measured.
+
+### Semantic Retrieval Reranker Pilot V1
+
+After Query/Search Document V2 established bounded 96-asset candidate recall, the next benchmark adds a **separate second-stage reranker** without changing the historical V2 retrieval ranking. The serving path is intentionally split into a control plane and query plane:
+
+- `Publish query-ready snapshot` performs the expensive pilot-state/corpus validation once, builds the 96-asset lexical index, loads the existing V2 vectors, and publishes an in-memory versioned snapshot.
+- query-time serving reads that snapshot directly; it does **not** call `getPreparedAssetSearchCorpus()` or rebuild the V2 selection on each request;
+- lexical, identity-vector, full-intent-vector, relationship-vector, graph-anchor evidence and Reciprocal Rank Fusion remain the first-stage candidate generator;
+- only the RRF Top 20 are passed to `nvidia/llama-nemotron-rerank-vl-1b-v2` through NVIDIA's ranking endpoint;
+- reranker passages are compiled deterministically from Search Document V2 identity/relationship/trusted role evidence. RRF rank/score is intentionally excluded from the passage so the cross-encoder judges candidate content independently;
+- returned logits and reranker ranks are evidence only. This patch does not add Grounding Policy V2, automatic final asset resolution, Director binding, GLM refinement, ANN infrastructure, or the 2,234-asset semantic backfill.
+
+The Orchestration Lab exposes snapshot publish/status, a tiny NVIDIA connectivity probe, the current-query RRF→reranker comparison, and a bounded benchmark smoke run. The initial benchmark fixture catalog contains 12 cases spanning endpoint-vs-intermediary, laterality, functional paraphrase, source/destination, relative position, specificity, and same-region/part-neighbor distractors. Ground-truth asset ids exist only in that benchmark fixture module and never influence production retrieval/reranking code.
+
+Stage 2/3 orchestration additionally compiles **Query Packet V2 shadow output** from the GLM-authored semantic concepts and Stage-3 relationships. This is inspection-only: the existing deterministic resolver and lexical search remain the live calibration result, and no reranker/provider call is added to the Stage 1-3 route.
+
+### Asset Semantic Evidence Pilot V1
+
+The next bounded precision experiment inserts an explicit **evidence inspection layer** between candidate generation and reranking without changing the 96-asset retrieval baseline. Evidence is derived in-memory from authorities MyWay already possesses:
+
+- source-provenanced Search Document V2 identity and ontology statements;
+- verified asset metadata only when semantic review is actually `verified`;
+- measured local bounds plus persisted shared-collection transforms, reconstructed into collection space;
+- query-conditioned distances/projections to resolved semantic anchors.
+
+Evidence is classified as `source_asserted`, `measured`, `reviewed`, or `model_inferred`. Pilot V1 authors **zero model-inferred permanent facts** and does not mutate `MyWayAssetRecord`. Unreviewed role/affordance metadata is surfaced as excluded diagnostic material rather than promoted to trusted reranker evidence.
+
+Shared-space geometry stays deliberately literal. It may report collection-space bounds, centroid/bounds distances, anchor-segment projection, perpendicular distance, and interior fraction. It does not translate geometry into anatomical claims such as “articulates with,” “transmits rotation,” or “connects,” unless such semantics arrive from a future explicit trusted source. BodyParts3D is the first collection exercised because its imports retain invertible shared-space transforms, but the evidence machinery keys off generic `collection_id` + `runtime_collection_space` + measured geometry rather than anatomy names.
+
+The Orchestration Lab now presents one current Asset Retrieval pipeline and moves historical V1/V2 maintenance controls into collapsed Diagnostics/History sections. Raw JSON remains available for evidence audits, passages, timings, historical candidate generation, and reranker outputs so experimental state can be shared without relying on screenshots.
+
+`Evidence Passage V2` is compact and provenance-aware: it omits opaque source ids/alias noise, keeps direct source-backed relations and limited ancestor context, adds reviewed metadata only when verified, and adds deterministic query-conditioned spatial measurements when available. It is evaluated through an A/B reranker path that sends the **same query and same exact RRF Top 20** to `nvidia/llama-nemotron-rerank-vl-1b-v2` twice: once with historical Passage V1 and once with Evidence Passage V2. Existing embeddings, RRF, Query Packet semantics, Grounding Policy, Director binding, and the 2,234-asset semantic backfill remain unchanged.
+
+The experiment therefore separates two questions:
+
+1. **Is the evidence true and inspectable?** Use the evidence audit first.
+2. **Does better evidence improve precision?** Only then run the V1 vs Evidence V2 reranker comparison.
+
+A rank improvement is not itself authority. Both reranker lanes remain evidence-only until a later grounding/confidence policy is designed and benchmarked.
+
+### Anchor Resolution V2 + Evidence Passage V3 pilot
+
+The 96-asset serving/RRF shortlist remains the candidate authority boundary. Evidence-only anchor resolution may consult the prepared full collection source-document corpus to find source-backed identity/concept references that are absent from the 96 selected assets. Those reference assets never enter the candidate set merely because they were used as anchors.
+
+Anchor Resolution V2 uses only canonical identity, aliases, and named concepts from the source-backed search documents. If an abstract query anchor has no source-backed identity/concept asset, it remains unresolved rather than being forced onto a nearby object. For assets sharing an invertible collection space, Evidence V2 measures candidate-to-anchor bounds/centroid distance plus two-anchor projection/corridor geometry. Endpoint identity is query-conditioned evidence only: when the Query Packet says an endpoint-only match is insufficient, Evidence Passage V3 may state that a candidate is itself a context endpoint without inventing a domain-specific semantic rule.
+
+Evidence Passage V3 deliberately prunes generic ontology volume and emphasizes direct source-backed class/part-of evidence plus resolved reference-anchor measurements. It does not write AI-authored facts, does not regenerate the existing 192 semantic vectors, does not change RRF, does not grant grounding/execution authority, and does not perform a 2,234-asset semantic-vector backfill. The Orchestration Lab retains V1/V2 outputs and raw JSON for controlled V1 vs V2 vs V3 comparison.
+

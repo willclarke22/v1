@@ -12,46 +12,10 @@ import {
   type VisualOrchestrationRequest,
 } from "./contracts";
 import { buildVisualOrchestrationMessages } from "./prompts";
+import { compileVisualAssetIntentGroundingRequests } from "./asset-intent-adapter";
 import {
   runLexicalAssetSearchBench,
 } from "../../assets/search/asset-search-bench.server";
-import type { AssetSearchRequirementV1 } from "../../assets/search/asset-lexical-search";
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function visualSearchRequirements(value: unknown): AssetSearchRequirementV1[] {
-  const output = asRecord(value);
-  if (!output || !Array.isArray(output.required_visual_concepts)) return [];
-
-  const requirements: AssetSearchRequirementV1[] = [];
-  for (const item of output.required_visual_concepts) {
-    const record = asRecord(item);
-    if (!record || typeof record.semantic_name !== "string") continue;
-
-    const semanticName = record.semantic_name.trim();
-    if (!semanticName) continue;
-    const visualRole = typeof record.role === "string" ? record.role.trim() : "";
-    const semanticTags = Array.isArray(record.semantic_tags)
-      ? record.semantic_tags
-          .filter(
-            (tag): tag is string => typeof tag === "string" && tag.trim().length > 0,
-          )
-          .map((tag) => tag.trim())
-          .slice(0, 12)
-      : [];
-
-    requirements.push({
-      semantic_name: semanticName,
-      ...(visualRole ? { visual_role: visualRole } : {}),
-      ...(semanticTags.length ? { semantic_tags: semanticTags } : {}),
-    });
-  }
-  return requirements;
-}
 
 export async function runVisualOrchestrationStage(raw: Partial<VisualOrchestrationRequest>) {
   const startedAt = Date.now();
@@ -140,7 +104,10 @@ export async function runVisualOrchestrationStage(raw: Partial<VisualOrchestrati
           input.asset_collection_mode,
         )
       : [];
-  const searchRequirements = stage >= 2 ? visualSearchRequirements(parsed.value) : [];
+  const assetIntentGrounding =
+    stage >= 2 ? compileVisualAssetIntentGroundingRequests(parsed.value) : [];
+  const searchRequirements = assetIntentGrounding.map((item) => item.lexical_requirement);
+  const searchQueryPacketsV2Shadow = assetIntentGrounding.map((item) => item.query_packet);
   const semanticAssetSearch =
     searchRequirements.length > 0
       ? await runLexicalAssetSearchBench({
@@ -162,11 +129,13 @@ export async function runVisualOrchestrationStage(raw: Partial<VisualOrchestrati
     glm_output: parsed.value,
     validation,
     myway_deterministic_result: {
+      asset_intent_grounding: assetIntentGrounding,
       semantic_anatomy_resolution: anatomyResolution,
       semantic_asset_search: semanticAssetSearch,
+      search_query_packets_v2_shadow: searchQueryPacketsV2Shadow,
       authority_note:
         stage >= 2
-          ? "GLM supplied semantic visual requirements only. The legacy exact/phrase resolver remains visible for calibration, while MyWay Lexical Search Bench V1 retrieves a ranked real-asset candidate set without provider or embedding calls. No asset id was model-authored and search ranking does not itself grant execution authority."
+          ? "GLM supplied simple asset intents only. MyWay normalized those intents, kept appearance separate from identity search, compiled Query Packet V2 grounding requests, and ran the existing deterministic/lexical calibration paths. No asset id was model-authored and search ranking does not itself grant execution authority."
           : "Stage 1 intentionally stops before asset retrieval.",
     },
     metrics: {

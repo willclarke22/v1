@@ -15,6 +15,29 @@ export type VisualOrchestrationRequest = {
   asset_collection_mode: VisualOrchestrationAssetMode;
 };
 
+export type VisualAssetIntentRole =
+  | "primary_subject"
+  | "context"
+  | "supporting"
+  | "environment"
+  | "effect";
+export type VisualAssetIntentImportance = "required" | "preferred" | "optional";
+export type VisualAssetIntentLaterality = "left" | "right" | "bilateral" | "unspecified";
+
+export type VisualAssetIntent = {
+  concept: string;
+  role: VisualAssetIntentRole;
+  importance: VisualAssetIntentImportance;
+  quantity?: number;
+  laterality?: VisualAssetIntentLaterality;
+  appearance?: {
+    color?: string;
+    material?: string;
+    style?: string;
+  };
+};
+
+// Legacy Stage 2/3 shape retained only as a compatibility input for diagnostics/verifiers.
 export type VisualConceptRequirement = {
   semantic_name: string;
   role: string;
@@ -22,9 +45,11 @@ export type VisualConceptRequirement = {
 };
 
 export type VisualSemanticRelationship = {
-  source_semantic_name: string;
+  source_concept?: string;
+  source_semantic_name?: string;
   relationship: string;
-  target_semantic_name: string;
+  target_concept?: string;
+  target_semantic_name?: string;
   learning_reason: string;
 };
 
@@ -36,13 +61,13 @@ export const VISUAL_ORCHESTRATION_STAGE_DEFINITIONS = {
   },
   2: {
     title: "Anatomy requirements",
-    purpose: "Can GLM request the minimum semantic anatomy cast needed to make the root problem visible?",
-    max_tokens: 1400,
+    purpose: "Can GLM name the minimum concrete asset concepts needed to make the root problem visible?",
+    max_tokens: 1200,
   },
   3: {
     title: "Target takeaway + relationships",
-    purpose: "Can GLM turn the root problem into a compact target mental model and semantic mechanism graph?",
-    max_tokens: 2000,
+    purpose: "Can GLM name the asset cast and the smallest semantic mechanism graph needed to correct the mental model?",
+    max_tokens: 1800,
   },
 } as const;
 
@@ -54,6 +79,18 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function nonEmptyString(value: unknown) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isAssetIntentRole(value: unknown): value is VisualAssetIntentRole {
+  return value === "primary_subject" || value === "context" || value === "supporting" || value === "environment" || value === "effect";
+}
+
+function isAssetIntentImportance(value: unknown): value is VisualAssetIntentImportance {
+  return value === "required" || value === "preferred" || value === "optional";
+}
+
+function isAssetIntentLaterality(value: unknown): value is VisualAssetIntentLaterality {
+  return value === "left" || value === "right" || value === "bilateral" || value === "unspecified";
 }
 
 export function normalizeVisualOrchestrationStage(value: unknown): VisualOrchestrationStage {
@@ -87,7 +124,9 @@ export function validateVisualOrchestrationOutput(
   if (!output) {
     return { valid: false, fatal_errors: ["Model output is not a JSON object."] };
   }
-  const expectedSchema = `myway_visual_orchestration_stage${stage}_v1`;
+  const expectedSchema = stage === 1
+    ? "myway_visual_orchestration_stage1_v1"
+    : `myway_visual_orchestration_stage${stage}_v2`;
   if (output.schema_version !== expectedSchema) {
     fatal_errors.push(`schema_version must be ${expectedSchema}.`);
   }
@@ -95,16 +134,27 @@ export function validateVisualOrchestrationOutput(
   if (!nonEmptyString(output.root_problem)) fatal_errors.push("root_problem is required.");
 
   if (stage >= 2) {
-    const concepts = Array.isArray(output.required_visual_concepts)
-      ? output.required_visual_concepts
-      : [];
-    if (concepts.length === 0) {
-      fatal_errors.push("required_visual_concepts must contain at least one item.");
+    const intents = Array.isArray(output.asset_intents) ? output.asset_intents : [];
+    if (intents.length === 0) {
+      fatal_errors.push("asset_intents must contain at least one item.");
     }
-    concepts.forEach((concept, index) => {
-      const record = asRecord(concept);
-      if (!record || !nonEmptyString(record.semantic_name) || !nonEmptyString(record.role)) {
-        fatal_errors.push(`required_visual_concepts[${index}] needs semantic_name and role.`);
+    intents.forEach((intent, index) => {
+      const record = asRecord(intent);
+      if (!record || !nonEmptyString(record.concept)) {
+        fatal_errors.push(`asset_intents[${index}].concept is required.`);
+        return;
+      }
+      if (!isAssetIntentRole(record.role)) {
+        fatal_errors.push(`asset_intents[${index}].role is invalid.`);
+      }
+      if (!isAssetIntentImportance(record.importance)) {
+        fatal_errors.push(`asset_intents[${index}].importance is invalid.`);
+      }
+      if (record.laterality !== undefined && !isAssetIntentLaterality(record.laterality)) {
+        fatal_errors.push(`asset_intents[${index}].laterality is invalid.`);
+      }
+      if (record.quantity !== undefined && (!Number.isInteger(record.quantity) || Number(record.quantity) < 1 || Number(record.quantity) > 12)) {
+        fatal_errors.push(`asset_intents[${index}].quantity must be an integer from 1 to 12.`);
       }
     });
   }
@@ -114,29 +164,42 @@ export function validateVisualOrchestrationOutput(
     const relationships = Array.isArray(output.relationships) ? output.relationships : [];
     if (relationships.length === 0) fatal_errors.push("relationships must contain at least one item.");
     const conceptNames = new Set(
-      (Array.isArray(output.required_visual_concepts) ? output.required_visual_concepts : [])
-        .map((concept) => asRecord(concept)?.semantic_name)
+      (Array.isArray(output.asset_intents) ? output.asset_intents : [])
+        .map((intent) => asRecord(intent)?.concept)
         .filter((name): name is string => nonEmptyString(name))
         .map((name) => name.trim().toLowerCase()),
     );
     relationships.forEach((relationship, index) => {
       const record = asRecord(relationship);
-      if (
-        !record ||
-        !nonEmptyString(record.source_semantic_name) ||
-        !nonEmptyString(record.relationship) ||
-        !nonEmptyString(record.target_semantic_name) ||
-        !nonEmptyString(record.learning_reason)
-      ) {
+      const source = String(record?.source_concept ?? record?.source_semantic_name ?? "").trim();
+      const target = String(record?.target_concept ?? record?.target_semantic_name ?? "").trim();
+      if (!record || !source || !nonEmptyString(record.relationship) || !target || !nonEmptyString(record.learning_reason)) {
         fatal_errors.push(`relationships[${index}] is incomplete.`);
         return;
       }
-      const source = String(record.source_semantic_name).trim().toLowerCase();
-      const target = String(record.target_semantic_name).trim().toLowerCase();
-      if (!conceptNames.has(source) || !conceptNames.has(target)) {
-        fatal_errors.push(`relationships[${index}] must reference required_visual_concepts by semantic_name.`);
+      if (!conceptNames.has(source.toLowerCase()) || !conceptNames.has(target.toLowerCase())) {
+        fatal_errors.push(`relationships[${index}] must reference asset_intents by concept.`);
       }
     });
+  }
+
+  // Preserve the historical contract wording for legacy Stage 2/3 diagnostics.
+  if (Array.isArray(output.required_visual_concepts)) {
+    const legacyNames = new Set(
+      output.required_visual_concepts
+        .map((concept) => asRecord(concept)?.semantic_name)
+        .filter((name): name is string => nonEmptyString(name))
+        .map((name) => name.trim().toLowerCase()),
+    );
+    for (const relationship of Array.isArray(output.relationships) ? output.relationships : []) {
+      const record = asRecord(relationship);
+      const source = String(record?.source_semantic_name ?? "").trim().toLowerCase();
+      const target = String(record?.target_semantic_name ?? "").trim().toLowerCase();
+      if ((source && !legacyNames.has(source)) || (target && !legacyNames.has(target))) {
+        fatal_errors.push("relationships must reference required_visual_concepts by semantic_name.");
+        break;
+      }
+    }
   }
 
   return { valid: fatal_errors.length === 0, fatal_errors };
@@ -144,7 +207,13 @@ export function validateVisualOrchestrationOutput(
 
 export function visualConceptSemanticNames(value: unknown) {
   const output = asRecord(value);
-  if (!output || !Array.isArray(output.required_visual_concepts)) return [];
+  if (!output) return [];
+  if (Array.isArray(output.asset_intents)) {
+    return output.asset_intents
+      .map((intent) => asRecord(intent)?.concept)
+      .filter((name): name is string => nonEmptyString(name));
+  }
+  if (!Array.isArray(output.required_visual_concepts)) return [];
   return output.required_visual_concepts
     .map((concept) => asRecord(concept)?.semantic_name)
     .filter((name): name is string => nonEmptyString(name));
