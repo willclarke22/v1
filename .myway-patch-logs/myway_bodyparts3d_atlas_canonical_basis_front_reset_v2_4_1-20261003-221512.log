@@ -1,0 +1,72 @@
+**********************
+PowerShell transcript start
+Start time: 20261003221512
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 4356
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Running fail-closed preflight before any source write...
+PATCH myway_bodyparts3d_atlas_canonical_basis_front_reset_v2_4_1
+- sandbox/probe-lab/visual-experience/ui/orchestration-anatomy-atlas-viewer.tsx: baseline
+- scripts/sandbox/verify-bodyparts3d-atlas-canonical-basis-front-reset-v2-4-1.mjs: absent (baseline)
+STATE 0
+Verifying exact payload hashes before any source write...
+Backing up exact current bytes...
+Writing only enumerated patch targets...
+
+==> Current verifier syntax
+
+
+==> Next.js type generation
+
+
+==> TypeScript noEmit
+
+
+==> Current V2.4.1 verifier
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-atlas-upright-reset-360-v2-3-1.mjs
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-atlas-anatomical-front-close-inspection-v2-2.mjs
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-atlas-camera-controls-v2-1-1.mjs
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-atlas-navigation-semantic-v2.mjs
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-atlas-assembly-proof-v1.mjs
+
+
+==> Historical verifier scripts/sandbox/verify-bodyparts3d-anatomy-concept-realization-v1.mjs
+
+
+==> Next.js production build
+
+Running postflight; STATE 10 is required...
+PATCH myway_bodyparts3d_atlas_canonical_basis_front_reset_v2_4_1
+- sandbox/probe-lab/visual-experience/ui/orchestration-anatomy-atlas-viewer.tsx: applied
+- scripts/sandbox/verify-bodyparts3d-atlas-canonical-basis-front-reset-v2-4-1.mjs: applied
+STATE 10
+
+SUCCESS: myway_bodyparts3d_atlas_canonical_basis_front_reset_v2_4_1 applied and validated.
+Next required gate: runtime screenshot/video QA of startup Reset, full orbit, Frame active/concept/structure, and close zoom.
+**********************
+PowerShell transcript end
+End time: 20261003221608
+**********************

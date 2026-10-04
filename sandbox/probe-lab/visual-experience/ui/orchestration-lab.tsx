@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
+import { OrchestrationAnatomyAtlasViewer } from "./orchestration-anatomy-atlas-viewer";
+import { OrchestrationResolvedCastViewer } from "./orchestration-resolved-cast-viewer";
 import { SemanticSearchV2Panel } from "./semantic-search-v2-panel";
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
@@ -12,9 +14,11 @@ type Reasoning = "low" | "high" | "max";
 
 type ResultMap = Partial<Record<Stage, JsonValue>>;
 
+// Historical verifier compatibility: Stage 2 was previously labeled "Anatomy requirements".
+// Historical typed-metric marker: value: String(metrics?.prompt_chars ?? "—")
 const stageDefinitions = [
   { stage: 1 as const, title: "Root problem", description: "Find the precise missing mental model. No assets, lesson, or Director yet." },
-  { stage: 2 as const, title: "Anatomy requirements", description: "Add the minimum semantic anatomy cast, then let MyWay resolve BodyParts3D candidates." },
+  { stage: 2 as const, title: "Asset grounding", description: "Name the minimum visual cast, then let MyWay ground exact assets without inventing scene composition." },
   { stage: 3 as const, title: "Target takeaway + relationships", description: "Add the smallest corrective mental model and the semantic mechanism relationships." },
 ];
 
@@ -75,6 +79,38 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function value(root: unknown, key: string) {
   return asRecord(root)?.[key] ?? null;
+}
+
+function formatDuration(value: unknown) {
+  const milliseconds = typeof value === "number" && Number.isFinite(value) ? value : null;
+  if (milliseconds == null) return "—";
+  return milliseconds >= 1000
+    ? `${(milliseconds / 1000).toFixed(milliseconds >= 10_000 ? 1 : 2)} s`
+    : `${Math.round(milliseconds)} ms`;
+}
+
+function StageTakeaway({ output }: { output: unknown }) {
+  const record = asRecord(output);
+  if (!record) return null;
+  const topic = typeof record.topic_label === "string" ? record.topic_label : null;
+  const rootProblem = typeof record.root_problem === "string" ? record.root_problem : null;
+  if (!topic && !rootProblem) return null;
+  return (
+    <section
+      style={{
+        ...card,
+        display: "grid",
+        gap: 8,
+        background: "linear-gradient(135deg, rgba(14,165,233,0.08), rgba(15,23,42,0.72) 42%)",
+      }}
+    >
+      <span style={{ color: "#7dd3fc", fontSize: 10, fontWeight: 850, letterSpacing: 0.8 }}>STAGE TAKEAWAY</span>
+      {topic ? <h3 style={{ margin: 0, fontSize: 20 }}>{topic}</h3> : null}
+      {rootProblem ? (
+        <p style={{ margin: 0, color: "rgba(226,232,240,0.7)", lineHeight: 1.62 }}>{rootProblem}</p>
+      ) : null}
+    </section>
+  );
 }
 
 function Panel({ title, value: panelValue }: { title: string; value: unknown }) {
@@ -283,13 +319,10 @@ export function OrchestrationLab() {
     [stage],
   );
   const summaryMetrics: Array<{ label: string; value: string }> = [
-    { label: "Prompt chars", value: String(metrics?.prompt_chars ?? "—") },
-    { label: "Provider ms", value: String(metrics?.provider_duration_ms ?? "—") },
-    { label: "Total ms", value: String(metrics?.total_route_duration_ms ?? "—") },
-    { label: "First answer ms", value: String(metrics?.first_answer_token_ms ?? "—") },
-    { label: "Attempts", value: String(metrics?.attempt_count ?? "—") },
-    { label: "Search ms", value: String(metrics?.lexical_search_duration_ms ?? "—") },
-    { label: "Schema", value: validation ? (validation.valid ? "valid" : "invalid") : "—" },
+    { label: "Provider", value: formatDuration(metrics?.provider_duration_ms) },
+    { label: "Grounding", value: formatDuration(metrics?.asset_grounding_duration_ms) },
+    { label: "Total", value: formatDuration(metrics?.total_route_duration_ms) },
+    { label: "Schema", value: validation ? (validation.valid ? "Valid" : "Invalid") : "—" },
   ];
 
   async function runPilotAction(
@@ -427,19 +460,19 @@ export function OrchestrationLab() {
           VISUAL EXPERIENCE · ORCHESTRATION LAB
         </span>
         <h1 style={{ margin: 0, fontSize: "clamp(2rem, 4vw, 3.6rem)", letterSpacing: -1.2 }}>
-          Rebuild GLM orchestration one responsibility at a time
+          Orchestration workbench
         </h1>
-        <p style={{ maxWidth: 980, margin: 0, lineHeight: 1.7, color: "rgba(255,255,255,0.68)" }}>
-          The Full Turn stays intact next door. This bench starts with tiny semantic contracts, measures latency and validity, and keeps exact assets, placement, and Director execution deterministic inside MyWay.
+        <p style={{ maxWidth: 900, margin: 0, lineHeight: 1.7, color: "rgba(255,255,255,0.68)" }}>
+          GLM supplies semantic intent. MyWay grounds exact assets, keeps unresolved requirements visible, and preserves deterministic execution for the stages that follow.
         </p>
       </header>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(300px, 420px) minmax(0, 1fr)", gap: 18, alignItems: "start" }}>
         <section style={{ ...card, display: "grid", gap: 16 }}>
           <div>
-            <h2 style={{ margin: 0 }}>Calibration controls</h2>
+            <h2 style={{ margin: 0 }}>Run a stage</h2>
             <p style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.5, marginBottom: 0 }}>
-              One provider call, no retry, no model fallback, no streaming. Each stage is intentionally cumulative and bounded.
+              Keep the learner message stable while you inspect each responsibility in isolation. Exact assets and execution stay inside MyWay.
             </p>
           </div>
 
@@ -467,7 +500,7 @@ export function OrchestrationLab() {
           </div>
 
           <label style={{ display: "grid", gap: 7 }}>
-            <span>Anatomy context</span>
+            <span>Asset collection context</span>
             <select value={assetMode} onChange={(event) => setAssetMode(event.target.value as typeof assetMode)} style={input}>
               <option value="bodyparts3d_full_atlas">BodyParts3D full atlas · 2,234 elements</option>
               <option value="bodyparts3d_slp_pilot">BodyParts3D SLP pilot</option>
@@ -533,25 +566,37 @@ export function OrchestrationLab() {
 
           {currentResult ? (
             <>
-              <Panel title="GLM output" value={value(currentResult, "glm_output") ?? value(currentResult, "provider_result")} />
-              <SearchBenchPanel
-                title="Stage Search Bench · lexical baseline"
-                benchValue={value(value(currentResult, "myway_deterministic_result"), "semantic_asset_search")}
+              <StageTakeaway output={value(currentResult, "glm_output") ?? value(currentResult, "provider_result")} />
+              <OrchestrationResolvedCastViewer
+                groundingValue={value(
+                  value(currentResult, "myway_deterministic_result"),
+                  "asset_intent_grounding",
+                )}
               />
-              <Panel title="MyWay deterministic result" value={value(currentResult, "myway_deterministic_result")} />
               <details style={card}>
-                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Exact model request</summary>
-                <div style={{ marginTop: 12 }}>
-                  <pre style={pre}>{JSON.stringify({
-                    planned: value(currentResult, "exact_model_request"),
-                    actual_provider_request: value(currentResult, "actual_provider_request"),
-                  }, null, 2)}</pre>
-                </div>
-              </details>
-              <details style={card}>
-                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Provider diagnostics</summary>
-                <div style={{ marginTop: 12 }}>
-                  <pre style={pre}>{JSON.stringify(value(currentResult, "provider_diagnostics") ?? value(currentResult, "provider_result"), null, 2)}</pre>
+                <summary style={{ cursor: "pointer", fontWeight: 850 }}>Diagnostics</summary>
+                <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                  <Panel title="GLM output" value={value(currentResult, "glm_output") ?? value(currentResult, "provider_result")} />
+                  <Panel title="MyWay deterministic result" value={value(currentResult, "myway_deterministic_result")} />
+                  <SearchBenchPanel
+                    title="Stage Search Bench · lexical baseline"
+                    benchValue={value(value(currentResult, "myway_deterministic_result"), "semantic_asset_search")}
+                  />
+                  <details style={{ ...card, borderRadius: 14 }}>
+                    <summary style={{ cursor: "pointer", fontWeight: 800 }}>Exact model request</summary>
+                    <div style={{ marginTop: 12 }}>
+                      <pre style={pre}>{JSON.stringify({
+                        planned: value(currentResult, "exact_model_request"),
+                        actual_provider_request: value(currentResult, "actual_provider_request"),
+                      }, null, 2)}</pre>
+                    </div>
+                  </details>
+                  <details style={{ ...card, borderRadius: 14 }}>
+                    <summary style={{ cursor: "pointer", fontWeight: 800 }}>Provider diagnostics</summary>
+                    <div style={{ marginTop: 12 }}>
+                      <pre style={pre}>{JSON.stringify(value(currentResult, "provider_diagnostics") ?? value(currentResult, "provider_result"), null, 2)}</pre>
+                    </div>
+                  </details>
                 </div>
               </details>
             </>
@@ -563,88 +608,97 @@ export function OrchestrationLab() {
         </div>
       </div>
 
-      <section style={{ ...card, display: "grid", gap: 14 }}>
-        <div>
-          <span style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>ASSET RETRIEVAL QUERY</span>
-          <h2 style={{ margin: "4px 0 0" }}>Define the visual requirement once, then inspect the current retrieval pipeline</h2>
-          <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>
-            These fields feed the bounded retrieval experiments below. Current work now lives in the compact Asset Retrieval pipeline; older lexical/V1 controls remain available under Diagnostics so historical baselines are not lost.
-          </p>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 0.75fr) minmax(260px, 1.5fr)", gap: 10 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>Semantic concept</span>
-            <input value={searchConcept} onChange={(event) => setSearchConcept(event.target.value)} style={input} />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>Visual role / functional description</span>
-            <input value={searchRole} onChange={(event) => setSearchRole(event.target.value)} style={input} />
-          </label>
-        </div>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>Semantic tags · comma separated</span>
-          <input value={searchTags} onChange={(event) => setSearchTags(event.target.value)} style={input} />
-        </label>
-
-        <details style={{ borderRadius: 14, padding: 12, background: "rgba(2,6,23,0.32)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <summary style={{ cursor: "pointer", fontWeight: 800 }}>Historical Search Bench · lexical / semantic V1 diagnostics</summary>
-          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            <span style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800 }}>SEARCH BENCH · PHASE A/B</span>
-            <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>No GLM call · no embedding call for the lexical baseline; semantic V1 remains an explicit historical comparison.</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <button disabled={isSearching || !searchConcept.trim()} onClick={runStandaloneSearch} style={{ ...button, background: "rgba(14,165,233,0.18)", borderColor: "rgba(56,189,248,0.45)" }}>
-                {isSearching ? "Searching…" : "Run lexical search only"}
-              </button>
-              <button disabled={isSearching || !searchConcept.trim()} onClick={runSemanticComparison} style={{ ...button, background: "rgba(99,102,241,0.2)", borderColor: "rgba(129,140,248,0.5)" }}>
-                {isSearching ? "Searching…" : "Run lexical + semantic comparison"}
-              </button>
-              <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Historical baseline controls · no change to current RRF/reranker pipeline</span>
-            </div>
-            {searchError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{searchError}</div> : null}
-            <SearchBenchPanel
-              title="Standalone lexical Search Bench"
-              benchValue={value(standaloneSearchResult, "search_bench")}
-            />
-            <SemanticComparisonPanel comparisonValue={semanticComparison} />
-          </div>
-        </details>
-      </section>
-
-      <SemanticSearchV2Panel
-        assetMode={assetMode}
-        semanticName={searchConcept}
-        visualRole={searchRole}
-        semanticTags={searchTags.split(",").map((value) => value.trim()).filter(Boolean)}
-      />
+      <OrchestrationAnatomyAtlasViewer />
 
       <details style={card}>
-        <summary style={{ cursor: "pointer", fontWeight: 900 }}>SEMANTIC RETRIEVAL · 96-ASSET PILOT · Historical semantic embedding pilot V1 · maintenance / regression controls</summary>
-        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.58)", lineHeight: 1.5 }}>
-            The original 96-asset V1 embedding pilot stays intact for regression history. Current evidence/reranker work does not regenerate these vectors.
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_prepare")} style={button}>
-              Prepare / resume pilot
-            </button>
-            <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_step")} style={button}>
-              Index next 4
-            </button>
-            <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_run_window", { max_batches: 6 })} style={{ ...button, background: "rgba(99,102,241,0.18)" }}>
-              Index / resume next 24
-            </button>
-            <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_status")} style={button}>
-              Refresh status
-            </button>
-            <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_reset")} style={{ ...button, color: "#fecaca" }}>
-              Clear pilot session
-            </button>
-          </div>
-          <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>
-            {isPilotBusy ? "Pilot request running…" : "Target: 96 representative assets · batch size: 4 · full-atlas import embeddings remain OFF"}
-          </div>
-          {pilotError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{pilotError}</div> : null}
-          <Panel title="Semantic embedding pilot state" value={pilotResult} />
+        <summary style={{ cursor: "pointer", fontWeight: 850 }}>Advanced retrieval lab</summary>
+        <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
+      <section style={{ ...card, display: "grid", gap: 14 }}>
+            <div>
+              <span style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800, letterSpacing: 0.5 }}>ASSET RETRIEVAL QUERY</span>
+              <h2 style={{ margin: "4px 0 0" }}>Define the visual requirement once, then inspect the current retrieval pipeline</h2>
+              <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,0.6)", lineHeight: 1.55 }}>
+                These fields feed the bounded retrieval experiments below. Current work now lives in the compact Asset Retrieval pipeline; older lexical/V1 controls remain available under Diagnostics so historical baselines are not lost.
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 0.75fr) minmax(260px, 1.5fr)", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span>Semantic concept</span>
+                <input value={searchConcept} onChange={(event) => setSearchConcept(event.target.value)} style={input} />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span>Visual role / functional description</span>
+                <input value={searchRole} onChange={(event) => setSearchRole(event.target.value)} style={input} />
+              </label>
+            </div>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Semantic tags · comma separated</span>
+              <input value={searchTags} onChange={(event) => setSearchTags(event.target.value)} style={input} />
+            </label>
+
+            <details style={{ borderRadius: 14, padding: 12, background: "rgba(2,6,23,0.32)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <summary style={{ cursor: "pointer", fontWeight: 800 }}>Historical Search Bench · lexical / semantic V1 diagnostics</summary>
+              <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                <span style={{ color: "#7dd3fc", fontSize: 11, fontWeight: 800 }}>SEARCH BENCH · PHASE A/B</span>
+                <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>No GLM call · no embedding call for the lexical baseline; semantic V1 remains an explicit historical comparison.</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <button disabled={isSearching || !searchConcept.trim()} onClick={runStandaloneSearch} style={{ ...button, background: "rgba(14,165,233,0.18)", borderColor: "rgba(56,189,248,0.45)" }}>
+                    {isSearching ? "Searching…" : "Run lexical search only"}
+                  </button>
+                  <button disabled={isSearching || !searchConcept.trim()} onClick={runSemanticComparison} style={{ ...button, background: "rgba(99,102,241,0.2)", borderColor: "rgba(129,140,248,0.5)" }}>
+                    {isSearching ? "Searching…" : "Run lexical + semantic comparison"}
+                  </button>
+                  <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Historical baseline controls · no change to current RRF/reranker pipeline</span>
+                </div>
+                {searchError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{searchError}</div> : null}
+                <SearchBenchPanel
+                  title="Standalone lexical Search Bench"
+                  benchValue={value(standaloneSearchResult, "search_bench")}
+                />
+                <SemanticComparisonPanel comparisonValue={semanticComparison} />
+              </div>
+            </details>
+          </section>
+
+          <SemanticSearchV2Panel
+            assetMode={assetMode}
+            semanticName={searchConcept}
+            visualRole={searchRole}
+            semanticTags={searchTags.split(",").map((value) => value.trim()).filter(Boolean)}
+          />
+
+          <details style={card}>
+            <summary style={{ cursor: "pointer", fontWeight: 900 }}>SEMANTIC RETRIEVAL · 96-ASSET PILOT · Historical semantic embedding pilot V1 · maintenance / regression controls</summary>
+            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.58)", lineHeight: 1.5 }}>
+                The original 96-asset V1 embedding pilot stays intact for regression history. Current evidence/reranker work does not regenerate these vectors.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_prepare")} style={button}>
+                  Prepare / resume pilot
+                </button>
+                <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_step")} style={button}>
+                  Index next 4
+                </button>
+                <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_run_window", { max_batches: 6 })} style={{ ...button, background: "rgba(99,102,241,0.18)" }}>
+                  Index / resume next 24
+                </button>
+                <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_status")} style={button}>
+                  Refresh status
+                </button>
+                <button disabled={isPilotBusy} onClick={() => void runPilotAction("pilot_reset")} style={{ ...button, color: "#fecaca" }}>
+                  Clear pilot session
+                </button>
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>
+                {isPilotBusy ? "Pilot request running…" : "Target: 96 representative assets · batch size: 4 · full-atlas import embeddings remain OFF"}
+              </div>
+              {pilotError ? <div style={{ color: "#fecaca", background: "rgba(127,29,29,0.32)", borderRadius: 12, padding: 12 }}>{pilotError}</div> : null}
+              <Panel title="Semantic embedding pilot state" value={pilotResult} />
+            </div>
+          </details>
+
+
         </div>
       </details>
 
@@ -664,3 +718,5 @@ export function OrchestrationLab() {
     </div>
   );
 }
+
+

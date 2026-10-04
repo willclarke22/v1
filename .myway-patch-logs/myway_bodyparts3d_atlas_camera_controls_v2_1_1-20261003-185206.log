@@ -1,0 +1,65 @@
+**********************
+PowerShell transcript start
+Start time: 20261003185206
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 6968
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+STATE 0
+- baseline matches the current 2026-10-03T18:46:27 sandbox dump; patch may be applied
+
+Patch payload written. Starting verification.
+
+==> Atlas Camera + Controls V2.1.1 verifier
+
+
+==> Atlas Navigation + Semantic Concept V2 regression
+
+
+==> Concept Realization V1 regression
+
+
+==> Atlas Assembly Proof V1 regression
+
+
+==> Resolved Cast Inspector regression
+
+
+==> BodyParts presentation-family regression
+
+
+==> Asset Grounding fast-path regression
+
+
+==> Simple Asset Intent regression
+
+
+==> Orchestration Stage 1-3 regression
+
+
+==> TypeScript
+
+
+==> Next.js build
+
+STATE 10
+- BodyParts3D Atlas Camera + Controls V2.1.1 is fully applied
+
+STATE 10
+PASS: BodyParts3D Atlas Camera + Controls V2.1.1 applied and verified.
+**********************
+PowerShell transcript end
+End time: 20261003185341
+**********************

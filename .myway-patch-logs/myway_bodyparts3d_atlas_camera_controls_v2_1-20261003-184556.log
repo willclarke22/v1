@@ -1,0 +1,46 @@
+**********************
+PowerShell transcript start
+Start time: 20261003184556
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 26304
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+STATE 0
+- baseline matches the current 2026-10-03T00:41:57 sandbox dump; patch may be applied
+
+Patch payload written. Starting verification.
+
+==> Atlas Camera + Controls V2.1 verifier
+
+
+==> Atlas Navigation + Semantic Concept V2 regression
+
+
+==> Concept Realization V1 regression
+
+
+==> Atlas Assembly Proof V1 regression
+
+PS>TerminatingError(): "Atlas Assembly Proof V1 regression failed with exit code 1."
+
+Verification failed. Restoring exact baseline bytes...
+STATE 0
+- baseline matches the current 2026-10-03T00:41:57 sandbox dump; patch may be applied
+Rollback proved STATE 0.
+PS>TerminatingError(): "Atlas Assembly Proof V1 regression failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20261003184557
+**********************
