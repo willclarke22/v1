@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
+import { AnatomyExperienceLab } from "./anatomy-experience-lab";
 import { OrchestrationAnatomyAtlasViewer } from "./orchestration-anatomy-atlas-viewer";
 import { OrchestrationResolvedCastViewer } from "./orchestration-resolved-cast-viewer";
 import { SemanticSearchV2Panel } from "./semantic-search-v2-panel";
@@ -454,7 +455,11 @@ export function OrchestrationLab() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div style={{ display: "grid", gap: 15 }}>
+      <AnatomyExperienceLab />
+      <details style={{...card, padding:12}}>
+        <summary style={{cursor:"pointer",fontWeight:750,color:"#b7cae5"}}>Legacy calibration: stages 1–3, atlas proof and retrieval diagnostics (preserved)</summary>
+    <div style={{ display: "grid", gap: 20, marginTop:14 }}>
       <header style={{ display: "grid", gap: 8 }}>
         <span style={{ color: "#7dd3fc", fontSize: 12, fontWeight: 800, letterSpacing: 0.6 }}>
           VISUAL EXPERIENCE · ORCHESTRATION LAB
@@ -716,7 +721,7 @@ export function OrchestrationLab() {
         </p>
       </section>
     </div>
+      </details>
+    </div>
   );
 }
-
-

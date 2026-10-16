@@ -4,6 +4,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { SemanticScenePlayer } from "./scene-player";
 import { OrchestrationLab } from "./orchestration-lab";
+import { GsapStoryLab } from "./gsap-story-lab";
+import { AnatomyDirectorLab } from "./anatomy-director-lab";
 import { getSemanticSceneTimelineBeats, prepareSemanticSceneFromTurnResult } from "./scene-player/semantic-scene-layout";
 import {
   extractResourcePlanFromLabResult,
@@ -546,7 +548,7 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
 }
 
 export function VisualExperienceLab() {
-  const [activeTab, setActiveTab] = useState<"full-turn" | "orchestration">("full-turn");
+  const [activeTab, setActiveTab] = useState<"full-turn" | "orchestration" | "2d-story" | "anatomy-director">("full-turn");
   const [body, setBody] = useState<RequestBody>(defaultRequestBody);
   const [debugResult, setDebugResult] = useState<JsonValue | undefined>();
   const [resolveResult, setResolveResult] = useState<JsonValue | undefined>();
@@ -558,13 +560,15 @@ export function VisualExperienceLab() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("tab") === "orchestration") setActiveTab("orchestration");
+    if (params.get("tab") === "2d-story") setActiveTab("2d-story");
+    if (params.get("tab") === "anatomy-director") setActiveTab("anatomy-director");
   }, []);
 
-  function chooseTab(tab: "full-turn" | "orchestration") {
+  function chooseTab(tab: "full-turn" | "orchestration" | "2d-story" | "anatomy-director") {
     setActiveTab(tab);
     const url = new URL(window.location.href);
     if (tab === "full-turn") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", "orchestration");
+    else url.searchParams.set("tab", tab);
     window.history.replaceState(null, "", url.toString());
   }
 
@@ -768,10 +772,26 @@ export function VisualExperienceLab() {
           >
             Orchestration Lab
           </button>
+          <button
+            type="button"
+            onClick={() => chooseTab("2d-story")}
+            style={{
+              ...buttonStyle,
+              background: activeTab === "2d-story" ? "rgba(34,211,238,0.18)" : buttonStyle.background,
+              borderColor: activeTab === "2d-story" ? "rgba(34,211,238,0.52)" : "rgba(255,255,255,0.18)",
+            }}
+          >
+            2D Story Lab
+          </button>
+          <button type="button" onClick={() => chooseTab("anatomy-director")} style={{...buttonStyle,background: activeTab === "anatomy-director" ? "rgba(96,165,250,0.2)" : buttonStyle.background,borderColor: activeTab === "anatomy-director" ? "rgba(96,165,250,0.55)" : "rgba(255,255,255,0.18)"}}>Anatomy Director</button>
         </nav>
 
-        {activeTab === "orchestration" ? (
+        {activeTab === "anatomy-director" ? (
+          <AnatomyDirectorLab />
+        ) : activeTab === "orchestration" ? (
           <OrchestrationLab />
+        ) : activeTab === "2d-story" ? (
+          <GsapStoryLab />
         ) : (
           <>
         <header style={{ display: "grid", gap: 8 }}>

@@ -1,0 +1,37 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261009130002
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Users\willc\AppData\Local\Temp\myway_visual_experience_creative_thesis_bench_v1_1\install.ps1 -ProjectRoot C:\Users\willc\projects\MyWay\v1 -Confirmation APPLY-VISUAL-EXPERIENCE-CREATIVE-THESIS-BENCH-V1-1
+Process ID: 5080
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+=== myway_visual_experience_creative_thesis_bench_v1_1 ===
+Project: C:\Users\willc\projects\MyWay\v1
+Preflight: exact STATE 0 required before writes.
+> node C:\Users\willc\AppData\Local\Temp\myway_visual_experience_creative_thesis_bench_v1_1\preflight.mjs --root=C:\Users\willc\projects\MyWay\v1 --expect=0
+
+> pnpm exec next typegen
+
+> pnpm exec tsc --noEmit
+
+PS>TerminatingError(): "Command failed with exit code 2: pnpm exec tsc --noEmit"
+PATCH FAILURE: Command failed with exit code 2: pnpm exec tsc --noEmit
+Restoring exact pre-patch source bytes...
+> node C:\Users\willc\AppData\Local\Temp\myway_visual_experience_creative_thesis_bench_v1_1\preflight.mjs --root=C:\Users\willc\projects\MyWay\v1 --expect=0
+
+ROLLBACK VERIFIED: STATE 0 restored.
+**********************
+Windows PowerShell transcript end
+End time: 20261009130157
+**********************

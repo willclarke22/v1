@@ -1099,7 +1099,8 @@ function errorMessage(error: unknown) {
 
 export type VisualOrchestrationCalibrationModel =
   | "z-ai/glm-5.3"
-  | "z-ai/glm-5.3-flash";
+  | "z-ai/glm-5.3-flash"
+  | "deepseek-ai/deepseek-v4-pro";
 
 export type VisualOrchestrationCalibrationResult =
   | {
@@ -1124,13 +1125,14 @@ function normalizeCalibrationReasoningEffort(value: unknown): VisualGlmReasoning
 }
 
 function normalizeCalibrationModel(value: unknown): VisualOrchestrationCalibrationModel {
+  if (value === "deepseek-ai/deepseek-v4-pro") return value;
   return value === "z-ai/glm-5.3-flash" ? value : "z-ai/glm-5.3";
 }
 
 /**
- * Shared provider entry point for the Visual Experience Orchestration Lab.
- * It deliberately reuses the production GLM transport/diagnostics path but
- * disables retries/fallbacks so each benchmark run measures one bounded call.
+ * Shared provider entry point for Visual Experience calibration lanes.
+ * It reuses the production NVIDIA transport/config for GLM or DeepSeek while
+ * disabling retries/fallbacks so each benchmark run measures one bounded call.
  */
 export async function callVisualOrchestrationCalibrationModel(args: {
   messages: VisualProviderChatMessage[];
@@ -1143,16 +1145,18 @@ export async function callVisualOrchestrationCalibrationModel(args: {
 }): Promise<VisualOrchestrationCalibrationResult> {
   const model = normalizeCalibrationModel(args.model);
   const reasoningEffort = normalizeCalibrationReasoningEffort(args.reasoning_effort);
-  const configBase = getNvidiaProviderConfig("glm", "reliable");
+  const isDeepSeek = model === "deepseek-ai/deepseek-v4-pro";
+  const configBase = getNvidiaProviderConfig(isDeepSeek ? "deepseek" : "glm", "reliable");
   const config: ChatProviderConfig = {
     ...configBase,
     model,
-    providerLabel:
-      model === "z-ai/glm-5.3-flash"
+    providerLabel: isDeepSeek
+      ? "NVIDIA/DeepSeek V4 Pro"
+      : model === "z-ai/glm-5.3-flash"
         ? "NVIDIA/GLM-5.3-Flash"
         : "NVIDIA/GLM-5.3",
     maxTokens: Math.max(64, Math.min(4_000, Math.floor(args.max_tokens))),
-    reasoningEffort,
+    reasoningEffort: isDeepSeek ? undefined : reasoningEffort,
     temperature:
       typeof args.temperature === "number"
         ? Math.max(0, Math.min(1, args.temperature))
@@ -1161,7 +1165,7 @@ export async function callVisualOrchestrationCalibrationModel(args: {
       typeof args.top_p === "number"
         ? Math.max(0, Math.min(1, args.top_p))
         : 1,
-    useResponseFormat: false,
+    useResponseFormat: configBase.useResponseFormat,
   };
   const request: VisualProviderChatRequest = {
     messages: args.messages,

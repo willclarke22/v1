@@ -67,7 +67,6 @@ for (const marker of [
   "Reconstruct the human in shared collection space",
   "runtime_transform",
   "Shared atlas space",
-  "Landmarks",
   "Skeleton",
   "Muscular",
   "Nervous",
@@ -125,5 +124,5 @@ assert(
 
 console.log("PASS: BodyParts3D Atlas Assembly Proof V1 verified.");
 console.log(
-  "MyWay exposes a bounded full-atlas manifest, reconstructs members from saved shared-space transforms in one Canvas, defaults to a landmark proof, keeps larger presets explicitly bounded, and adds no GLM/search/Director authority.",
+  "MyWay exposes a bounded full-atlas manifest, reconstructs members from saved shared-space transforms in one Canvas, defaults to All anatomy after preload, keeps larger presets explicitly bounded, and adds no GLM/search/Director authority.",
 );

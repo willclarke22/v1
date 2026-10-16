@@ -1,0 +1,166 @@
+**********************
+PowerShell transcript start
+Start time: 20261013231613
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\2a59476c9b\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 24600
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+RUN: node --check C:\Users\willc\AppData\Local\Temp\myway_visual_experience_anatomy_director_v1-qa-ab7c232912814977a3a564d4c1f61451\preflight-myway_visual_experience_anatomy_director_v1.mjs
+PREFLIGHT STATE 0: safe baseline
+RUN: pnpm exec next typegen
+Generating route types...
+Γ£ô Types generated successfully
+RUN: pnpm exec tsc --noEmit
+RUN: node scripts/sandbox/verify-visual-experience-anatomy-director-v1.mjs
+PASS: Anatomy Director V1 integrated as fourth tab; one grounded GLM request; bounded JSON contract; single-asset Three.js playback; original labs preserved.
+RUN: pnpm exec tsx scripts/sandbox/verify-visual-experience-anatomy-director-contract-v1.ts
+PASS: anatomy timeline parser, bounded invalidation, fenced JSON, interpolation.
+RUN: node scripts/sandbox/verify-bodyparts3d-atlas-assembly-proof-v1.mjs
+PASS: BodyParts3D Atlas Assembly Proof V1 verified.
+MyWay exposes a bounded full-atlas manifest, reconstructs members from saved shared-space transforms in one Canvas, defaults to All anatomy after preload, keeps larger presets explicitly bounded, and adds no GLM/search/Director authority.
+RUN: node scripts/sandbox/verify-bodyparts3d-atlas-trackball-spatial-feel-landmarks-cleanup-v2-6.mjs
+PASS: BodyParts3D Atlas Trackball Spatial Feel + Landmarks Cleanup V2.6 verified.
+The Anatomy Atlas now reuses the Learning Space Trackball interaction feel with an anchored no-pan target, removes the old Landmarks test/preset while retaining internal landmark context for concept realization, and preserves preload, All-anatomy startup, skin, selection color, canonical reset, framing, and shared-space transforms.
+RUN: pnpm exec tsx scripts/sandbox/verify-visual-experience-gsap-story-lab-v1.ts
+PASS: Visual Experience 2D Story Lab + isolated GSAP runtime V1 verified.
+Full Turn and Orchestration remain intact; a third 2D Story Lab tab accepts generated SVG/GSAP programs and executes them only inside an opaque sandboxed iframe.
+RUN: pnpm exec tsx scripts/sandbox/verify-visual-experience-creative-thesis-single-fastpath-v1.ts
+PASS: Creative Visual Thesis single-thesis fast path V1 verified.
+Exactly one unconstrained thesis is generated with one GLM call and a 180-second provider timeout; the second critic call is skipped, then optional capability assist occurs afterward with the freeform escape hatch intact.
+RUN: pnpm exec tsx scripts/sandbox/verify-visual-experience-orchestration-lab-stage1-3-v2.ts
+PASS: Visual Experience Orchestration Lab Stage 1-3 V2 verified.
+Full Turn remains intact; calibration stages isolate root problem, semantic anatomy resolution, and target-takeaway/relationship reasoning before Director orchestration is introduced.
+RUN: pnpm build
+
+> v1@0.1.0 build C:\Users\willc\projects\MyWay\v1
+> next build
+
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 12.4s
+  Running TypeScript ...
+  Finished TypeScript in 29.0s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/86) ...
+  Generating static pages using 11 workers (21/86)
+  Generating static pages using 11 workers (42/86)
+  Generating static pages using 11 workers (64/86)
+Γ£ô Generating static pages using 11 workers (86/86) in 1504ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/bootstrap/topic-state
+Γö£ ╞Æ /api/confusion-insight/run-pending
+Γö£ ╞Æ /api/local-dev/engine-provider-smoke
+Γö£ ╞Æ /api/local-dev/idle-state
+Γö£ ╞Æ /api/local-dev/mock-3model-turn
+Γö£ ╞Æ /api/message
+Γö£ ╞Æ /api/probe/submit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/acquisition
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/ambientcg
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/attributions
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/blender-jobs
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/bodyparts3d-pilot
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/bodyparts3d-thumbnails
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/enrichment
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/geometry
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/glm-builder
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/identity-audit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-blenderkit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-local
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-smart
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/library
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/library-browser
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/pending-file
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/promote
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/remove
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/replace
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/resolve
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/scenes
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/trellis
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/benchmark
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/candidate
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/execute
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/execute-with-repair
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/improve
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/native-vintage-camera-proof
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/plan
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/repair
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/resources
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/visual-critique
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/freeform
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/freeform-vision
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/video-compare
+Γö£ ╞Æ /api/sandbox/probe-lab/manual-turn/render
+Γö£ ╞Æ /api/sandbox/probe-lab/primitive-builder/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/primitive-builder/refresh-assets
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments/file
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials/texture
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/models/file
+Γö£ ╞Æ /api/sandbox/probe-lab/scene-runtime/resolve
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-atlas
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-director
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/asset-search-bench
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/compile-experience
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/creative-thesis
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/full-turn-debug
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/generate-full-turn
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/orchestration-stage
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/request-debug
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/resolve-full-turn
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/semantic-embedding-pilot
+Γö£ ╞Æ /api/semantic-enrichment/pending-status
+Γö£ ╞Æ /api/semantic-enrichment/run-pending
+Γö£ ╞Æ /api/semantic-layout/commit-pending
+Γö£ ╞Æ /api/semantic-layout/recompute-pending
+Γö£ ╞Æ /api/topic-message-embeddings/run-pending
+Γö£ Γùï /sandbox/probe-lab
+Γö£ Γùï /sandbox/probe-lab/asset-library
+Γö£ Γùï /sandbox/probe-lab/asset-library/ambientcg
+Γö£ Γùï /sandbox/probe-lab/blender-python-builder
+Γö£ Γùï /sandbox/probe-lab/cinematic-production
+Γö£ Γùï /sandbox/probe-lab/cinematic-production/freeform
+Γö£ Γùï /sandbox/probe-lab/directable-assets
+Γö£ Γùï /sandbox/probe-lab/directable-interactions
+Γö£ Γùï /sandbox/probe-lab/director-capability-library
+Γö£ Γùï /sandbox/probe-lab/manual-turn
+Γö£ Γùï /sandbox/probe-lab/motion-camera-library
+Γö£ Γùï /sandbox/probe-lab/primitive-builder
+Γö£ Γùï /sandbox/probe-lab/probe-gallery
+Γö£ Γùï /sandbox/probe-lab/resource-runtime
+Γöö Γùï /sandbox/probe-lab/visual-experience
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+PREFLIGHT STATE 10: fully applied
+SUCCESS: Anatomy Director V1 installed. Browser visual/runtime validation is still required.
+**********************
+PowerShell transcript end
+End time: 20261013231745
+**********************

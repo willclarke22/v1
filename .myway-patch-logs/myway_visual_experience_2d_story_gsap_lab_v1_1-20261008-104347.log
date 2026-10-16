@@ -1,0 +1,48 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261008104348
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Users\willc\AppData\Local\Temp\myway_visual_experience_2d_story_gsap_lab_v1_1\install.ps1 -ProjectRoot C:\Users\willc\projects\MyWay\v1 -Confirmation APPLY-VISUAL-EXPERIENCE-2D-STORY-GSAP-LAB-V1-1
+Process ID: 25584
+PSVersion: 5.1.26100.9549
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9549
+BuildVersion: 10.0.26100.9549
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+=== myway_visual_experience_2d_story_gsap_lab_v1_1 ===
+Project: C:\Users\willc\projects\MyWay\v1
+Preflight: exact STATE 0 required before writes.
+> node C:\Users\willc\AppData\Local\Temp\myway_visual_experience_2d_story_gsap_lab_v1_1\preflight.mjs --root=C:\Users\willc\projects\MyWay\v1 --expect=0
+
+> pnpm exec next typegen
+
+> pnpm exec tsc --noEmit
+
+> pnpm exec tsx scripts/sandbox/verify-visual-experience-gsap-story-lab-v1.ts
+
+> pnpm exec tsx scripts/sandbox/verify-visual-experience-director-full-atlas-convergence-v4.ts
+
+> pnpm exec tsx scripts/sandbox/verify-visual-experience-glm53-fallback-compact-director-v7.ts
+
+> pnpm exec tsx scripts/sandbox/verify-visual-experience-glm53-native-reasoning-observability-v8.ts
+
+> pnpm exec tsx scripts/sandbox/verify-visual-experience-orchestration-lab-stage1-3-v2.ts
+
+> pnpm build
+
+> node C:\Users\willc\AppData\Local\Temp\myway_visual_experience_2d_story_gsap_lab_v1_1\preflight.mjs --root=C:\Users\willc\projects\MyWay\v1 --expect=10
+
+SUCCESS: myway_visual_experience_2d_story_gsap_lab_v1_1 reached STATE 10.
+Open: http://localhost:3000/sandbox/probe-lab/visual-experience?tab=2d-story
+Log: C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_visual_experience_2d_story_gsap_lab_v1_1-20261008-104347.log
+**********************
+Windows PowerShell transcript end
+End time: 20261008105002
+**********************

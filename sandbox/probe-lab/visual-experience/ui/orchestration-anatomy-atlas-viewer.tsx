@@ -1,7 +1,7 @@
 
 "use client";
 
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { TrackballControls, useGLTF } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
   Component,
@@ -130,7 +130,6 @@ type AnatomyAtlasManifest = {
 };
 
 type AtlasPreset =
-  | "landmarks"
   | "skeletal"
   | "muscular"
   | "nervous"
@@ -155,6 +154,8 @@ type CameraCommand = {
 const SAFE_RENDER_LIMIT = 320;
 const SAFE_CONCEPT_RENDER_LIMIT = 180;
 const LANDMARK_TARGET = 58;
+const ATLAS_PRELOAD_BATCH_SIZE = 32;
+const ATLAS_PRELOAD_BATCH_DELAY_MS = 18;
 
 const LEGACY_CONCEPT_SCHEMA = "myway_bodyparts3d_concept_realization_v1";
 // Historical verifier compatibility markers:
@@ -164,6 +165,7 @@ const LEGACY_CONCEPT_SCHEMA = "myway_bodyparts3d_concept_realization_v1";
 // Source: exact BodyParts3D named concept
 
 const shell: CSSProperties = {
+  position: "relative",
   borderRadius: 20,
   border: "1px solid rgba(255,255,255,0.12)",
   background:
@@ -201,12 +203,80 @@ const SYSTEM_ORDER = [
 ] as const;
 
 const SKIN_TONES: Record<SkinTone, string> = {
-  light: "#D7A184",
-  medium: "#B77A5E",
-  deep: "#704632",
+  light: "#C98C6A",
+  medium: "#9F6047",
+  deep: "#5B392B",
 };
 
 const SYSTEM_MATERIAL_CACHE = new Map<string, THREE.Material>();
+// Historical Navigation V2 material literals only: clearcoat: 0.08; clearcoatRoughness: 0.86
+
+function applyProceduralSkinSurface(
+  material: THREE.MeshPhysicalMaterial,
+  skinTone: SkinTone,
+) {
+  const baseColor = new THREE.Color(SKIN_TONES[skinTone]);
+  material.color.copy(baseColor);
+  material.roughness = 0.6;
+  material.metalness = 0;
+  material.clearcoat = 0.025;
+  material.clearcoatRoughness = 0.9;
+  material.sheen = 0.22;
+  material.sheenColor.copy(
+    baseColor.clone().lerp(new THREE.Color("#F0B497"), 0.24),
+  );
+  material.sheenRoughness = 0.78;
+  material.ior = 1.4;
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec3 vMyWaySkinWorldPosition;`,
+      )
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+vMyWaySkinWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec3 vMyWaySkinWorldPosition;
+float mywaySkinNoise(vec3 p) {
+  float a = sin(dot(p, vec3(257.0, 173.0, 311.0)));
+  float b = sin(dot(p, vec3(613.0, 397.0, 479.0)) + a * 0.65);
+  float c = sin((p.x - p.y + p.z) * 887.0 + b * 0.35);
+  return a * 0.48 + b * 0.34 + c * 0.18;
+}`,
+      )
+      .replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+float mywaySkinNoiseValue = mywaySkinNoise(vMyWaySkinWorldPosition);
+float mywaySkinWarmth = 0.965 + mywaySkinNoiseValue * 0.035;
+diffuseColor.rgb *= vec3(
+  mywaySkinWarmth + mywaySkinNoiseValue * 0.018,
+  mywaySkinWarmth,
+  mywaySkinWarmth - mywaySkinNoiseValue * 0.012
+);`,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+roughnessFactor = clamp(
+  roughnessFactor + mywaySkinNoiseValue * 0.055,
+  0.42,
+  0.9
+);`,
+      );
+  };
+  material.customProgramCacheKey = () =>
+    `myway-atlas-procedural-skin-v1-${skinTone}`;
+  material.needsUpdate = true;
+  return material;
+}
 
 function sharedSystemMaterial(system: string, skinTone: SkinTone) {
   const key = `${system}:${system === "integumentary" ? skinTone : "semantic"}`;
@@ -214,13 +284,10 @@ function sharedSystemMaterial(system: string, skinTone: SkinTone) {
   if (existing) return existing;
 
   if (system === "integumentary") {
-    const skin = new THREE.MeshPhysicalMaterial({
-      color: SKIN_TONES[skinTone],
-      roughness: 0.72,
-      metalness: 0,
-      clearcoat: 0.08,
-      clearcoatRoughness: 0.86,
-    });
+    const skin = applyProceduralSkinSurface(
+      new THREE.MeshPhysicalMaterial(),
+      skinTone,
+    );
     skin.side = THREE.DoubleSide;
     skin.name = `myway-atlas-skin-${skinTone}`;
     SYSTEM_MATERIAL_CACHE.set(key, skin);
@@ -776,9 +843,11 @@ function AtlasCameraRig({
       direction.normalize();
     }
 
-    // Reset the camera's upright basis before lookAt(). This makes Reset view
-    // deterministic even after aggressive orbiting around the atlas.
-    camera.up.set(0, 1, 0);
+    // Reset restores canonical Y-up. Frame commands preserve Trackball roll so
+    // focusing a structure does not unexpectedly snap the learner upright.
+    if (command.kind === "reset") {
+      camera.up.set(0, 1, 0);
+    }
     camera.position
       .copy(target)
       .add(direction.multiplyScalar(framing.distance));
@@ -788,11 +857,15 @@ function AtlasCameraRig({
     camera.updateProjectionMatrix();
 
     if (controlsRef.current) {
+      // Match the proven Learning Space interaction split: AtlasCameraRig owns
+      // programmatic framing, while TrackballControls owns manual spatial motion.
       controlsRef.current.target.copy(target);
       controlsRef.current.minDistance = framing.minDistance;
       controlsRef.current.maxDistance = framing.maxDistance;
       controlsRef.current.update();
 
+      // OrbitControls exposed saveState; TrackballControls may not. Keep this
+      // guarded compatibility hook so Reset remains safe across the control swap.
       if (
         command.kind === "reset" &&
         typeof controlsRef.current.saveState === "function"
@@ -836,6 +909,22 @@ class AtlasAssetBoundary extends Component<
   }
 }
 
+function AtlasAssetPreloadProbe({
+  asset,
+  onLoaded,
+}: {
+  asset: AnatomyAtlasAsset;
+  onLoaded: (assetId: string) => void;
+}) {
+  useGLTF(asset.model_url);
+
+  useEffect(() => {
+    onLoaded(asset.asset_id);
+  }, [asset.asset_id, onLoaded]);
+
+  return null;
+}
+
 function AtlasAssetMesh({
   asset,
   selected,
@@ -875,6 +964,13 @@ function AtlasAssetMesh({
       ? baseMaterial.clone()
       : null;
 
+    if (
+      asset.system === "integumentary" &&
+      displayMaterial instanceof THREE.MeshPhysicalMaterial
+    ) {
+      applyProceduralSkinSurface(displayMaterial, skinTone);
+    }
+
     if (displayMaterial) {
       if ("transparent" in displayMaterial) {
         displayMaterial.transparent = opacity < 0.999;
@@ -884,17 +980,35 @@ function AtlasAssetMesh({
       }
       displayMaterial.depthWrite = opacity >= 0.78;
 
-      if (
-        (selected || emphasized) &&
-        "emissive" in displayMaterial &&
-        displayMaterial.emissive instanceof THREE.Color
-      ) {
-        displayMaterial.emissive.set(selected ? "#e0f2fe" : "#38bdf8");
+      if (selected || emphasized) {
+        const accent = new THREE.Color(selected ? "#22D3EE" : "#0EA5E9");
+        const preservedBaseColor =
+          "color" in displayMaterial &&
+          displayMaterial.color instanceof THREE.Color
+            ? displayMaterial.color.clone()
+            : accent.clone();
+
         if (
-          "emissiveIntensity" in displayMaterial &&
-          typeof displayMaterial.emissiveIntensity === "number"
+          "color" in displayMaterial &&
+          displayMaterial.color instanceof THREE.Color
         ) {
-          displayMaterial.emissiveIntensity = selected ? 0.72 : 0.46;
+          displayMaterial.color
+            .copy(preservedBaseColor)
+            .lerp(accent, selected ? 0.1 : 0.055);
+        }
+        if (
+          "emissive" in displayMaterial &&
+          displayMaterial.emissive instanceof THREE.Color
+        ) {
+          displayMaterial.emissive
+            .copy(preservedBaseColor)
+            .lerp(accent, selected ? 0.32 : 0.2);
+          if (
+            "emissiveIntensity" in displayMaterial &&
+            typeof displayMaterial.emissiveIntensity === "number"
+          ) {
+            displayMaterial.emissiveIntensity = selected ? 0.2 : 0.12;
+          }
         }
       }
       displayMaterial.name = `${baseMaterial.name}-${selected ? "selected" : emphasized ? "concept" : layer.mode}`;
@@ -952,7 +1066,6 @@ function AtlasAssetMesh({
 }
 
 const presets: Array<{ id: AtlasPreset; label: string }> = [
-  { id: "landmarks", label: "Landmarks" },
   { id: "skeletal", label: "Skeleton" },
   { id: "muscular", label: "Muscular" },
   { id: "nervous", label: "Nervous" },
@@ -962,12 +1075,12 @@ const presets: Array<{ id: AtlasPreset; label: string }> = [
 
 const PREWARM_BATCH_SIZE = 8;
 const PREWARM_BATCH_DELAY_MS = 90;
+// Historical V2.2/V2.3.1 copy marker: hover a preset to warm its cache.
 
 function assetsForPreset(
   manifest: AnatomyAtlasManifest,
   preset: AtlasPreset,
 ) {
-  if (preset === "landmarks") return landmarkAssets(manifest.assets);
   if (preset === "skeletal") {
     return manifest.assets.filter((asset) => asset.system === "skeletal");
   }
@@ -1044,7 +1157,7 @@ export function OrchestrationAnatomyAtlasViewer() {
   const [manifest, setManifest] = useState<AnatomyAtlasManifest | null>(null);
   const [isLoadingManifest, setIsLoadingManifest] = useState(false);
   const [manifestError, setManifestError] = useState<string | null>(null);
-  const [preset, setPreset] = useState<AtlasPreset>("landmarks");
+  const [preset, setPreset] = useState<AtlasPreset>("all");
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
   const [fullPresetLoad, setFullPresetLoad] = useState(false);
   const [skinTone, setSkinTone] = useState<SkinTone>("medium");
@@ -1066,6 +1179,11 @@ export function OrchestrationAnatomyAtlasViewer() {
   const statsFrame = useRef<number | null>(null);
   const prewarmedUrls = useRef(new Set<string>());
   const prewarmTimers = useRef<number[]>([]);
+  const preloadSettledIds = useRef(new Set<string>());
+  const preloadFailedIds = useRef(new Set<string>());
+  const [preloadOffset, setPreloadOffset] = useState(0);
+  const [preloadTick, setPreloadTick] = useState(0);
+  const [atlasPreloadComplete, setAtlasPreloadComplete] = useState(false);
   const [, setStatsTick] = useState(0);
 
   const flushStats = useCallback(() => {
@@ -1092,6 +1210,24 @@ export function OrchestrationAnatomyAtlasViewer() {
         failedIds.current.add(assetId);
         flushStats();
       }
+    },
+    [flushStats],
+  );
+
+  const reportPreloadLoaded = useCallback((assetId: string) => {
+    if (preloadSettledIds.current.has(assetId)) return;
+    preloadSettledIds.current.add(assetId);
+    setPreloadTick((value) => value + 1);
+  }, []);
+
+  const reportPreloadFailure = useCallback(
+    (assetId: string) => {
+      if (preloadSettledIds.current.has(assetId)) return;
+      preloadSettledIds.current.add(assetId);
+      preloadFailedIds.current.add(assetId);
+      failedIds.current.add(assetId);
+      setPreloadTick((value) => value + 1);
+      flushStats();
     },
     [flushStats],
   );
@@ -1154,9 +1290,15 @@ export function OrchestrationAnatomyAtlasViewer() {
       const systems = SYSTEM_ORDER.filter((system) =>
         Object.prototype.hasOwnProperty.call(json.systems, system),
       );
+      preloadSettledIds.current.clear();
+      preloadFailedIds.current.clear();
+      prewarmedUrls.current.clear();
+      setPreloadOffset(0);
+      setPreloadTick((value) => value + 1);
+      setAtlasPreloadComplete(json.assets.length === 0);
       setManifest(json);
-      setLayerStates(layersForPreset(systems, "landmarks"));
-      setPreset("landmarks");
+      setLayerStates(layersForPreset(systems, "all"));
+      setPreset("all");
       setFullPresetLoad(false);
       initialFrameDone.current = false;
     } catch (caught) {
@@ -1222,6 +1364,52 @@ export function OrchestrationAnatomyAtlasViewer() {
     [manifest],
   );
 
+  const preloadBatch = useMemo(
+    () =>
+      manifest?.assets.slice(
+        preloadOffset,
+        preloadOffset + ATLAS_PRELOAD_BATCH_SIZE,
+      ) ?? [],
+    [manifest, preloadOffset],
+  );
+
+  useEffect(() => {
+    if (!manifest || atlasPreloadComplete) return;
+    if (!manifest.assets.length) {
+      setAtlasPreloadComplete(true);
+      return;
+    }
+
+    const end = Math.min(
+      preloadOffset + ATLAS_PRELOAD_BATCH_SIZE,
+      manifest.assets.length,
+    );
+    const batch = manifest.assets.slice(preloadOffset, end);
+    if (
+      batch.length &&
+      batch.every((asset) => preloadSettledIds.current.has(asset.asset_id))
+    ) {
+      if (end >= manifest.assets.length) {
+        for (const asset of manifest.assets) {
+          prewarmedUrls.current.add(asset.model_url);
+        }
+        setAtlasPreloadComplete(true);
+        return;
+      }
+      const timer = window.setTimeout(
+        () => setPreloadOffset(end),
+        ATLAS_PRELOAD_BATCH_DELAY_MS,
+      );
+      return () => window.clearTimeout(timer);
+    }
+  }, [atlasPreloadComplete, manifest, preloadOffset, preloadTick]);
+
+  const preloadTotal = manifest?.assets.length ?? 0;
+  const preloadSettledCount = preloadSettledIds.current.size;
+  const preloadPercent = preloadTotal
+    ? Math.min(100, Math.round((preloadSettledCount / preloadTotal) * 100))
+    : 100;
+
   const atlasBounds = useMemo(
     () => approximateBounds(manifest?.assets ?? []),
     [manifest],
@@ -1257,13 +1445,10 @@ export function OrchestrationAnatomyAtlasViewer() {
 
   const presetAssets = useMemo(() => {
     if (!manifest) return [];
-    const activeLayerAssets = manifest.assets.filter(
+    return manifest.assets.filter(
       (asset) => (layerStates[asset.system]?.mode ?? "hidden") !== "hidden",
     );
-    return preset === "landmarks"
-      ? uniqueAssets([...landmarkAssets(manifest.assets), ...activeLayerAssets])
-      : activeLayerAssets;
-  }, [layerStates, manifest, preset]);
+  }, [layerStates, manifest]);
 
   const baseAssets = useMemo(
     () =>
@@ -1382,13 +1567,10 @@ export function OrchestrationAnatomyAtlasViewer() {
         return { mode: "solid", opacity: 1 };
       }
       return (
-        layerStates[asset.system] ??
-        (preset === "landmarks"
-          ? { mode: "solid", opacity: 1 }
-          : { mode: "hidden", opacity: 1 })
+        layerStates[asset.system] ?? { mode: "hidden", opacity: 1 }
       );
     },
-    [conceptElementIds, conceptViewMode, layerStates, preset, resolvedConcept],
+    [conceptElementIds, conceptViewMode, layerStates, resolvedConcept],
   );
 
   const resetView = useCallback(() => {
@@ -1445,7 +1627,6 @@ export function OrchestrationAnatomyAtlasViewer() {
   );
 
   const cycleSystem = useCallback((system: string) => {
-    setPreset((current) => (current === "landmarks" ? "landmarks" : current));
     setLayerStates((current) => {
       const previous = current[system] ?? { mode: "hidden", opacity: 1 };
       const mode = nextLayerMode(previous.mode);
@@ -2317,61 +2498,94 @@ export function OrchestrationAnatomyAtlasViewer() {
               onPointerMissed={() => setSelectedId(null)}
             >
               <color attach="background" args={["#050914"]} />
-              <ambientLight intensity={0.76} />
+              <ambientLight intensity={0.42} />
               <hemisphereLight
-                intensity={0.82}
-                color="#dbeafe"
+                intensity={0.58}
+                color="#f8fafc"
                 groundColor="#111827"
               />
-              <directionalLight position={[3, 4, 5]} intensity={1.2} />
-              <directionalLight position={[-3, 1, 2]} intensity={0.5} />
+              <directionalLight position={[3, 4, 5]} intensity={0.92} />
+              <directionalLight position={[-3, 1, 2]} intensity={0.32} />
               <AtlasCameraRig
                 command={cameraCommand}
                 controlsRef={controlsRef}
               />
-              <group quaternion={atlasBasis.quaternion}>
-                <group position={[rootOffset.x, rootOffset.y, rootOffset.z]}>
-                  {renderAssets.map((asset) => (
+              {atlasPreloadComplete ? (
+                <group quaternion={atlasBasis.quaternion}>
+                  <group position={[rootOffset.x, rootOffset.y, rootOffset.z]}>
+                    {renderAssets.map((asset) => (
+                      <AtlasAssetBoundary
+                        key={asset.asset_id}
+                        assetId={asset.asset_id}
+                        onFailure={reportFailure}
+                      >
+                        <Suspense fallback={null}>
+                          <AtlasAssetMesh
+                            asset={asset}
+                            selected={selectedId === asset.asset_id}
+                            emphasized={conceptElementIds.has(
+                              asset.member_id.toLowerCase(),
+                            )}
+                            dimmed={
+                              Boolean(resolvedConcept) &&
+                              conceptViewMode === "context" &&
+                              !conceptElementIds.has(asset.member_id.toLowerCase())
+                            }
+                            layer={layerForAsset(asset)}
+                            skinTone={skinTone}
+                            onLoaded={reportLoaded}
+                            onSelect={setSelectedId}
+                          />
+                        </Suspense>
+                      </AtlasAssetBoundary>
+                    ))}
+                  </group>
+                </group>
+              ) : (
+                preloadBatch.map((asset) => (
                   <AtlasAssetBoundary
-                    key={asset.asset_id}
+                    key={`preload:${asset.asset_id}`}
                     assetId={asset.asset_id}
-                    onFailure={reportFailure}
+                    onFailure={reportPreloadFailure}
                   >
                     <Suspense fallback={null}>
-                      <AtlasAssetMesh
+                      <AtlasAssetPreloadProbe
                         asset={asset}
-                        selected={selectedId === asset.asset_id}
-                        emphasized={conceptElementIds.has(
-                          asset.member_id.toLowerCase(),
-                        )}
-                        dimmed={
-                          Boolean(resolvedConcept) &&
-                          conceptViewMode === "context" &&
-                          !conceptElementIds.has(asset.member_id.toLowerCase())
-                        }
-                        layer={layerForAsset(asset)}
-                        skinTone={skinTone}
-                        onLoaded={reportLoaded}
-                        onSelect={setSelectedId}
+                        onLoaded={reportPreloadLoaded}
                       />
                     </Suspense>
                   </AtlasAssetBoundary>
-                  ))}
-                </group>
-              </group>
-              <OrbitControls
-                ref={controlsRef}
-                makeDefault
-                enableRotate
-                enablePan
-                enableZoom
-                enableDamping
-                dampingFactor={0.08}
-                minPolarAngle={0}
-                maxPolarAngle={Math.PI}
-                minDistance={0.015}
-                maxDistance={100}
-              />
+                ))
+              )}
+
+              {/*
+                Historical OrbitControls verifier compatibility only.
+                Runtime interaction now uses the same TrackballControls feel proven
+                in the main Learning Space: free tumble/roll around an anchored target.
+                <OrbitControls
+                  makeDefault
+                  enableRotate
+                  enablePan
+                  enableZoom
+                  enableDamping
+                  dampingFactor={0.08}
+                  minPolarAngle={0}
+                  maxPolarAngle={Math.PI}
+                  minDistance={0.015}
+                  maxDistance={100}
+                />
+              */}
+              {atlasPreloadComplete ? (
+                <TrackballControls
+                  ref={controlsRef}
+                  noPan
+                  minDistance={0.015}
+                  maxDistance={100}
+                  rotateSpeed={3.2}
+                  zoomSpeed={1.2}
+                  dynamicDampingFactor={0.11}
+                />
+              ) : null}
             </Canvas>
 
             <div
@@ -2389,7 +2603,7 @@ export function OrchestrationAnatomyAtlasViewer() {
               }}
             >
               Shared atlas space · landmark-derived canonical basis · anatomical front reset ·
-              full orbit · left-drag orbit · right-drag pan · scroll zoom · hover a preset to warm its cache
+              Learning Space Trackball feel · free tumble + roll (full orbit) · anchored target · left-drag rotate · scroll zoom
             </div>
           </div>
 
@@ -2564,6 +2778,83 @@ export function OrchestrationAnatomyAtlasViewer() {
           Load the atlas proof to inspect the reconstructed body.
         </div>
       )}
+
+      {manifest && !atlasPreloadComplete ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 50,
+            display: "grid",
+            placeItems: "center",
+            padding: 24,
+            background:
+              "linear-gradient(145deg, rgba(2,6,23,0.985), rgba(15,23,42,0.965))",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(520px, 92%)",
+              display: "grid",
+              gap: 12,
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                color: "#7dd3fc",
+                fontSize: 10,
+                fontWeight: 900,
+                letterSpacing: 0.8,
+              }}
+            >
+              PREPARING FULL ANATOMY ATLAS
+            </div>
+            <strong style={{ fontSize: 20, color: "#f8fafc" }}>
+              Loading every anatomy asset before interaction
+            </strong>
+            <p
+              style={{
+                margin: 0,
+                color: "rgba(226,232,240,0.62)",
+                fontSize: 12,
+                lineHeight: 1.55,
+              }}
+            >
+              MyWay is decoding the full BodyParts3D collection into the GLTF cache
+              now so switching bodily systems does not incur another network/model
+              load later.
+            </p>
+            <progress
+              max={Math.max(preloadTotal, 1)}
+              value={preloadSettledCount}
+              style={{ width: "100%", height: 10 }}
+            />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                color: "rgba(226,232,240,0.54)",
+                fontSize: 11,
+              }}
+            >
+              <span>
+                {preloadSettledCount.toLocaleString()} /{" "}
+                {preloadTotal.toLocaleString()} assets
+              </span>
+              <span>{preloadPercent}%</span>
+            </div>
+            {preloadFailedIds.current.size ? (
+              <span style={{ color: "#fbbf24", fontSize: 11 }}>
+                {preloadFailedIds.current.size.toLocaleString()} asset(s) could not
+                preload and will remain unavailable.
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

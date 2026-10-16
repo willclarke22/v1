@@ -1,0 +1,49 @@
+**********************
+PowerShell transcript start
+Start time: 20261003232939
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\04c0d99f4f\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 29648
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Running fail-closed preflight before any source write...
+PATCH myway_bodyparts3d_atlas_full_preload_arcball_skin_v2_5
+- sandbox/probe-lab/visual-experience/ui/orchestration-anatomy-atlas-viewer.tsx: baseline
+- scripts/sandbox/verify-bodyparts3d-atlas-full-preload-arcball-skin-v2-5.mjs: absent (baseline)
+STATE 0
+Verifying exact payload hashes before any source write...
+Backing up exact current bytes...
+Writing only enumerated patch targets...
+
+==> Current verifier syntax
+
+
+==> Next.js type generation
+
+
+==> TypeScript noEmit
+
+PS>TerminatingError(): "TypeScript noEmit failed with exit code 2."
+WARNING: Patch validation failed after source writes. Restoring exact baseline bytes...
+Running rollback preflight; STATE 0 is required...
+PATCH myway_bodyparts3d_atlas_full_preload_arcball_skin_v2_5
+- sandbox/probe-lab/visual-experience/ui/orchestration-anatomy-atlas-viewer.tsx: baseline
+- scripts/sandbox/verify-bodyparts3d-atlas-full-preload-arcball-skin-v2-5.mjs: absent (baseline)
+STATE 0
+Rollback proved STATE 0. No manual source cleanup is required.
+PS>TerminatingError(): "TypeScript noEmit failed with exit code 2."
+**********************
+PowerShell transcript end
+End time: 20261003232955
+**********************
