@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
 import { AnatomyExperienceLab } from "./anatomy-experience-lab";
+import { OrchestrationAssemblyStudio } from "./orchestration-assembly-studio";
 import { OrchestrationAnatomyAtlasViewer } from "./orchestration-anatomy-atlas-viewer";
 import { OrchestrationResolvedCastViewer } from "./orchestration-resolved-cast-viewer";
 import { SemanticSearchV2Panel } from "./semantic-search-v2-panel";
@@ -289,6 +290,7 @@ function SemanticComparisonPanel({ comparisonValue }: { comparisonValue: unknown
 }
 
 export function OrchestrationLab() {
+  const [workspace, setWorkspace] = useState<"assemblies" | "experience">("assemblies");
   const [stage, setStage] = useState<Stage>(1);
   const [learnerMessage, setLearnerMessage] = useState(
     "Why does rotating your hip inward change where your knee points?",
@@ -456,7 +458,14 @@ export function OrchestrationLab() {
 
   return (
     <div style={{ display: "grid", gap: 15 }}>
-      <AnatomyExperienceLab />
+      <section style={{ ...card, display: "grid", gap: 10, padding: 13 }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.1, fontWeight: 850, color: "#7dd3fc" }}>VISUAL EXPERIENCE · ORCHESTRATION LAB</div>
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+          <button type="button" style={{ ...button, background: workspace === "assemblies" ? "rgba(14,165,233,0.25)" : button.background, borderColor: workspace === "assemblies" ? "#38bdf8" : "rgba(255,255,255,0.15)" }} onClick={() => setWorkspace("assemblies")}>Assembly Studio</button>
+          <button type="button" style={{ ...button, background: workspace === "experience" ? "rgba(14,165,233,0.25)" : button.background, borderColor: workspace === "experience" ? "#38bdf8" : "rgba(255,255,255,0.15)" }} onClick={() => setWorkspace("experience")}>Look &amp; Grab · existing experiment</button>
+        </div>
+      </section>
+      {workspace === "assemblies" ? <OrchestrationAssemblyStudio /> : <AnatomyExperienceLab />}
       <details style={{...card, padding:12}}>
         <summary style={{cursor:"pointer",fontWeight:750,color:"#b7cae5"}}>Legacy calibration: stages 1–3, atlas proof and retrieval diagnostics (preserved)</summary>
     <div style={{ display: "grid", gap: 20, marginTop:14 }}>

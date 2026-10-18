@@ -1151,7 +1151,11 @@ function modeLabel(mode: LayerMode) {
   return "Ghost";
 }
 
-export function OrchestrationAnatomyAtlasViewer() {
+export function OrchestrationAnatomyAtlasViewer({
+  assemblyPreview,
+}: {
+  assemblyPreview?: { id: string; label: string; asset_ids: string[]; spatialScan?: {y:number;minX:number;maxX:number;minZ:number;maxZ:number} };
+} = {}) {
   void LEGACY_CONCEPT_SCHEMA;
 
   const [manifest, setManifest] = useState<AnatomyAtlasManifest | null>(null);
@@ -1159,7 +1163,12 @@ export function OrchestrationAnatomyAtlasViewer() {
   const [manifestError, setManifestError] = useState<string | null>(null);
   const [preset, setPreset] = useState<AtlasPreset>("all");
   const [layerStates, setLayerStates] = useState<Record<string, LayerState>>({});
-  const [fullPresetLoad, setFullPresetLoad] = useState(false);
+  const [fullPresetLoad, setFullPresetLoad] = useState(Boolean(assemblyPreview));
+  const [assemblyMountCount, setAssemblyMountCount] = useState(24);
+  useEffect(() => {
+    setFullPresetLoad(Boolean(assemblyPreview));
+    setAssemblyMountCount(24);
+  }, [assemblyPreview?.id]);
   const [skinTone, setSkinTone] = useState<SkinTone>("medium");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1184,7 +1193,7 @@ export function OrchestrationAnatomyAtlasViewer() {
   const [preloadOffset, setPreloadOffset] = useState(0);
   const [preloadTick, setPreloadTick] = useState(0);
   const [atlasPreloadComplete, setAtlasPreloadComplete] = useState(false);
-  const [, setStatsTick] = useState(0);
+  const [statsTick, setStatsTick] = useState(0);
 
   const flushStats = useCallback(() => {
     if (statsFrame.current != null) return;
@@ -1242,7 +1251,7 @@ export function OrchestrationAnatomyAtlasViewer() {
 
   const prewarmPreset = useCallback(
     (nextPreset: AtlasPreset) => {
-      if (!manifest) return;
+      if (!manifest || assemblyPreview) return;
       const targetAssets = assetsForPreset(manifest, nextPreset);
       const boundedAssets =
         targetAssets.length <= SAFE_RENDER_LIMIT
@@ -1266,7 +1275,7 @@ export function OrchestrationAnatomyAtlasViewer() {
         prewarmTimers.current.push(timer);
       }
     },
-    [manifest],
+    [manifest, assemblyPreview],
   );
 
   async function loadManifest() {
@@ -1295,11 +1304,11 @@ export function OrchestrationAnatomyAtlasViewer() {
       prewarmedUrls.current.clear();
       setPreloadOffset(0);
       setPreloadTick((value) => value + 1);
-      setAtlasPreloadComplete(json.assets.length === 0);
+      setAtlasPreloadComplete(Boolean(assemblyPreview) || json.assets.length === 0);
       setManifest(json);
       setLayerStates(layersForPreset(systems, "all"));
       setPreset("all");
-      setFullPresetLoad(false);
+      setFullPresetLoad(Boolean(assemblyPreview));
       initialFrameDone.current = false;
     } catch (caught) {
       setManifestError(
@@ -1309,6 +1318,12 @@ export function OrchestrationAnatomyAtlasViewer() {
       setIsLoadingManifest(false);
     }
   }
+
+  useEffect(() => {
+    if (assemblyPreview && !manifest && !isLoadingManifest && !manifestError) {
+      void loadManifest();
+    }
+  }, [assemblyPreview?.id, manifest, isLoadingManifest, manifestError]);
 
   async function resolveConcept(
     queryOverride?: string,
@@ -1366,15 +1381,15 @@ export function OrchestrationAnatomyAtlasViewer() {
 
   const preloadBatch = useMemo(
     () =>
-      manifest?.assets.slice(
+      assemblyPreview ? [] : manifest?.assets.slice(
         preloadOffset,
         preloadOffset + ATLAS_PRELOAD_BATCH_SIZE,
       ) ?? [],
-    [manifest, preloadOffset],
+    [manifest, preloadOffset, assemblyPreview],
   );
 
   useEffect(() => {
-    if (!manifest || atlasPreloadComplete) return;
+    if (!manifest || atlasPreloadComplete || assemblyPreview) return;
     if (!manifest.assets.length) {
       setAtlasPreloadComplete(true);
       return;
@@ -1402,7 +1417,7 @@ export function OrchestrationAnatomyAtlasViewer() {
       );
       return () => window.clearTimeout(timer);
     }
-  }, [atlasPreloadComplete, manifest, preloadOffset, preloadTick]);
+  }, [atlasPreloadComplete, manifest, preloadOffset, preloadTick, assemblyPreview]);
 
   const preloadTotal = manifest?.assets.length ?? 0;
   const preloadSettledCount = preloadSettledIds.current.size;
@@ -1442,6 +1457,23 @@ export function OrchestrationAnatomyAtlasViewer() {
       size: vec3Tuple(normalizedAtlasBounds.size),
     });
   }, [manifest, normalizedAtlasBounds.size]);
+
+  useEffect(() => {
+    if (!assemblyPreview || !manifest) return;
+    const ids = new Set(assemblyPreview.asset_ids);
+    const targets = manifest.assets.filter((asset) => ids.has(asset.asset_id));
+    if (!targets.length) return;
+    const bounded = approximateBounds(targets);
+    const displayed = normalizedBoundsForAtlasRoot(
+      bounded, atlasBounds.center, atlasBasis.quaternion,
+    );
+    setCameraCommand({
+      revision: Date.now(),
+      kind: "frame",
+      center: vec3Tuple(displayed.center),
+      size: vec3Tuple(displayed.size),
+    });
+  }, [assemblyPreview, manifest, atlasBounds.center, atlasBasis.quaternion]);
 
   const presetAssets = useMemo(() => {
     if (!manifest) return [];
@@ -1516,6 +1548,13 @@ export function OrchestrationAnatomyAtlasViewer() {
   );
 
   const renderAssets = useMemo(() => {
+    if (assemblyPreview && manifest) {
+      const wanted = new Set(assemblyPreview.asset_ids);
+      // Every generated member is mounted; system filters cannot silently
+      // reduce the manifest's render target.
+      const members = manifest.assets.filter(asset => wanted.has(asset.asset_id));
+      return members.slice(0, assemblyMountCount);
+    }
     let base = baseAssets;
     if (resolvedConcept) {
       if (conceptViewMode === "isolate") {
@@ -1544,12 +1583,32 @@ export function OrchestrationAnatomyAtlasViewer() {
     resolvedConcept,
     selectedId,
     visibleConceptAssets,
+    assemblyPreview,
+    fullPresetLoad,
+    assemblyMountCount,
+    layerStates,
   ]);
 
   const selected =
     manifest?.assets.find((asset) => asset.asset_id === selectedId) ?? null;
-  const sampleLimited =
-    !fullPresetLoad && presetAssets.length > SAFE_RENDER_LIMIT;
+  const assemblyTotal = assemblyPreview?.asset_ids.length ?? 0;
+  const assemblyResolvable = assemblyPreview && manifest
+    ? manifest.assets.filter(a => assemblyPreview.asset_ids.includes(a.asset_id)).length : 0;
+  const assemblyUnresolved = Math.max(0, assemblyTotal - assemblyResolvable);
+  useEffect(() => {
+    if (!assemblyPreview || !fullPresetLoad || assemblyMountCount >= assemblyResolvable) return;
+    // Limit unresolved GLB fetches/decodes; don't saturate memory with every
+    // asset at once. A settled mesh (success or failure) frees a pending slot.
+    const unsettled = renderAssets.filter(a =>
+      !loadedIds.current.has(a.asset_id) && !failedIds.current.has(a.asset_id)
+    ).length;
+    if (unsettled >= 48) return;
+    const timeout = window.setTimeout(() =>
+      setAssemblyMountCount(n => Math.min(assemblyResolvable,n + 24)), 140);
+    return () => window.clearTimeout(timeout);
+  }, [assemblyPreview?.id, fullPresetLoad, assemblyMountCount, assemblyResolvable, renderAssets, statsTick]);
+  const assemblySampleLimited = false;
+  const sampleLimited = assemblyPreview ? assemblySampleLimited : !fullPresetLoad && presetAssets.length > SAFE_RENDER_LIMIT;
   const activeLoadedCount = renderAssets.filter((asset) =>
     loadedIds.current.has(asset.asset_id),
   ).length;
@@ -1559,6 +1618,7 @@ export function OrchestrationAnatomyAtlasViewer() {
 
   const layerForAsset = useCallback(
     (asset: AnatomyAtlasAsset): LayerState => {
+      if (assemblyPreview) return { mode: "solid", opacity: 1 };
       if (
         resolvedConcept &&
         conceptElementIds.has(asset.member_id.toLowerCase()) &&
@@ -1570,7 +1630,7 @@ export function OrchestrationAnatomyAtlasViewer() {
         layerStates[asset.system] ?? { mode: "hidden", opacity: 1 }
       );
     },
-    [conceptElementIds, conceptViewMode, layerStates, resolvedConcept],
+    [conceptElementIds, conceptViewMode, layerStates, resolvedConcept, assemblyPreview],
   );
 
   const resetView = useCallback(() => {
@@ -1668,11 +1728,11 @@ export function OrchestrationAnatomyAtlasViewer() {
   );
 
   return (
-    <section style={shell}>
+    <section style={assemblyPreview ? { ...shell, borderRadius: 12 } : shell}>
       <div
         style={{
           padding: "18px 18px 16px",
-          display: "grid",
+          display: assemblyPreview ? "none" : "grid",
           gap: 12,
           borderBottom: "1px solid rgba(255,255,255,0.09)",
         }}
@@ -2469,12 +2529,25 @@ export function OrchestrationAnatomyAtlasViewer() {
         ) : null}
       </div>
 
+      {assemblyPreview && manifestError ? (
+        <div role="alert" style={{padding:"14px",color:"#fecaca",fontSize:12}}>
+          Anatomy geometry could not be loaded: {manifestError}
+        </div>
+      ) : null}
+      {manifest && assemblyPreview ? (
+        <div style={{padding:"10px 12px",display:"flex",gap:12,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",fontSize:12,color:"#cbd5e1"}}>
+          <span><strong>{assemblyPreview.label}</strong> · {assemblyTotal} included · {renderAssets.length} mounted · {activeLoadedCount} loaded · {activeFailedCount} failed</span>
+          <span>Progressive mount: {renderAssets.length}/{assemblyResolvable}</span>
+          {assemblyUnresolved ? <span style={{color:"#fbbf24"}}>{assemblyUnresolved} IDs missing from viewer atlas</span> : null}
+          {manifestError ? <span style={{color:"#fca5a5"}}>{manifestError}</span> : null}
+        </div>
+      ) : null}
       {manifest ? (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) minmax(230px, 300px)",
-            minHeight: 640,
+            gridTemplateColumns: assemblyPreview ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(230px, 300px)",
+            minHeight: assemblyPreview ? 480 : 640,
           }}
         >
           <div
@@ -2513,6 +2586,23 @@ export function OrchestrationAnatomyAtlasViewer() {
               {atlasPreloadComplete ? (
                 <group quaternion={atlasBasis.quaternion}>
                   <group position={[rootOffset.x, rootOffset.y, rootOffset.z]}>
+                    {assemblyPreview?.spatialScan ? (
+                      <mesh
+                        position={[
+                          (assemblyPreview.spatialScan.minX + assemblyPreview.spatialScan.maxX) / 2,
+                          assemblyPreview.spatialScan.y,
+                          (assemblyPreview.spatialScan.minZ + assemblyPreview.spatialScan.maxZ) / 2,
+                        ]}
+                        rotation={[-Math.PI / 2, 0, 0]}
+                        raycast={() => undefined}
+                      >
+                        <planeGeometry args={[
+                          Math.max(0.01, assemblyPreview.spatialScan.maxX - assemblyPreview.spatialScan.minX),
+                          Math.max(0.01, assemblyPreview.spatialScan.maxZ - assemblyPreview.spatialScan.minZ),
+                        ]} />
+                        <meshBasicMaterial color="#14b8a6" opacity={0.23} transparent depthWrite={false} side={THREE.DoubleSide} />
+                      </mesh>
+                    ) : null}
                     {renderAssets.map((asset) => (
                       <AtlasAssetBoundary
                         key={asset.asset_id}
@@ -2611,10 +2701,10 @@ export function OrchestrationAnatomyAtlasViewer() {
             style={{
               borderLeft: "1px solid rgba(255,255,255,0.08)",
               padding: 16,
-              display: "grid",
               alignContent: "start",
               gap: 12,
               background: "rgba(2,6,23,0.55)",
+              display: assemblyPreview ? "none" : "grid",
             }}
           >
             <div>

@@ -197,6 +197,7 @@ export function searchAssetLexicalIndexV1(
   index: AssetLexicalSearchIndexV1,
   requirement: AssetSearchRequirementV1,
   limit = 8,
+  maxResults = 20,
 ): AssetLexicalSearchResultV1[] {
   const qWeights = queryWeights(requirement);
   if (!qWeights.size || !index.documents.length) return [];
@@ -264,7 +265,7 @@ export function searchAssetLexicalIndexV1(
         index.documents[right.documentIndex]!.document.canonical_identity,
       )
     )
-    .slice(0, Math.max(1, Math.min(20, Math.round(limit))))
+    .slice(0, Math.max(1, Math.min(300, Math.round(maxResults), Math.round(limit))))
     .map((candidate, indexPosition) => {
       const document = index.documents[candidate.documentIndex]!.document;
       return {

@@ -1,0 +1,36 @@
+**********************
+PowerShell transcript start
+Start time: 20261018140936
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\6d62b1d5da\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 30440
+PSVersion: 7.6.7
+PSEdition: Core
+GitCommitId: 7.6.7
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+PREFLIGHT STATE 0: all changes safely applicable
+RUN: node C:\Users\willc\AppData\Local\Temp\myway_bodyparts3d_auto_assemblies_v1_1-qa-0599cf4e2c444b65b36833f23b279fbd\viewer-surgery.mjs --file C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\visual-experience\ui\orchestration-anatomy-atlas-viewer.tsx --mode apply --expected-sha 3facefaa9ee5a821185eeb20a394d1b9658446d12898e13e75300c09019fbab8
+VIEWER SURGERY OK; unrelated source preserved.
+RUN: pnpm exec next typegen
+Generating route types...
+Γ£ô Types generated successfully
+RUN: pnpm exec tsc --noEmit
+sandbox/probe-lab/visual-experience/ui/orchestration-anatomy-atlas-viewer.tsx(2708,15): error TS1117: An object literal cannot have multiple properties with the same name.
+PS>TerminatingError(): "Validation failed (2): pnpm exec tsc --noEmit"
+INSTALL FAILED AFTER WRITES: restoring original source bytes...
+PREFLIGHT STATE 0: all changes safely applicable
+ROLLBACK VERIFIED: STATE 0. Exact original source bytes restored.
+PS>TerminatingError(): "Validation failed (2): pnpm exec tsc --noEmit"
+**********************
+PowerShell transcript end
+End time: 20261018141034
+**********************

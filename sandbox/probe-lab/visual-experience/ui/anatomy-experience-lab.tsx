@@ -9,6 +9,17 @@ type Experience = {
   ok:boolean;model:string;plan:AnatomyExperiencePlan;assets:AnatomySceneAsset[];
   diagnostics: {selected_asset_count:number;candidate_count:number;cache_hit:boolean;semantic_snapshot_ready:boolean;additional_embedding_calls:number;model_duration_ms:number;assembly_ms:number;total_duration_ms:number;estimated_model_cost_usd:number|null;cost_note:string;tokens:{input_tokens:number|null;output_tokens:number|null;cached_input_tokens:number|null};[key:string]:unknown};
 };
+type ContextPreview = {
+  ok: boolean; preview: true; focal_name: string; assets: AnatomySceneAsset[];
+  diagnostics: {
+    candidate_count?: number;selected_asset_count?: number;assembly_ms?: number;
+    atlas_cache_hit?: boolean;cache_hit?: boolean;
+    context_role_counts?: Record<string,number>;
+    context_candidate_counts?: Record<string,number>;
+    selected_evidence?: Array<{id:string;label:string;role:string;score:number;reasons:string[]}>;
+    context_coverage_warnings?: string[];
+  };
+};
 const colorBySystem:Record<string,string>={skeletal:'#e8d4af',muscular:'#bf6e66',digestive:'#d4988a',respiratory:'#a986b1',nervous:'#e3bd74',cardiovascular:'#b65a62',connective:'#9ca3af',integumentary:'#d19c83'};
 const panel:React.CSSProperties={background:'linear-gradient(155deg,#14202e,#0b1523)',border:'1px solid #273649',borderRadius:14,padding:14};
 const btn:React.CSSProperties={background:'#233348',border:'1px solid #35465c',borderRadius:9,padding:'8px 11px',color:'#ecf4ff',cursor:'pointer'};
@@ -71,16 +82,34 @@ export function AnatomyExperienceLab(){
  const [hidden,setHidden]=useState<Set<string>>(new Set());
  const [manualHot,setManualHot]=useState<string|null>(null);
  const [details,setDetails]=useState(false);
+ const [contextPreview,setContextPreview]=useState<ContextPreview|null>(null);
+ const [discoveryMode,setDiscoveryMode]=useState<"v2_context"|"full_catalog"|"search_assisted"|"multiscale_v2">("v2_context");
+ const [discoveryPreview,setDiscoveryPreview]=useState<{
+  diagnostics:Record<string,unknown>;
+  sample:Array<{id:string;name:string;system:string}>;
+ }|null>(null);
+ const [previewBusy,setPreviewBusy]=useState(false);
+ const [referenceNames,setReferenceNames]=useState('');
  const step=experience?.plan.steps[stepIndex];
  const activeAssets=useMemo(()=>experience?experience.assets.filter(a=>step?.visible_asset_ids.includes(a.asset_id)):[],[experience,step]);
  const hot=useMemo(()=>new Set(manualHot?[manualHot]:step?.highlighted_asset_ids??[]),[manualHot,step]);
+ async function inspectContext(){
+  setPreviewBusy(true);setError(null);
+  try{
+    const response=await fetch('/api/sandbox/probe-lab/visual-experience/anatomy-experience',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({learner_message:question,inspect_only:discoveryMode==="v2_context",inspect_discovery:discoveryMode!=="v2_context",discovery_mode:discoveryMode,reference_names:referenceNames.split(/[,\n]/).map(x=>x.trim()).filter(Boolean).slice(0,12)})});
+    const json=await response.json() as ContextPreview&{error?:string;sample?:Array<{id:string;name:string;system:string}>};
+    if(!response.ok||!json.ok||!json.preview)throw new Error(json.error??`HTTP ${response.status}`);
+    if(discoveryMode==="v2_context"){setContextPreview(json);setDiscoveryPreview(null)}
+    else {setDiscoveryPreview({diagnostics:json.diagnostics as Record<string,unknown>,sample:json.sample??[]});setContextPreview(null)}
+  }catch(e){setError(e instanceof Error?e.message:String(e))}finally{setPreviewBusy(false)}
+ }
  async function generate(){
   setBusy(true);setError(null);setManualHot(null);
   try{
-    const response=await fetch('/api/sandbox/probe-lab/visual-experience/anatomy-experience',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({learner_message:question,model,use_semantic:useSemantic})});
+    const response=await fetch('/api/sandbox/probe-lab/visual-experience/anatomy-experience',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({learner_message:question,model,use_semantic:discoveryMode==="v2_context"&&useSemantic,discovery_mode:discoveryMode})});
     const parsed=await response.json() as Experience&{error?:string};
     if(!response.ok||!parsed.ok)throw new Error(parsed.error??`HTTP ${response.status}`);
-    setExperience(parsed);setStepIndex(0);setHidden(new Set());setReset(v=>v+1);
+    setExperience(parsed);setContextPreview(null);setDiscoveryPreview(null);setStepIndex(0);setHidden(new Set());setReset(v=>v+1);
   }catch(e){setError(e instanceof Error?e.message:String(e))}finally{setBusy(false)}
  }
  const changes=(next:number)=>{setStepIndex(next);setManualHot(null);setHidden(new Set());setReset(x=>x+1)};
@@ -92,11 +121,54 @@ export function AnatomyExperienceLab(){
   <aside style={{...panel}} className="scroll-side"><h3 style={{margin:'0 0 6px'}}>What do you want to explore?</h3><p className="muted" style={{margin:'0 0 12px'}}>Describe what you don't understand.</p>
    <textarea style={{boxSizing:'border-box',width:'100%',minHeight:125,borderRadius:10,padding:11,background:'#1a2939',border:'1px solid #38506a',color:'#fff',resize:'vertical'}} value={question} maxLength={1000} onChange={e=>setQuestion(e.target.value)}/>
    <label style={{display:'grid',gap:6,fontSize:12,marginTop:12}}>Model<select aria-label="Anatomy experience model" value={model} onChange={e=>setModel(e.target.value as typeof model)} style={{color:'#e7f0ff',background:'#233548',padding:10,borderRadius:8,border:'1px solid #3c5267'}}><option value="gpt-6.1-sol">GPT-6.1 Sol · OpenAI (paid)</option><option value="z-ai/glm-5.3">GLM-5.3 · NVIDIA</option></select></label>
-   <label style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11,color:'#c3d3e6',marginTop:11}}><input type="checkbox" checked={useSemantic} onChange={e=>setUseSemantic(e.target.checked)}/>Use published V2 semantic vectors when available (3 additional paid embedding calls; cost not estimated)</label>
+   <label style={{display:'grid',gap:6,fontSize:12,marginTop:12}}>Asset discovery mode<select aria-label="Asset discovery mode" value={discoveryMode} onChange={e=>{setDiscoveryMode(e.target.value as typeof discoveryMode);setContextPreview(null);setDiscoveryPreview(null)}} style={{color:'#e7f0ff',background:'#233548',padding:10,borderRadius:8,border:'1px solid #3c5267'}}><option value="v2_context">V2 baseline · MyWay selects 50</option><option value="full_catalog">Look &amp; Grab · complete atlas</option><option value="search_assisted">Look &amp; Grab · BM25 broad search</option><option value="multiscale_v2">Look &amp; Grab · multiscale V2 (experimental)</option></select></label>
+   <p className="muted" style={{margin:'7px 0 3px'}}>{discoveryMode==='full_catalog'?'The model receives every eligible atlas mesh as a compact catalog; highest prompt cost.':discoveryMode==='search_assisted'?'The model selects from up to 250 BM25 candidates; lexical misses are expected on implicit questions.':discoveryMode==='multiscale_v2'?'The model chooses from up to 250 evidence-supported BM25 and distinct part-of/classification context candidates. Weak BM25 filler is discarded. Inspect warnings before generation.':'Existing 50-mesh anatomical context; kept unchanged for comparison.'}</p>
+   {discoveryMode==='v2_context'?<label style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11,color:'#c3d3e6',marginTop:11}}><input type="checkbox" checked={useSemantic} onChange={e=>setUseSemantic(e.target.checked)}/>Use published V2 semantic vectors when available (3 additional paid embedding calls; cost not estimated)</label>:null}
+   {discoveryMode!=='v2_context'?<label style={{display:'grid',gap:4,marginTop:10,fontSize:11,color:'#c4d4e5'}}>Optional no-model recall check (comma-separated names)
+     <input aria-label="Reference asset names to check" placeholder="Enter known asset names for coverage testing" value={referenceNames} onChange={e=>setReferenceNames(e.target.value)} style={{color:'#e7f0ff',background:'#1a2939',border:'1px solid #38506a',padding:7,borderRadius:7}} />
+   </label>:null}
    <button style={{...btn,width:'100%',background:'#176ff0',borderColor:'#287eea',marginTop:12,fontWeight:800}} onClick={()=>void generate()} disabled={busy||question.trim().length<8}>{busy?'Generating…':'Generate anatomy experience'}</button>
+   <button style={{...btn,width:'100%',marginTop:8,fontSize:12}} onClick={()=>void inspectContext()} disabled={busy||previewBusy||question.trim().length<8}>{previewBusy?'Inspecting candidate anatomy…':discoveryMode==='v2_context'?'Inspect anatomy context · no model call':'Inspect discovery inventory · no model call'}</button>
+   {discoveryPreview?<div style={{marginTop:11,padding:11,background:'#17283d',border:'1px solid #36516e',borderRadius:9}}>
+     <strong style={{fontSize:13}}>Look &amp; Grab inventory preview</strong>
+     <div className="muted">Eligible library: {String(discoveryPreview.diagnostics.eligible_library_count??'—')} · Shown to model: {String(discoveryPreview.diagnostics.provided_candidate_count??'—')} · Search: {(Number(discoveryPreview.diagnostics.assembly_ms??0)/1000).toFixed(2)}s</div>
+     <div className="muted">Catalog characters: {String(discoveryPreview.diagnostics.inventory_characters??'—')} · Approx. input tokens (characters/4, not provider count): {String(discoveryPreview.diagnostics.inventory_approx_tokens??'—')}</div>
+     {discoveryMode==='multiscale_v2' && discoveryPreview.diagnostics.multiscale_evidence ? <div style={{marginTop:8}}>
+       <strong style={{fontSize:12}}>Multiscale retrieval evidence</strong>
+       {(()=>{const ev=discoveryPreview.diagnostics.multiscale_evidence as {direct_anchors?:string[];query_count?:number;lexical_candidates?:number;graph_candidates?:number;context_candidates?:number;rejected_weak_lexical?:number;weak_anchor_count?:number;partof_candidates?:number;classification_candidates?:number;region_hints?:string[];parents?:Array<{name:string;depth:number;renderable:boolean;relationship?:string}>;warnings?:string[];sample?:Array<{id:string;name:string;channels:string[]}>};return <>
+         <div className="muted">Queries: {ev.query_count??0} · Identity/tag BM25: {ev.lexical_candidates??0} · Graph-derived new: {ev.graph_candidates??0} · Context: {ev.context_candidates??0} · Weak BM25 discarded: {ev.rejected_weak_lexical??0}</div>
+         <div className="muted">Anchor identities: {(ev.direct_anchors??[]).join(' · ')||'none'}</div>
+         <div className="muted">Derived region hints: {(ev.region_hints??[]).join(' · ')||'none verified'} · is_a added: {ev.classification_candidates??0} · part_of added: {ev.partof_candidates??0}</div>
+         {(ev.warnings??[]).map((w,i)=><div className="muted" key={i} style={{color:'#e5ba8d'}}>{w}</div>)}
+         <details><summary style={{fontSize:12,cursor:'pointer'}}>Related regional context and candidate evidence</summary>
+           <div className="muted">A concept's parent does not guarantee that a complete exterior or region mesh exists.</div>
+           {(ev.parents??[]).map((x,i)=><div className="muted" key={i}>{x.name} · {x.relationship??'relationship'} depth {x.depth} · {x.renderable?'matched renderable asset':'concept only'}</div>)}
+           {(ev.sample??[]).map(x=><div key={x.id} className="muted">{x.name}: {x.channels.join(' · ')}</div>)}
+         </details>
+       </>;})()}
+     </div>:null}
+     {Array.isArray(discoveryPreview.diagnostics.reference_checks) && discoveryPreview.diagnostics.reference_checks.length>0 ? <div style={{marginTop:8}}><strong style={{fontSize:12}}>Name-based retrieval coverage</strong>
+       {(discoveryPreview.diagnostics.reference_checks as Array<{requested:string;library_matches:number;retrieved:number;note?:string;matches?:Array<{name:string;supplied:boolean}>}>).map((x,i)=><div className="muted" key={i} style={{color:x.library_matches>0 && x.retrieved===0?'#e5ba8d':undefined}}>{x.requested}: {x.retrieved}/{x.library_matches} matching library meshes supplied {x.note?` · ${x.note}`:''}</div>)}
+       <div className="muted">Matches use normalized exact identity/alias, not semantic equivalence. User-entered checks are diagnostics only, never retrieval overrides.</div>
+     </div>:null}
+     <details style={{marginTop:8}}><summary style={{fontSize:12,cursor:'pointer'}}>First 30 catalog records</summary><div className="muted" style={{maxHeight:220,overflowY:'auto'}}>{discoveryPreview.sample.map(a=><div key={a.id}>{a.id} · {a.name} · {a.system}</div>)}</div></details>
+     <div className="muted" style={{marginTop:6}}>Zero GPT/GLM or embedding calls; full inventory is sent only when Generate is pressed.</div>
+   </div>:null}
+   {contextPreview?<div style={{marginTop:11,padding:11,background:'#17283d',border:'1px solid #36516e',borderRadius:9}}>
+     <strong style={{fontSize:13}}>V2 context preview · {contextPreview.assets.length} verified meshes</strong>
+     <div className="muted">Candidates: {contextPreview.diagnostics.candidate_count??'—'} · Retrieval: {((contextPreview.diagnostics.assembly_ms??0)/1000).toFixed(2)}s · Atlas cache: {contextPreview.diagnostics.atlas_cache_hit?'hit':'miss'}</div>
+     <div className="muted" style={{marginTop:5}}>{Object.entries(contextPreview.diagnostics.context_role_counts??{}).map(([role,n])=>`${role}: ${n}`).join(' · ')}</div>
+     {(contextPreview.diagnostics.context_coverage_warnings??[]).map((warning,i)=><p key={i} className="muted" style={{color:'#e5ba8d',margin:'4px 0'}}>{warning}</p>)}
+     <details style={{marginTop:8}}><summary style={{fontSize:12,cursor:'pointer'}}>View selected structures and retrieval evidence</summary>
+       <div style={{maxHeight:280,overflowY:'auto',fontSize:11,paddingTop:6}}>{(contextPreview.diagnostics.selected_evidence??[]).map(a=><div key={a.id} style={{padding:'5px 0',borderBottom:'1px solid #2c4157'}}><strong>{a.label}</strong> <span className="muted">· {a.role} · score {a.score}</span><div className="muted">{a.reasons.join(' · ')}</div></div>)}</div>
+     </details>
+     <div className="muted" style={{marginTop:6}}>No GPT-6, GLM or embedding call. Retrieval metadata only; this is not a rendered scene.</div>
+   </div>:null}
    {error?<p role="alert" style={{color:'#feb9b9',fontSize:12,overflowWrap:'anywhere'}}>{error}</p>:null}
    <div style={{borderTop:'1px solid #304156',marginTop:15,paddingTop:13}}><strong style={{fontSize:13}}>Generation report</strong>{experience?<>
-    <div className="muted" style={{marginTop:8}}>Model: {experience.model}</div><div className="muted">Total: {(experience.diagnostics.total_duration_ms/1000).toFixed(2)}s · Model: {(experience.diagnostics.model_duration_ms/1000).toFixed(2)}s</div><div className="muted">Asset grounding: {(experience.diagnostics.assembly_ms/1000).toFixed(2)}s · {experience.diagnostics.selected_asset_count} verified assets</div><div className="muted">BM25 cache: {experience.diagnostics.cache_hit?'hit':'miss'} · Semantic snapshot: {experience.diagnostics.semantic_snapshot_ready?'ready':'unavailable'}</div><div className="muted">Additional embedding calls: {experience.diagnostics.additional_embedding_calls}</div>
+    <div className="muted" style={{marginTop:8}}>Model: {experience.model} · Discovery: {String(experience.diagnostics.discovery_mode??'v2_context')}</div>
+    {experience.diagnostics.discovery_mode?<div className="muted">Library: {String(experience.diagnostics.eligible_library_count??'—')} · Supplied: {String(experience.diagnostics.provided_candidate_count??'—')} · Selected: {String(experience.diagnostics.model_selected_count??'—')} · Catalog chars: {String(experience.diagnostics.inventory_characters??'—')}</div>:null}
+    {Array.isArray(experience.diagnostics.unmet_visual_needs)&&experience.diagnostics.unmet_visual_needs.length?<details><summary className="muted">Unmet visual needs ({experience.diagnostics.unmet_visual_needs.length})</summary><pre style={{fontSize:10,whiteSpace:'pre-wrap'}}>{JSON.stringify(experience.diagnostics.unmet_visual_needs,null,2)}</pre></details>:null}<div className="muted">Total: {(experience.diagnostics.total_duration_ms/1000).toFixed(2)}s · Model: {(experience.diagnostics.model_duration_ms/1000).toFixed(2)}s</div><div className="muted">Asset grounding: {(experience.diagnostics.assembly_ms/1000).toFixed(2)}s · {experience.diagnostics.selected_asset_count} verified assets</div><div className="muted">BM25 cache: {experience.diagnostics.cache_hit?'hit':'miss'} · Semantic snapshot: {experience.diagnostics.semantic_snapshot_ready?'ready':'unavailable'}</div><div className="muted">Additional embedding calls: {experience.diagnostics.additional_embedding_calls}</div>
     <div style={{marginTop:10,fontSize:13,fontWeight:700}}>Estimated API model cost: {usd(experience.diagnostics.estimated_model_cost_usd)}</div><p className="muted">{experience.diagnostics.cost_note}</p>
     <button onClick={()=>setDetails(v=>!v)} style={{...btn,fontSize:11}}> {details?'Hide':'Show'} detailed model output</button>
     {details?<div style={{marginTop:9}}><div className="muted">Input tokens: {token?.input_tokens??'unreported'} · Cached: {token?.cached_input_tokens??'unreported'} · Output: {token?.output_tokens??'unreported'}</div><pre style={{fontSize:10,whiteSpace:'pre-wrap',wordBreak:'break-word',maxHeight:240,overflow:'auto'}}>{JSON.stringify({plan:experience.plan,diagnostics:experience.diagnostics},null,2)}</pre></div>:null}

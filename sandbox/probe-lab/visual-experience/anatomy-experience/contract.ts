@@ -9,6 +9,7 @@ export type AnatomySceneAsset = {
   runtime_transform: { position: [number,number,number]; rotation: [number,number,number]; scale: [number,number,number] };
   dimensions_m: [number,number,number] | null;
   reason: string;
+  context_role?: "focal" | "functional" | "orientation" | "environment";
 };
 export type AnatomyExperienceStep = {
   title: string;

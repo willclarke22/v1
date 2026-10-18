@@ -1,6 +1,7 @@
 import { callVisualOrchestrationCalibrationModel } from "../model-provider.server";
 import { assembleAnatomyContext } from "./assemble.server";
 import { validateAnatomyExperiencePlan, ANATOMY_EXPERIENCE_SCHEMA } from "./contract";
+import { prepareLookGrabDiscovery, validateLookGrabSelection, reportUnmetLookGrabNeeds, type LookGrabMode } from "./asset-discovery.server";
 
 export type AnatomyExperienceModel = "gpt-6.1-sol" | "z-ai/glm-5.3";
 const MODEL_PRICING:Record<string,{input:number;cached_input:number;output:number}> = {
@@ -20,28 +21,52 @@ function parseObject(raw:string){
   if(first<0||last<=first)throw new Error('Model returned no JSON scene plan.');
   return JSON.parse(raw.slice(first,last+1)) as unknown;
 }
-export async function generateAnatomyExperience(learnerMessage:string,model:AnatomyExperienceModel,useSemantic:boolean){
+export async function generateAnatomyExperience(learnerMessage:string,model:AnatomyExperienceModel,useSemantic:boolean, discoveryMode:"v2_context"|LookGrabMode="v2_context"){
   const started=performance.now();
-  const assembled=await assembleAnatomyContext(learnerMessage,useSemantic);
+  const discovered=discoveryMode==="v2_context"?null:await prepareLookGrabDiscovery(learnerMessage,discoveryMode);
+  const assembled=discovered?{assets:discovered.verified_assets,focal_name:learnerMessage,diagnostics:discovered.diagnostics}:await assembleAnatomyContext(learnerMessage,useSemantic);
   if(!assembled.assets.length)throw new Error('No verified BodyParts3D anatomy could be grounded for this question. Try naming a specific anatomical structure.');
   const knowledge={
     focal_concept:assembled.focal_name,
-    verified_assets:assembled.assets.map(a=>({id:a.asset_id,name:a.label,system:a.system,why_retrieved:a.reason,dimensions_m:a.dimensions_m,position_m:a.runtime_transform.position})),
+    verified_assets:assembled.assets.map(a=>({id:a.asset_id,name:a.label,system:a.system,why_retrieved:a.reason,context_role:a.context_role,dimensions_m:a.dimensions_m,position_m:a.runtime_transform.position})),
     constraints:{only_use_supplied_asset_ids:true,mesh_deformation_available:false,animation_type:'camera, visibility, highlighting and explanatory staging only',all_asset_transforms_in_shared_collection_space:true}
   };
-  const system=[
+  const historicalSystem=[
     'You are an anatomical education experience director. Return ONLY a JSON object.',
     `Required schema_version: ${ANATOMY_EXPERIENCE_SCHEMA}.`,
     'Fields: title, learning_objective, summary, steps (3–6).',
     'Each step fields: title, narration, visible_asset_ids (1–24 from supplied IDs), highlighted_asset_ids (subset of visible), motion_explanation.',
-    'Build a learner-friendly progression: locate focal target, reveal useful neighbours, show functional relationships, and recap.',
+    'Prioritize anatomical orientation: when verified bone/landmark/environment meshes are supplied, start with recognizable location context before isolating focal muscles. Then reveal their neighbours and functional relationships.',
+    'context_role tells you WHY an asset was selected: focal, functional, orientation, or environment. It is not a verified anatomical functional claim.',
+    'Keep useful landmarks throughout multiple steps when legible; do not isolate a muscle against an empty background when context assets are available.',
+    'A structure missing from the supplied candidate list is NOT proof it is absent from the entire MyWay atlas. Say only it is not supplied for this experience.',
     'Keep focal and supporting structures visually legible. Use at most 24 objects in a step.',
     'Never invent a mesh or anatomical identity. If focal anatomy is not present, state limitations explicitly.',
     'This renderer does NOT support mesh contraction, deformation or true anatomy motion yet. Do not claim it will animate contraction.',
     'motion_explanation should describe physiology in text and clearly distinguish explanation from executed animation.',
     'Avoid claiming exact biomechanics or muscle insertions without evidence. No executable JS or code.',
   ].join('\n');
-  const user=JSON.stringify({learner_question:learnerMessage,knowledge});
+  const lookGrabSystem=[
+    'You are an anatomical education experience director. Return ONLY one JSON object.',
+    `Required schema_version: ${ANATOMY_EXPERIENCE_SCHEMA}.`,
+    'The supplied catalog is a verified inventory of available meshes, not a recommendation or relevance ranking.',
+    'Each catalog row is [short_id, verified_name, system, laterality, optional_aliases].',
+    'LOOK AND GRAB: independently select the most useful available assets for the learner question; do not assume the top of the search results is correct.',
+    'Required output: title, learning_objective, summary, selected_asset_ids (1–80 SHORT IDs from catalog), and steps (3–6).',
+    'Each step: title, narration, visible_asset_ids (1–24 SHORT IDs from selected_asset_ids), highlighted_asset_ids (subset of visible), motion_explanation.',
+    'Choose as many or as few assets as useful, without system quotas; favour a coherent visual explanation.',
+    ...(discoveryMode==='multiscale_v2'?[
+      'When appropriate, establish a recognizable larger-scale location before focusing on details. Use only truly available contextual meshes, then progressively reveal or isolate the subject; do not assume a complete exterior model exists.',
+      'Context evidence suggests options, not mandates. You decide what to include. If adequate regional geometry is missing, describe that limitation; do not invent it.',
+    ]:[]),
+    'Anatomy meshes share atlas coordinates. MyWay, not you, resolves actual asset transforms and model URLs.',
+    'Optional unmet_visual_needs: brief names of useful structures missing from the provided inventory. This is diagnostic only; never place a missing asset in a step.',
+    'Do not invent IDs. Do not claim that an asset absent from these search results is absent from the entire library.',
+    'Renderer supports mesh visibility and highlights, not actual muscular deformation. Describe physiology in text only.',
+    'No executable code, no unsupported biomechanical claims. Use only the listed SHORT IDs.',
+  ].join('\n');
+  const system=discovered?lookGrabSystem:historicalSystem;
+  const user=discovered?JSON.stringify({learner_question:learnerMessage,discovery_mode:discoveryMode,available_assets:JSON.parse(discovered.compact_catalog)}):JSON.stringify({learner_question:learnerMessage,knowledge});
   const callStart=performance.now();
   let responseText='';
   let usage:{input_tokens:number|null;output_tokens:number|null;cached_input_tokens:number|null;cache_write_tokens:number|null}={input_tokens:null,output_tokens:null,cached_input_tokens:null,cache_write_tokens:null};
@@ -68,9 +93,13 @@ export async function generateAnatomyExperience(learnerMessage:string,model:Anat
     responseText=called.raw_text;
   }
   const modelMs=Math.round(performance.now()-callStart);
-  const plan=validateAnatomyExperiencePlan(parseObject(responseText),assembled.assets);
+  const modelObject=parseObject(responseText);
+  const picked=discovered?validateLookGrabSelection(modelObject,discovered.entries):null;
+  const selectedAssets=picked?assembled.assets.filter(a=>picked.selected_ids.includes(a.asset_id)):assembled.assets;
+  const plan=validateAnatomyExperiencePlan(picked?picked.plan_raw:modelObject,selectedAssets);
+  const gaps=picked&&discovered?reportUnmetLookGrabNeeds(picked.unmet_visual_needs,discovered.all_entries,new Set(discovered.entries.map(a=>a.asset_id))):[];
   const rate=MODEL_PRICING[model];
   const uncached=usage.input_tokens===null?null:Math.max(0,usage.input_tokens-(usage.cached_input_tokens??0));
   const cost=rate&&uncached!==null&&usage.output_tokens!==null?Number(((uncached*rate.input+(usage.cached_input_tokens??0)*rate.cached_input+usage.output_tokens*rate.output)/1_000_000).toFixed(6)):null;
-  return {ok:true as const,schema_version:ANATOMY_EXPERIENCE_SCHEMA,model,plan,assets:assembled.assets,diagnostics:{...assembled.diagnostics,model_duration_ms:modelMs,total_duration_ms:Math.round(performance.now()-started),tokens:usage,estimated_model_cost_usd:cost,cost_note:model==='gpt-6.1-sol'?'Standard published text-token rates; excludes cache-write/processing surcharges and any other billed operations.':'GLM NVIDIA usage/cost unavailable through this adapter; no estimate.',model_calls:1,additional_embedding_calls:assembled.diagnostics.embedding_calls??0}};
+  return {ok:true as const,schema_version:ANATOMY_EXPERIENCE_SCHEMA,model,plan,assets:selectedAssets,diagnostics:{...assembled.diagnostics,selected_asset_count:selectedAssets.length,model_selected_count:picked?.selected_ids.length??null,unmet_visual_needs:gaps,model_duration_ms:modelMs,total_duration_ms:Math.round(performance.now()-started),tokens:usage,estimated_model_cost_usd:cost,cost_note:model==='gpt-6.1-sol'?'Standard published text-token rates; excludes cache-write/processing surcharges and any other billed operations.':'GLM NVIDIA usage/cost unavailable through this adapter; no estimate.',model_calls:1,additional_embedding_calls:assembled.diagnostics.embedding_calls??0}};
 }

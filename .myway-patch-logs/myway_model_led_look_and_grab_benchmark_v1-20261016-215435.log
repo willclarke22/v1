@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20261016215436
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\2a59476c9b\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 3608
+PSVersion: 7.6.7
+PSEdition: Core
+GitCommitId: 7.6.7
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+PREFLIGHT STATE 0: unpatched and compatible
+RUN: pnpm exec next typegen
+Generating route types...
+Γ£ô Types generated successfully
+RUN: pnpm exec tsc --noEmit
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(93,212): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(93,259): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(93,303): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(96,8): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(96,62): error TS2304: Cannot find name 'setDiscoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(97,11): error TS2304: Cannot find name 'setDiscoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(103,218): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(103,275): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(106,51): error TS2304: Cannot find name 'setDiscoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(118,136): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(118,165): error TS2304: Cannot find name 'setDiscoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(118,207): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(118,246): error TS2304: Cannot find name 'setDiscoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(119,55): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(119,176): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(120,5): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(122,202): error TS2304: Cannot find name 'discoveryMode'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(123,5): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(125,55): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(125,140): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(125,220): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(126,57): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(126,181): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(127,184): error TS2304: Cannot find name 'discoveryPreview'.
+sandbox/probe-lab/visual-experience/ui/anatomy-experience-lab.tsx(127,212): error TS7006: Parameter 'a' implicitly has an 'any' type.
+PS>TerminatingError(): "Validation failed (2): pnpm exec tsc --noEmit"
+INSTALL FAILED AFTER WRITES: restoring exact original bytes...
+PREFLIGHT STATE 0: unpatched and compatible
+ROLLBACK VERIFIED: STATE 0. Original source bytes restored.
+PS>TerminatingError(): "Validation failed (2): pnpm exec tsc --noEmit"
+**********************
+PowerShell transcript end
+End time: 20261016215500
+**********************

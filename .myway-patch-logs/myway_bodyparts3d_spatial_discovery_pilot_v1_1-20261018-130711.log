@@ -1,0 +1,168 @@
+**********************
+PowerShell transcript start
+Start time: 20261018130712
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\6d62b1d5da\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 12448
+PSVersion: 7.6.7
+PSEdition: Core
+GitCommitId: 7.6.7
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+PREFLIGHT STATE 0: compatible (viewer safe surgical merge)
+RUN: node C:\Users\willc\AppData\Local\Temp\myway_bodyparts3d_spatial_discovery_pilot_v1_1-qa-07a0d60d20ae4483ba37ace1a201eeba\spatial-viewer-surgery.mjs --file C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\visual-experience\ui\orchestration-anatomy-atlas-viewer.tsx --mode apply --expected-sha 346ad99722c3238282ad6eb6ecaabedabe952e71101aea919d486e3b2427e7b5
+Viewer surgery STATE 10: inserted two exact snippets; original unrelated viewer code preserved.
+RUN: pnpm exec next typegen
+Generating route types...
+Γ£ô Types generated successfully
+RUN: pnpm exec tsc --noEmit
+RUN: node scripts/sandbox/verify-bodyparts3d-assembly-spatial-v1.mjs
+PASS: spatial bounding semantics, missing-data rejection, read-only route, staging gate, UI and 3D plane markers.
+RUN: node scripts/sandbox/verify-bodyparts3d-assembly-proposal-import-v1.mjs
+PASS: Assembly proposal import validates exact asset identities, stale inventories, duplicate/conflicting decisions, and review-only evidence.
+RUN: node scripts/sandbox/verify-bodyparts3d-assembly-studio-v2.mjs
+PASS V2: ontology part-of membership, classification exclusion, inherited laterality, unassigned audit, stale reviews, missing ontology safety, simplified UI and full-loading control.
+RUN: node scripts/sandbox/verify-bodyparts3d-atlas-assembly-proof-v1.mjs
+PASS: BodyParts3D Atlas Assembly Proof V1 verified.
+MyWay exposes a bounded full-atlas manifest, reconstructs members from saved shared-space transforms in one Canvas, defaults to All anatomy after preload, keeps larger presets explicitly bounded, and adds no GLM/search/Director authority.
+RUN: node scripts/sandbox/verify-bodyparts3d-atlas-navigation-semantic-v2.mjs
+PASS: BodyParts3D Atlas Navigation + Semantic Concept Robustness V2 verified.
+The atlas now keeps a stable camera across system changes, supports smooth multi-system overlays and opacity, uses a dedicated skin material, and resolves controlled everyday anatomy language through exact/ontology/profile paths without adding GLM or fuzzy retrieval authority.
+RUN: node scripts/sandbox/verify-bodyparts3d-atlas-trackball-spatial-feel-landmarks-cleanup-v2-6.mjs
+PASS: BodyParts3D Atlas Trackball Spatial Feel + Landmarks Cleanup V2.6 verified.
+The Anatomy Atlas now reuses the Learning Space Trackball interaction feel with an anchored no-pan target, removes the old Landmarks test/preset while retaining internal landmark context for concept realization, and preserves preload, All-anatomy startup, skin, selection color, canonical reset, framing, and shared-space transforms.
+RUN: node scripts/sandbox/verify-bodyparts3d-anatomy-concept-realization-v1.mjs
+PASS: BodyParts3D Anatomy Concept Realization V1 verified.
+Exact BodyParts3D named concepts map deterministically to one-or-many existing atlas elements; unresolved/ambiguous concepts remain non-authoritative; context/highlight/isolate views preserve shared atlas placement; Stage 2 remains unchanged.
+RUN: pnpm build
+
+> v1@0.1.0 build C:\Users\willc\projects\MyWay\v1
+> next build
+
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 15.7s
+  Running TypeScript ...
+  Finished TypeScript in 35.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/87) ...
+  Generating static pages using 11 workers (21/87)
+  Generating static pages using 11 workers (43/87)
+  Generating static pages using 11 workers (65/87)
+Γ£ô Generating static pages using 11 workers (87/87) in 3.3s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/bootstrap/topic-state
+Γö£ ╞Æ /api/confusion-insight/run-pending
+Γö£ ╞Æ /api/local-dev/engine-provider-smoke
+Γö£ ╞Æ /api/local-dev/idle-state
+Γö£ ╞Æ /api/local-dev/mock-3model-turn
+Γö£ ╞Æ /api/message
+Γö£ ╞Æ /api/probe/submit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/acquisition
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/ambientcg
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/attributions
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/blender-jobs
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/bodyparts3d-pilot
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/bodyparts3d-thumbnails
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/enrichment
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/geometry
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/glm-builder
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/identity-audit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-blenderkit
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-local
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/import-smart
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/library
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/library-browser
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/pending-file
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/promote
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/remove
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/replace
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/resolve
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/scenes
+Γö£ ╞Æ /api/sandbox/probe-lab/assets/trellis
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/benchmark
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/candidate
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/execute
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/execute-with-repair
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/improve
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/native-vintage-camera-proof
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/plan
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/repair
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/resources
+Γö£ ╞Æ /api/sandbox/probe-lab/blender-python-builder/visual-critique
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/freeform
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/freeform-vision
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/cinematic-production/video-compare
+Γö£ ╞Æ /api/sandbox/probe-lab/manual-turn/render
+Γö£ ╞Æ /api/sandbox/probe-lab/primitive-builder/generate
+Γö£ ╞Æ /api/sandbox/probe-lab/primitive-builder/refresh-assets
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/environments/file
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials/blender-hydrate
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/materials/texture
+Γö£ ╞Æ /api/sandbox/probe-lab/resource-runtime/models/file
+Γö£ ╞Æ /api/sandbox/probe-lab/scene-runtime/resolve
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-assemblies
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-atlas
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-director
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/anatomy-experience
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/asset-search-bench
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/compile-experience
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/creative-thesis
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/full-turn-debug
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/generate-full-turn
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/orchestration-stage
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/request-debug
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/resolve-full-turn
+Γö£ ╞Æ /api/sandbox/probe-lab/visual-experience/semantic-embedding-pilot
+Γö£ ╞Æ /api/semantic-enrichment/pending-status
+Γö£ ╞Æ /api/semantic-enrichment/run-pending
+Γö£ ╞Æ /api/semantic-layout/commit-pending
+Γö£ ╞Æ /api/semantic-layout/recompute-pending
+Γö£ ╞Æ /api/topic-message-embeddings/run-pending
+Γö£ Γùï /sandbox/probe-lab
+Γö£ Γùï /sandbox/probe-lab/asset-library
+Γö£ Γùï /sandbox/probe-lab/asset-library/ambientcg
+Γö£ Γùï /sandbox/probe-lab/blender-python-builder
+Γö£ Γùï /sandbox/probe-lab/cinematic-production
+Γö£ Γùï /sandbox/probe-lab/cinematic-production/freeform
+Γö£ Γùï /sandbox/probe-lab/directable-assets
+Γö£ Γùï /sandbox/probe-lab/directable-interactions
+Γö£ Γùï /sandbox/probe-lab/director-capability-library
+Γö£ Γùï /sandbox/probe-lab/manual-turn
+Γö£ Γùï /sandbox/probe-lab/motion-camera-library
+Γö£ Γùï /sandbox/probe-lab/primitive-builder
+Γö£ Γùï /sandbox/probe-lab/probe-gallery
+Γö£ Γùï /sandbox/probe-lab/resource-runtime
+Γöö Γùï /sandbox/probe-lab/visual-experience
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+PREFLIGHT STATE 10: fully applied
+SUCCESS: myway_bodyparts3d_spatial_discovery_pilot_v1_1 installed and verified. STATE 10.
+**********************
+PowerShell transcript end
+End time: 20261018130847
+**********************
