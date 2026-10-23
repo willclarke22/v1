@@ -1,4 +1,3 @@
-
 "use client";
 
 import { TrackballControls, useGLTF } from "@react-three/drei";
@@ -17,6 +16,7 @@ import {
   useState,
 } from "react";
 import * as THREE from "three";
+import { effectiveAssemblyRole, type AnatomyBoundaryPresentation, type AnatomyBoundaryMode } from "./assembly-boundary-presentation";
 
 import {
   bodyParts3dSemanticMaterialForSystem,
@@ -934,6 +934,7 @@ function AtlasAssetMesh({
   skinTone,
   onLoaded,
   onSelect,
+  extendedGhostOpacity = false,
 }: {
   asset: AnatomyAtlasAsset;
   selected: boolean;
@@ -943,16 +944,17 @@ function AtlasAssetMesh({
   skinTone: SkinTone;
   onLoaded: (assetId: string) => void;
   onSelect: (assetId: string) => void;
+  extendedGhostOpacity?: boolean;
 }) {
   const gltf = useGLTF(asset.model_url);
   const scene = useMemo(() => {
     const clone = gltf.scene.clone(true);
     const baseMaterial = sharedSystemMaterial(asset.system, skinTone);
     const opacity =
-      dimmed && !selected && !emphasized
+      selected ? 1 : dimmed && !emphasized
         ? 0.09
         : layer.mode === "ghost"
-          ? Math.min(layer.opacity, 0.42)
+          ? (extendedGhostOpacity ? layer.opacity : Math.min(layer.opacity, 0.42))
           : layer.opacity;
     const needsDisplayMaterial =
       selected ||
@@ -1030,6 +1032,7 @@ function AtlasAssetMesh({
     asset.system,
     dimmed,
     emphasized,
+    extendedGhostOpacity,
     gltf.scene,
     layer.mode,
     layer.opacity,
@@ -1052,6 +1055,7 @@ function AtlasAssetMesh({
 
   return (
     <group
+      visible={layer.mode !== "hidden"}
       position={transform.position}
       rotation={transform.rotation}
       scale={transform.scale}
@@ -1153,11 +1157,14 @@ function modeLabel(mode: LayerMode) {
 
 export function OrchestrationAnatomyAtlasViewer({
   assemblyPreview,
+  onAssemblySelectAsset,
 }: {
-  assemblyPreview?: { id: string; label: string; asset_ids: string[]; spatialScan?: {y:number;minX:number;maxX:number;minZ:number;maxZ:number} };
+  assemblyPreview?: { id: string; label: string; asset_ids: string[]; presentation?: AnatomyBoundaryPresentation; boundaryMode?: AnatomyBoundaryMode; spatialScan?: {y:number;minX:number;maxX:number;minZ:number;maxZ:number} };
+  onAssemblySelectAsset?: (assetId: string) => void;
 } = {}) {
   void LEGACY_CONCEPT_SCHEMA;
 
+  const assemblySignature=assemblyPreview?.asset_ids.join("|")??"";
   const [manifest, setManifest] = useState<AnatomyAtlasManifest | null>(null);
   const [isLoadingManifest, setIsLoadingManifest] = useState(false);
   const [manifestError, setManifestError] = useState<string | null>(null);
@@ -1461,7 +1468,10 @@ export function OrchestrationAnatomyAtlasViewer({
   useEffect(() => {
     if (!assemblyPreview || !manifest) return;
     const ids = new Set(assemblyPreview.asset_ids);
-    const targets = manifest.assets.filter((asset) => ids.has(asset.asset_id));
+    const allTargets = manifest.assets.filter((asset) => ids.has(asset.asset_id));
+    // Context meshes (e.g. a long pelvic attachment) must not widen the initial camera crop.
+    const coreTargets = allTargets.filter(asset => effectiveAssemblyRole(assemblyPreview.presentation?.roles??{},asset.asset_id)==="core");
+    const targets = coreTargets.length ? coreTargets : allTargets;
     if (!targets.length) return;
     const bounded = approximateBounds(targets);
     const displayed = normalizedBoundsForAtlasRoot(
@@ -1473,7 +1483,7 @@ export function OrchestrationAnatomyAtlasViewer({
       center: vec3Tuple(displayed.center),
       size: vec3Tuple(displayed.size),
     });
-  }, [assemblyPreview, manifest, atlasBounds.center, atlasBasis.quaternion]);
+  }, [assemblyPreview?.id, assemblySignature, manifest, atlasBounds.center, atlasBasis.quaternion]);
 
   const presetAssets = useMemo(() => {
     if (!manifest) return [];
@@ -1618,7 +1628,13 @@ export function OrchestrationAnatomyAtlasViewer({
 
   const layerForAsset = useCallback(
     (asset: AnatomyAtlasAsset): LayerState => {
-      if (assemblyPreview) return { mode: "solid", opacity: 1 };
+      if (assemblyPreview) {
+        const role=effectiveAssemblyRole(assemblyPreview.presentation?.roles??{},asset.asset_id);
+        const mode=assemblyPreview.boundaryMode??"contextual";
+        if(mode==="full"||role==="core")return {mode:"solid",opacity:1};
+        if(mode==="isolated")return {mode:"hidden",opacity:0};
+        return {mode:"ghost",opacity:role==="context"?(assemblyPreview.presentation?.context_opacity??0.2):(assemblyPreview.presentation?.boundary_opacity??0.4)};
+      }
       if (
         resolvedConcept &&
         conceptElementIds.has(asset.member_id.toLowerCase()) &&
@@ -2623,8 +2639,9 @@ export function OrchestrationAnatomyAtlasViewer({
                             }
                             layer={layerForAsset(asset)}
                             skinTone={skinTone}
+                            extendedGhostOpacity={Boolean(assemblyPreview)}
                             onLoaded={reportLoaded}
-                            onSelect={setSelectedId}
+                            onSelect={(id)=>{setSelectedId(id); if(assemblyPreview)onAssemblySelectAsset?.(id)}}
                           />
                         </Suspense>
                       </AtlasAssetBoundary>
