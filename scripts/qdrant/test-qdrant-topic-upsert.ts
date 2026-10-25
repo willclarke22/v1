@@ -4,11 +4,11 @@ dotenv.config({ path: ".env.local" });
 import { embedText } from "../../lib/vector/embed";
 
 async function main() {
-  console.log("QDRANT_URL:", process.env.QDRANT_URL);
+  console.log("QDRANT_URL configured:", !!process.env.QDRANT_URL);
   console.log("QDRANT_API_KEY exists:", !!process.env.QDRANT_API_KEY);
   console.log("EMBEDDINGS_URL:", process.env.EMBEDDINGS_URL);
 
-  const { createQdrantClient, TOPIC_COLLECTION } = await import(
+  const { createQdrantClient, getQdrantConfig } = await import(
     "../../lib/vector/qdrant"
   );
 
@@ -17,7 +17,7 @@ async function main() {
   const topicName = "Action Potentials";
   const vector = await embedText(topicName);
 
-  await qdrant.upsert(TOPIC_COLLECTION, {
+  await qdrant.upsert(getQdrantConfig().topicCollection, {
     wait: true,
     points: [
       {
@@ -31,7 +31,7 @@ async function main() {
     ],
   });
 
-  const result = await qdrant.query(TOPIC_COLLECTION, {
+  const result = await qdrant.query(getQdrantConfig().topicCollection, {
     query: await embedText("How do action potentials work?"),
     limit: 3,
     with_payload: true,

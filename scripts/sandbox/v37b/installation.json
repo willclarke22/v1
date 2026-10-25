@@ -1,0 +1,19 @@
+{
+  "schema": "myway-v37b-install-v1",
+  "version": "3.7B.0",
+  "installed_utc": "2026-10-25T00:34:09.296Z",
+  "original": "C:\\Users\\willc\\projects\\MyWay\\v1",
+  "target": "C:\\Users\\willc\\projects\\MyWay\\v1-learning-experiment",
+  "file_hashes": {
+    "lib/supabase/server.ts": "8f7a22af7bf83e5f428a15186e80659921de526bb0535e7d19cf5dfec08f133a",
+    "lib/vector/qdrant.ts": "a33ad71cd56e2490ab3a9d9293786495b44a6bf4c49b650c4cc8c87b19e9ec8c",
+    "lib/vector/query-topics.ts": "e7b6828c7964cd5db7f732df36863e0b2c5695f9491b95840f10f8a9d5a2df2b",
+    "lib/vector/sync-topic-to-qdrant.ts": "661ae3a7bef78cc5b6f3931b0640be766a514a9e22ccfb2761b05e2963d57e53",
+    "scripts/qdrant/backfill-topic-state-to-qdrant.ts": "f0b936642c8bcd99ce48e7b413bf216102ba164cb5dba4b8101f72f6f7aef2a8",
+    "scripts/qdrant/test-qdrant-topic-upsert.ts": "8d1fe89d8fdaa9ee2f1bdf50e56945702336b8b7b4927e7f7a8c46070c581770",
+    "lib/sandbox/v37b/runtime-guards.server.ts": "5bec98877a83aa2f7ff39c7801eb8d3c9b7a2e827b69ed758255d587f9e3ba0d"
+  },
+  "no_database_writes": true,
+  "runtime_safe_to_start": false,
+  "worker_safe_to_start": false
+}

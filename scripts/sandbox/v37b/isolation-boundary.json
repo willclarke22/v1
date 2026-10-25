@@ -1,0 +1,8 @@
+{
+  "schema": "myway-v37b-boundary-v1",
+  "worktree": "C:\\Users\\willc\\projects\\MyWay\\v1-learning-experiment",
+  "original_supabase_url_sha256": "93a36b3d9c35e9ae32f3777464c6c10f0c018e1039ee31bf5bc9290d97243521",
+  "original_supabase_service_key_sha256": "6904f1467ce7d982de932469edf51d22e9b779a0e3e7f5bc2c4584855319db5b",
+  "production_qdrant_collection": "myway-topics",
+  "experimental_qdrant_collection": "myway-topics-sandbox"
+}

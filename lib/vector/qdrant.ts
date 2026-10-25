@@ -1,4 +1,5 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
+import { assertExperimentQdrantConfig } from "@/lib/sandbox/v37b/runtime-guards.server";
 
 export const TOPIC_COLLECTION = "myway-topics";
 export const DEFAULT_TOPIC_VECTOR_SIZE = 384;
@@ -44,12 +45,11 @@ export function getTopicVectorSize() {
 export const TOPIC_VECTOR_SIZE = DEFAULT_TOPIC_VECTOR_SIZE;
 
 export function getQdrantConfig() {
-  return {
-    url: getOptionalEnv("QDRANT_URL"),
-    apiKey: getOptionalEnv("QDRANT_API_KEY"),
-    topicCollection: getOptionalEnv("QDRANT_TOPIC_COLLECTION") ?? TOPIC_COLLECTION,
-    topicVectorSize: getTopicVectorSize(),
-  };
+  const url = getOptionalEnv("QDRANT_URL");
+  const apiKey = getOptionalEnv("QDRANT_API_KEY");
+  const topicCollection = getOptionalEnv("QDRANT_TOPIC_COLLECTION") ?? TOPIC_COLLECTION;
+  assertExperimentQdrantConfig(topicCollection, url, apiKey);
+  return { url, apiKey, topicCollection, topicVectorSize: getTopicVectorSize() };
 }
 
 export function hasQdrantConfig(): boolean {

@@ -7,7 +7,7 @@ import { embedTexts } from "@/lib/vector/embed";
 import {
   createQdrantClient,
   ensureTopicCollection,
-  TOPIC_COLLECTION,
+  getQdrantConfig,
 } from "@/lib/vector/qdrant";
 
 type JsonValue =
@@ -123,13 +123,13 @@ async function main() {
     };
   });
 
-  await qdrant.upsert(TOPIC_COLLECTION, {
+  await qdrant.upsert(getQdrantConfig().topicCollection, {
     wait: true,
     points,
   });
 
   console.log(
-    `Backfilled ${points.length} topic_state rows into Qdrant collection "${TOPIC_COLLECTION}".`,
+    `Backfilled ${points.length} topic_state rows into Qdrant collection "${getQdrantConfig().topicCollection}".`,
   );
 }
 

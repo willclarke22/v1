@@ -1,0 +1,72 @@
+{
+  "audit_source": "2026-10-24 read-only original Supabase SQL catalog inspection",
+  "table_columns": {
+    "runs": [
+      "id",
+      "created_at",
+      "run_type",
+      "user_message",
+      "source_message_id",
+      "target_topic_id",
+      "mode_selected",
+      "active_diagnosis",
+      "reply_text",
+      "suggested_action",
+      "run_result_json"
+    ],
+    "attempts": [
+      "id",
+      "created_at",
+      "run_id",
+      "probe_id",
+      "topic_id",
+      "response_text",
+      "classification",
+      "correctness_estimate",
+      "explanation_quality",
+      "insight",
+      "confusion",
+      "attempt_json"
+    ],
+    "topic_state": [
+      "topic_id",
+      "updated_at",
+      "last_run_id",
+      "topic_label",
+      "confusion",
+      "insight",
+      "learning_score",
+      "diagnosis",
+      "next_step",
+      "topic_json",
+      "topic_position_x",
+      "topic_position_y",
+      "topic_position_z",
+      "semantic_enrichment_status",
+      "needs_embedding_centroid",
+      "should_schedule_enrichment",
+      "semantic_enrichment_prompt_text",
+      "layout_status",
+      "embedding_skip_reason",
+      "semantic_position_x",
+      "semantic_position_y",
+      "semantic_position_z",
+      "semantic_position_updated_at",
+      "semantic_position_method",
+      "topic_label_embedding_centroid",
+      "topic_label_embedding_count",
+      "topic_label_embedding_model",
+      "topic_label_embedding_updated_at",
+      "topic_message_embedding_centroid",
+      "topic_message_embedding_count",
+      "topic_message_embedding_model",
+      "topic_message_embedding_updated_at"
+    ]
+  },
+  "rls_on": {
+    "runs": true,
+    "attempts": true,
+    "topic_state": true
+  },
+  "original_pgvector_installed": false
+}

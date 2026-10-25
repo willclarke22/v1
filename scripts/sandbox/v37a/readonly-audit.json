@@ -1,0 +1,74 @@
+{
+  "schema": "myway-v37a-source-audit-v1",
+  "created_at": "2026-10-25T00:22:25.721Z",
+  "original": "C:\\Users\\willc\\projects\\MyWay\\v1",
+  "experimental": "C:\\Users\\willc\\projects\\MyWay\\v1-learning-experiment",
+  "mode": "SOURCE-ONLY-NO-NETWORK",
+  "source_integrity": {
+    "lib/vector/qdrant.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "lib/vector/query-topics.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "lib/vector/sync-topic-to-qdrant.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "lib/supabase/server.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "lib/persistence/read.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "app/api/semantic-layout/recompute-pending/route.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "app/api/semantic-layout/commit-pending/route.ts": {
+      "original_exists": true,
+      "experimental_exists": true
+    },
+    "scripts/local-dev/semantic-enrichment-worker.ps1": {
+      "original_exists": true,
+      "experimental_exists": true
+    }
+  },
+  "qdrant": {
+    "config_mentions_collection_env": true,
+    "search_uses_hardcoded_collection": true,
+    "upsert_uses_hardcoded_collection": true
+  },
+  "supabase": {
+    "original_.env.local_exists": true,
+    "original_.env.local_key_presence": {
+      "NEXT_PUBLIC_SUPABASE_URL": true,
+      "SUPABASE_URL": false,
+      "SUPABASE_SERVICE_ROLE_KEY": true,
+      "QDRANT_URL": true,
+      "QDRANT_API_KEY": true,
+      "QDRANT_TOPIC_COLLECTION": false,
+      "MYWAY_WORKER_RUNTIME_MODE": false
+    },
+    "experimental_credentials_copied": false
+  },
+  "workers": {
+    "original_worker_mentions_port_3000": true,
+    "experimental_worker_started": false
+  },
+  "blockers": [
+    "QDRANT_WRITE_ROUTING: collection selection must be fixed in experimental branch BEFORE enabling runtime/writes.",
+    "SUPABASE_SCHEMA: authoritative live SQL schema/migrations and separate experimental project not yet verified.",
+    "QDRANT_COLLECTION: actual production vector configuration and sandbox collection not yet inspected.",
+    "WORKERS: experimental worker routing/ports not yet isolated."
+  ],
+  "notes": [
+    "The experimental worktree must NOT be started with production .env files or globally inherited production credentials.",
+    "A Git worktree isolates source edits; it does not isolate external services by itself.",
+    "The attached source dump cannot prove live schema, Qdrant collection dimensions, or installed environment credentials."
+  ]
+}

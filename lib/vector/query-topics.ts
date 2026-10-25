@@ -1,7 +1,7 @@
 import {
   createQdrantClient,
   hasQdrantConfig,
-  TOPIC_COLLECTION,
+  getQdrantConfig,
 } from "@/lib/vector/qdrant";
 import { embedText } from "@/lib/vector/embed";
 import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
@@ -533,7 +533,7 @@ export async function querySemanticTopicCandidatesFromEmbedding(
     timer.step("create_qdrant_client");
 
     result = await withTimeout(
-      qdrant.query(TOPIC_COLLECTION, {
+      qdrant.query(getQdrantConfig().topicCollection, {
         query: messageEmbedding,
         limit: requestedLimit,
         // Supabase remains the source of truth. This payload is only for

@@ -1,0 +1,31 @@
+{
+  "schema": "myway-v3.7a-source-baseline-v1",
+  "snapshot": "2026-10-24T19:04:16-04:00",
+  "required_normalized_sha256": {
+    "sandbox/probe-lab/local-assessment/local-assessment-lab.tsx": "c6d237f7658ca843b60e2f64b4e9cd51eedb4df04df1620719df3523d13cd61f",
+    "sandbox/probe-lab/local-assessment/local-assessment-lab.module.css": "2048872a94fcdaa0126758815e15fb0dd5c2a039c0eadda55baacf7068642797",
+    "sandbox/probe-lab/local-assessment/cloud-assessment-client.ts": "9f35e22dad3226c22213ff7e36d33154a7dd7f54328858f236999022fe8640ee",
+    "sandbox/probe-lab/local-assessment/cloud-teaching-client.ts": "8f5273bc722a2f02cb6af138dc751aac94456d7abcea4a483a883b024d17fc20",
+    "sandbox/probe-lab/local-assessment/learning-decision-inspector.tsx": "5d9164ba2657da6447718fcf76aafdb29dd2aea1950eb74fdd53b08f86810b57",
+    "sandbox/probe-lab/local-assessment/learning-decision-inspector.module.css": "fb94802a365fd2414f1b7d54c2deb5b0d218d7f9f797e051702e15d20d89e0f1",
+    "sandbox/probe-lab/local-assessment/learning-plan.ts": "a4faa2598f66be8df6b15b60f5e49e87f14431e22b4ba15eb5a9664b00b9b63e",
+    "sandbox/probe-lab/local-assessment/visual-handoff.ts": "2e32c9a48e504b5796bce8321e8759e334936df272c24e4efdc17855ab3ff7c3",
+    "app/api/sandbox/probe-lab/local-assessment/openai/route.ts": "39521b0d916281d427a3eb973f17d53605af175fac62165e1a9836fdfaad09fd",
+    "app/api/sandbox/probe-lab/local-assessment/teaching/route.ts": "5c4871c812e0f001524ab140c9296d338beca28985757e311984c1251698381b",
+    "scripts/sandbox/verify-myway-learning-studio-v3_6.mjs": "e2a982bb5d906402d17ba5b10514d766eaa9d010aa834d03ef6d641019bfe539",
+    "scripts/sandbox/verify-myway-learning-plan-v3_5.mjs": "97eaeaee1919eba8e3935e271d0054ce4597167a3499e12f12b99fef2dfe9248",
+    "scripts/sandbox/verify-myway-edge-local-assessment-v1.mjs": "676c02f5265d8cb83c55dc57fc684e3824cdef68e0f36e4098450c86f82184a2",
+    "scripts/sandbox/verify-myway-edge-local-assessment-v1_1.mjs": "33302834a1d3cc6b91c6dcded57de6fd3d0365954ff2f91b1194785270cd2ba6",
+    "scripts/sandbox/verify-myway-edge-local-assessment-connected-v2.mjs": "d90c8255df5c0a75e9963cc105740c1f7820792650b1405e7f48f23a8adeacba",
+    "scripts/sandbox/verify-myway-edge-local-assessment-embeddings-v1.mjs": "1a393892b860fd77389ccedc8e5a494fa722f30d6ffbb9aef1e162018792c7f5",
+    "scripts/sandbox/verify-myway-edge-local-assessment-clarify-v3.mjs": "9a5eb840bf31feed9741389ad2662981d22d0b0b5a1bc7941bf43abbe7d36909",
+    "scripts/sandbox/verify-myway-edge-local-assessment-recovery-v3_2.mjs": "0be9d49154c9268f22fc46aa948b86c6d4da4370d13e344005e59870edbb2ef5",
+    "scripts/sandbox/verify-myway-edge-local-assessment-evidence-v3_3.mjs": "e8be39c6fb3a0ecdfdb13923c83366094f103b1b9584a6b90241066d1d8d4f0a",
+    "scripts/sandbox/verify-myway-assessment-provider-v3_4.mjs": "b3d65cd52669e03d2a923dc1411f5538ae161d2b1db6c8f3035ddd6b9654262e",
+    "scripts/sandbox/verify-myway-assessment-provider-repair-v3_4_1.mjs": "92cfbaf3f466c83c1ee629f5b3c3849e5023df62036f6a7e082c1e59a85fb89d"
+  },
+  "public_optional": [
+    "public/myway-local-embedding-lab-v1/",
+    "public/myway-local-embedding-lab-v2/"
+  ]
+}

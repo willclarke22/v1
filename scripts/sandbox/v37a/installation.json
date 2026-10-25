@@ -1,0 +1,13 @@
+{
+  "schema": "myway-v37a-install-v1",
+  "version": "3.7A",
+  "original": "C:\\Users\\willc\\projects\\MyWay\\v1",
+  "target": "C:\\Users\\willc\\projects\\MyWay\\v1-learning-experiment",
+  "branch": "myway/learning-sandbox-v3_7a",
+  "source_commit": "462a7a4b6ce8b2b20a91021acca716307f4aa2d1",
+  "source_snapshot": "2026-10-24T19:04:16-04:00",
+  "installed_utc": "2026-10-25T00:22:25.7538911Z",
+  "carry": [],
+  "database_writes_enabled": false,
+  "runtime_safe_to_start": false
+}

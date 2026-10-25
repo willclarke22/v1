@@ -1,0 +1,12 @@
+# MyWay V3.7A ONLY — DOCUMENTATION TEMPLATE. DO NOT COPY PRODUCTION SECRETS.
+# Do not make this an active .env.local until V3.7B routing gates pass.
+# Experimental Supabase project: DIFFERENT PROJECT from original.
+NEXT_PUBLIC_SUPABASE_URL=SET_SEPARATE_EXPERIMENTAL_PROJECT_URL
+SUPABASE_SERVICE_ROLE_KEY=SET_SEPARATE_EXPERIMENTAL_SERVICE_ROLE_KEY_LOCALLY
+# Same Qdrant server may be used, but the collection MUST be distinct.
+QDRANT_URL=SET_QDRANT_ENDPOINT
+QDRANT_API_KEY=SET_QDRANT_KEY_LOCALLY
+QDRANT_TOPIC_COLLECTION=myway-topics-sandbox
+# Note: QDRANT_TOPIC_COLLECTION is NOT reliably honored by old query/upsert code.
+# The experimental worktree MUST NOT run DB-connected jobs until V3.7B fixes routes.
+# Dedicated worker/client base URL planned: http://localhost:3001

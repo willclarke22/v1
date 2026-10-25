@@ -1,0 +1,12 @@
+# V3.7B ONLY. Documentation template; this installer does not create .env.local.
+# Credentials must belong to a NEW, SEPARATE experimental Supabase project.
+# Never copy the original project's values.
+MYWAY_EXPERIMENTAL_RUNTIME=v37b
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-EXPERIMENTAL-PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=SET_ONLY_IN_YOUR_EXPERIMENTAL_LOCAL_ENV
+# Qdrant can share a cluster, but NEVER a topic collection.
+QDRANT_URL=https://YOUR-QDRANT-ENDPOINT
+QDRANT_API_KEY=SET_LOCALLY
+QDRANT_TOPIC_COLLECTION=myway-topics-sandbox
+# Runtime, DB schema and Qdrant collection must be verified before starting app/workers.
+# Planned separate runtime: localhost:3001. Original localhost:3000 stays untouched.

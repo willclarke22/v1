@@ -4,7 +4,7 @@ import {
   createQdrantClient,
   ensureTopicCollection,
   hasQdrantConfig,
-  TOPIC_COLLECTION,
+  getQdrantConfig,
 } from "@/lib/vector/qdrant";
 import type { EmbeddingVector } from "@/types/contracts";
 
@@ -354,7 +354,7 @@ export async function syncTopicToQdrant(
   }
 
   await withTimeout(
-    qdrant.upsert(TOPIC_COLLECTION, {
+    qdrant.upsert(getQdrantConfig().topicCollection, {
       wait: qdrantUpsertWait,
       points: [
         {
