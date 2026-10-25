@@ -1,0 +1,74 @@
+import fs from "node:fs";
+import path from "node:path";
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const ts = require("typescript");
+const root = process.cwd();
+const file = name => fs.readFileSync(path.join(root, name), "utf8");
+const lab = file("sandbox/probe-lab/local-assessment/local-assessment-lab.tsx");
+const css = file("sandbox/probe-lab/local-assessment/local-assessment-lab.module.css");
+const planner = file("sandbox/probe-lab/local-assessment/learning-plan.ts");
+const route = file("app/api/sandbox/probe-lab/local-assessment/teaching/route.ts");
+const cloudClient = file("sandbox/probe-lab/local-assessment/cloud-teaching-client.ts");
+for (const marker of ["createTeachingPlan", "teachingBase", "runConnectedComparison", "makeTeachingInput", "validateTeachingPlan", "TEACH_SYSTEM_PROMPT", "teachingStage: \"planning\"", "teachingStage: \"skipped\"", "model configuration", "Optional learner profile", "EXPERIMENTAL PLAN", "No learner database writes"]) {
+  assert(lab.toLowerCase().includes(marker.toLowerCase()), `Missing UI/planner flow: ${marker}`);
+}
+assert(lab.includes('rootProblem && resolution !== "clarify" && resolution !== "unresolved"'), "Teaching must wait until one clarification ends with grounded difficulty");
+assert(lab.includes('teachingProvider, controller.signal'), "Teaching must use independently selected teaching provider explicitly");
+assert(lab.includes('session.prompt(JSON.stringify(input)'), "Edge teaching must get compact input");
+assert(lab.includes('requestOpenAITeaching(input, signal)'), "GPT teaching must run through explicit server-side route");
+assert(lab.indexOf('className={styles.chatStack}') < lab.indexOf('className={styles.chatColumn}'), "chat stack missing");
+assert(/<\/section>\s*<details className=\{styles.profilePanel\}/.test(lab), "Profile/config must not be trapped inside fixed-height chat panel");
+assert(/<\/details>\s*<\/div>\s*<aside className=\{styles.sideColumn\}/.test(lab), "Config must expand outside fixed chat panel");
+assert(css.includes('chatColumn{min-height:850px') && css.includes('chatStack>.promptDock') && css.includes('overflow:visible'), "Console height / config unclipping missing");
+assert(!/\blocalStorage\b/.test(lab) && !/\/api\/message\b/.test(lab), "No production learning state/persistence");
+assert(route.includes('process.env.NODE_ENV !== "development"') && route.includes('validContext(body.context)') && route.includes('timeoutMs = 30_000'), "Cloud teaching route must be guarded, bounded and validate context");
+assert(!/process.env.NEXT_PUBLIC_/.test(route) && !/NEXT_PUBLIC_/.test(cloudClient), "No browser-exposed API key");
+assert(cloudClient.includes('fetch(ROUTE') && cloudClient.includes('42_000'), "Bounded client transport required");
+const js = ts.transpileModule(planner, {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const api = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(js)}`);
+const profile = api.normalizeProfile({interests:'soccer, Spanish films, soccer, \nmusic, science, geography',preferred_style:'unsure',goal:'Listen more easily'});
+assert(profile.interests.length === 5 && profile.goal === 'Listen more easily', "Profile limits missing");
+const d = [{label:'Spanish reflexive pronouns',rootProblem:'Confuses reflexive pronoun use with verb meaning.',similarity:.535},{label:'Math',rootProblem:'Similar concern',similarity:.42}];
+const related=api.discoverRelationshipCandidates('I cannot recognize se quickly.',d);
+assert(related.length === 1 && related[0].status === 'candidate' && related[0].source === 'mock_difficulty_embedding', "Provisional open-text relation missed");
+assert(api.discoverRelationshipCandidates('',d).length === 0, "No difficulty means no diagnosis relationships");
+const input=api.makeTeachingInput({topic_name:'Spanish se',root_problem:'Slowly recognizes function in context',evidence_quote:'I process it slowly.',root_problem_confidence:.65}, {subjects:[{label:'Spanish reflexive pronouns',similarity:.42}],difficulties:d}, profile);
+assert(input.candidate_relationships.length===1 && input.profile.interests.length===5, "Compact context missing");
+const output={learner_reflection:'You know some uses but recognition takes effort.',teaching_strategy:'Compare sentence contexts',next_step:'Spot the role of se in two short sentences.',visual_intent:'Side-by-side sentence highlights',use_interest:'do_not_use',chosen_interest:'',reason:'Context comparison directly addresses recognition.'};
+assert(api.validateTeachingPlan(JSON.stringify(output),input).plan, "Valid concise teaching plan rejected");
+assert(api.validateTeachingPlan('{broken',input).error, "Malformed model output accepted");
+assert(api.validateTeachingPlan(JSON.stringify({...output,chosen_interest:'soccer'}),input).error, "Undeclared interest accepted");
+assert(api.validateTeachingPlan(JSON.stringify({...output,use_interest:'structural_bridge',chosen_interest:'invented'}),input).error, "Fabricated interests accepted");
+assert(api.validateTeachingPlan(JSON.stringify({...output,teaching_strategy:''}),input).error, "Empty teaching guidance accepted");
+assert(api.validateTeachingPlan(JSON.stringify({...output,extra:'new'}),input).error, "Extra schema fields accepted");
+const okInterest={...output,use_interest:'light_tone',chosen_interest:'SOCCER'};
+assert(api.validateTeachingPlan(JSON.stringify(okInterest),input).plan?.chosen_interest === 'soccer', 'Grounded interest normalization failed');
+// Exercise the provider route with a fake fetch, without any external API calls.
+const routeJs=ts.transpileModule(route,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const imported = routeJs.replace(/from "\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/sandbox\/probe-lab\/local-assessment\/learning-plan"/,`from "data:text/javascript;charset=utf-8,${encodeURIComponent(js)}"`);
+assert(imported !== routeJs,'Test import patch failed');
+const svc=await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(imported)}`);
+const backup={NODE_ENV:process.env.NODE_ENV,MYWAY_OPENAI_API_KEY:process.env.MYWAY_OPENAI_API_KEY};
+const previousFetch=globalThis.fetch;
+try {
+ process.env.NODE_ENV='development';delete process.env.MYWAY_OPENAI_API_KEY;
+ const url='http://localhost:3000/api/sandbox/probe-lab/local-assessment/teaching';
+ const send = body => new Request(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ assert((await svc.POST(send({}))).status===400,'Invalid request must fail without contacting model');
+ assert((await svc.POST(send({context:input}))).status===503,'Missing key must fail safely');
+ process.env.MYWAY_OPENAI_API_KEY='FAKE_TEST_KEY';
+ let calls=0; globalThis.fetch=async (_url,opt)=>{
+  calls++;
+  assert(opt.headers.Authorization==='Bearer FAKE_TEST_KEY','Key not confined to server');
+  const data=JSON.parse(opt.body);
+  assert(data.response_format.json_schema.schema.required.length===7,'Planner schema not enforced');
+  assert(!JSON.stringify(data).includes('FAKE_TEST_KEY'),'Key leaked into prompt body');
+  return Response.json({model:'test-model',choices:[{message:{content:JSON.stringify(output)}}]});
+ };
+ const response=await svc.POST(send({context:input}));
+ assert(response.status===200,'Mock teaching provider did not respond');
+ const answer=await response.json();assert(answer.raw && answer.model==='test-model' && calls===1,'Mock provider did not run exactly once');
+} finally {globalThis.fetch=previousFetch;for(const [k,v] of Object.entries(backup)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
+console.log('PASS V3.5: valid teaching JSON, open-ended provisional discovery, profile limits, hallucinated-interest refusal, independent providers, developer-only mock cloud route, unclipped configuration, no learning writes.');

@@ -1,0 +1,19 @@
+
+$ErrorActionPreference = "Stop"
+
+$ScriptPath = Join-Path $env:USERPROFILE "Downloads\MyWay_NonSandbox_Topic_Architecture_Dump_V2_ReadOnly_Oct23_2026.ps1"
+
+if (!(Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+    throw "Script not found: $ScriptPath"
+}
+
+$ExpectedSha256 = "dfdc07d8431dcee561719e5cd9f141a907cb370818c9143d6851f9756f7ded91"
+$ActualSha256 = (Get-FileHash -LiteralPath $ScriptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+
+if ($ActualSha256 -cne $ExpectedSha256) {
+    throw "Script checksum mismatch. Do not execute."
+}
+
+Set-ExecutionPolicy -Scope Process Bypass -Force
+
+& $ScriptPath

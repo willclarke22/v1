@@ -18,6 +18,6 @@ for (const bad of [/\bfetch\s*\(/, /\blocalStorage\b/, /\baxios\b/, /\/api\/.*(?
   assert(!bad.test(ui), `unexpected side effect or network call: ${bad}`);
 }
 assert(css.includes(".chatColumn"), "stylesheet incomplete");
-assert(ui.includes('type: "number", minimum: 0, maximum: 1'), "confusion constraint changed");
-assert(ui.includes('required: ["topic_name", "root_problem", "confusion"]'), "three-field schema changed");
+assert(ui.includes('type: "integer", minimum: -1, maximum: 10'), "score constraint changed");
+assert(ui.includes('required: ["topic_name", "evidence_quote", "root_problem", "confusion", "insight", "next_action", "clarifying_question", "root_problem_confidence"]'), "assessment contract changed");
 console.log("PASS: MyWay Edge Local Assessment V1 route, standalone browser API, assessment schema, timing diagnostics, and no persistence.");
