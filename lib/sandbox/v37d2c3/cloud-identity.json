@@ -1,0 +1,9 @@
+{
+  "schema": "myway-v37d2c3-cloud-identity-v1",
+  "mode": "readonly_shell",
+  "vercel_project_id": "prj_eQkWaZX3UU831VjuqVisjdtrJpYd",
+  "branch": "myway/learning-sandbox-v3_7a",
+  "repository_owner": "willclarke22",
+  "repository_slug": "v1",
+  "sandbox_host": "yoojwlxikpphggqsvkse.supabase.co"
+}

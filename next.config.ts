@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import { assertExperimentalStartupGate } from "./lib/sandbox/v37b3/startup-gate";
-assertExperimentalStartupGate();
+import { assertCloudShellBuildGate } from "./lib/sandbox/v37d2c3/cloud-gate";
+if (process.env.VERCEL === "1") {
+  assertCloudShellBuildGate();
+} else {
+  assertExperimentalStartupGate();
+}
 
 const sandboxProbeLabTraceExcludes = [
   "./.git/**/*",

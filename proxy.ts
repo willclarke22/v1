@@ -1,8 +1,18 @@
 /** V3.7C.1 local-only request gate; explicitly denies all legacy write-capable APIs. */
 import { NextRequest, NextResponse } from "next/server";
+import { currentCloudShellStatus } from "./lib/sandbox/v37d2c3/cloud-gate";
+import { cloudRouteDecision } from "./lib/sandbox/v37d2c3/cloud-policy";
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  if (process.env.VERCEL === "1") {
+    const identity = currentCloudShellStatus();
+    if (!identity.ok) return new NextResponse("Cloud sandbox identity rejected", {status:403});
+    const decision = cloudRouteDecision(path, request.method);
+    if (decision === "block") return new NextResponse("Cloud shell: APIs and unsupported routes disabled", {status:403});
+    if (decision === "redirect") return NextResponse.redirect(new URL("/sandbox/probe-lab/learning-space", request.url));
+    return NextResponse.next();
+  }
   const host = request.headers.get("host")?.toLowerCase() ?? "";
   // A loopback-only dev server is mandatory. No public preview deployment.
   if (host !== "127.0.0.1:3001" && host !== "localhost:3001") {
