@@ -53,6 +53,7 @@ export function getQdrantConfig() {
 }
 
 export function hasQdrantConfig(): boolean {
+  if (process.env.MYWAY_TOPIC_VECTOR_BACKEND === "supabase") return false;
   const { url, apiKey } = getQdrantConfig();
   return Boolean(url && apiKey);
 }
@@ -63,6 +64,9 @@ function buildQdrantClientKey(url: string, apiKey: string) {
 }
 
 export function createQdrantClient(): QdrantClient {
+  if (process.env.MYWAY_TOPIC_VECTOR_BACKEND === "supabase") {
+    throw new Error("V3.7B.2 BLOCK: Qdrant is disabled in Supabase-only experiment.");
+  }
   const { url, apiKey } = getQdrantConfig();
 
   if (!url) {

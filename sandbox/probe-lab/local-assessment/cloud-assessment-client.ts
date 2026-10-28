@@ -1,9 +1,10 @@
+import type { ModelTokenUsage } from "./model-token-usage";
 /** Browser boundary for explicit opt-in cloud requests. No API secrets here. */
 const ROUTE = "/api/sandbox/probe-lab/local-assessment/openai";
 const CLOUD_CLIENT_TIMEOUT_MS = 42_000;
 const CONFIG_TIMEOUT_MS = 8_000;
-export type CloudAssessmentRequest = { userPrompt: string; systemPrompt: string; responseSchema: Record<string, unknown>; signal: AbortSignal };
-export type CloudAssessmentReply = { raw: string; model: string };
+export type CloudAssessmentRequest = { userPrompt: string; systemPrompt: string; responseSchema: Record<string, unknown>; model?: string; signal: AbortSignal };
+export type CloudAssessmentReply = { raw: string; model: string; usage: ModelTokenUsage | null };
 export type CloudSetupInfo = { ready: boolean; model: string; keySource: string | null; endpointHost: string; serverTimeoutSeconds: number };
 export class CloudAssessmentError extends Error {
   constructor(message: string, public readonly stage: string, public readonly httpStatus?: number) { super(message); this.name = "CloudAssessmentError"; }
@@ -28,7 +29,7 @@ export async function requestOpenAIAssessment(request: CloudAssessmentRequest): 
   try {
     const response = await fetch(ROUTE, {
       method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store", signal: timer.signal,
-      body: JSON.stringify({ userPrompt: request.userPrompt, systemPrompt: request.systemPrompt, responseSchema: request.responseSchema }),
+      body: JSON.stringify({ userPrompt: request.userPrompt, systemPrompt: request.systemPrompt, responseSchema: request.responseSchema, model: request.model }),
     });
     const body = await decodeResponse(response);
     if (!response.ok) {
@@ -36,7 +37,7 @@ export async function requestOpenAIAssessment(request: CloudAssessmentRequest): 
       throw new CloudAssessmentError(typeof body.error === "string" ? `${stage}: ${body.error}` : `Cloud request failed (HTTP ${response.status})`, stage, response.status);
     }
     if (typeof body.raw !== "string" || typeof body.model !== "string") throw new CloudAssessmentError("Cloud assessment returned no structured JSON text.", "response", response.status);
-    return { raw: body.raw, model: body.model };
+    return { raw: body.raw, model: body.model, usage: parseUsage(body.usage) };
   } catch (error) {
     if (timer.expired()) throw new CloudAssessmentError("Cloud request timed out after 42 seconds (including dev-route startup). Check the development terminal and Diagnostics tab.", "client_timeout");
     if (request.signal.aborted) throw new DOMException("Aborted", "AbortError");
@@ -57,4 +58,15 @@ export async function checkOpenAISetup(): Promise<CloudSetupInfo> {
     if (error instanceof CloudAssessmentError) throw error;
     throw new CloudAssessmentError(`Configuration request failed: ${error instanceof Error ? error.message : String(error)}`, "network");
   } finally { timer.close(); }
+}
+
+function parseUsage(value: unknown): ModelTokenUsage | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const num = (x: unknown): number | null => typeof x === "number" && Number.isSafeInteger(x) && x >= 0 ? x : null;
+  const input = num(v.promptTokens), output = num(v.completionTokens);
+  if (input === null || output === null) return null;
+  const cached = num(v.cachedTokens);
+  if (cached !== null && cached > input) return null;
+  return {promptTokens:input,completionTokens:output,totalTokens:num(v.totalTokens)??input+output,cachedTokens:cached};
 }

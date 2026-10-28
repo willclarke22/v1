@@ -1,0 +1,90 @@
+{
+  "version": "v37d2c2",
+  "note": "Human-labeled scenarios for future model-C evaluation. Not proof of measured model accuracy; candidate histories must be prepared before running.",
+  "cases": [
+    {
+      "id": "cardio_recurrence",
+      "theme": "paraphrase same difficulty",
+      "expected": "same_topic_same_difficulty",
+      "reference": "Cardio Cross-Activity Transfer",
+      "query": "Why does running fitness not mean I tread water longer?"
+    },
+    {
+      "id": "cardio_new_difficulty",
+      "theme": "same topic different difficulty",
+      "expected": "same_topic_new_difficulty",
+      "reference": "Cardio Cross-Activity Transfer",
+      "query": "How does buoyancy change the effort needed for treading water?"
+    },
+    {
+      "id": "fractions_new",
+      "theme": "unrelated new topic",
+      "expected": "new_topic",
+      "reference": null,
+      "query": "Why must fractions use a common denominator for addition?"
+    },
+    {
+      "id": "fractions_paraphrase",
+      "theme": "paraphrase same fraction difficulty",
+      "expected": "same_topic_same_difficulty",
+      "reference": "Adding Fractions",
+      "query": "Can I just add the tops and bottoms when adding fractions?"
+    },
+    {
+      "id": "circuits_new",
+      "theme": "unrelated circuits",
+      "expected": "new_topic",
+      "reference": null,
+      "query": "Why must the electrical circuit be closed for a bulb to light?"
+    },
+    {
+      "id": "circuits_related_distinct",
+      "theme": "same topic different difficulty",
+      "expected": "same_topic_new_difficulty",
+      "reference": "Electric circuits",
+      "query": "How does resistance alter current when a circuit remains closed?"
+    },
+    {
+      "id": "legacy_no_root",
+      "theme": "legacy topic no root history",
+      "expected": "uncertain",
+      "reference": "Yoga",
+      "query": "I do not understand whether slow breathing reduces effort."
+    },
+    {
+      "id": "ambiguous_candidates",
+      "theme": "two equally plausible roots",
+      "expected": "uncertain",
+      "reference": null,
+      "query": "Both course topics look the same to me"
+    },
+    {
+      "id": "vague_low_evidence",
+      "theme": "insufficient learner explanation",
+      "expected": "uncertain",
+      "reference": null,
+      "query": "I do not get it"
+    },
+    {
+      "id": "law_new",
+      "theme": "distinct domain",
+      "expected": "new_topic",
+      "reference": null,
+      "query": "Why does copyright fair use not permit any commercial reuse?"
+    },
+    {
+      "id": "repeated_yoga",
+      "theme": "same topic same difficulty",
+      "expected": "same_topic_same_difficulty",
+      "reference": "Yoga",
+      "query": "I still confuse how controlled breathing affects balance"
+    },
+    {
+      "id": "transfer_new",
+      "theme": "distinct near-neighbor",
+      "expected": "new_topic",
+      "reference": null,
+      "query": "Why does running stamina not predict how long I can hold my breath underwater?"
+    }
+  ]
+}

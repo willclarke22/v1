@@ -57,6 +57,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# V3.7B.3 WORKER BLOCK: this production-targeted orchestrator is intentionally disabled in the experimental worktree.
+throw "V3.7B.3 WORKER BLOCK: Legacy enrichment worker disabled until sandbox-specific API routes and service ports are audited."
+
 $script:LastLayoutCommitAt = [DateTime]::MinValue
 
 function Write-WorkerLog {

@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import { assertExperimentalStartupGate } from "./lib/sandbox/v37b3/startup-gate";
+assertExperimentalStartupGate();
 
 const sandboxProbeLabTraceExcludes = [
   "./.git/**/*",

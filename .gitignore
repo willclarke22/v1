@@ -101,3 +101,13 @@ sandbox/probe-lab/assets/library/materials/appearance-registry.json
 /sandbox/probe-lab/blender-python-builder/jobs/
 /sandbox/probe-lab/blender-python-builder/candidates/
 /sandbox/probe-lab/assets/debug/
+__pycache__/
+*.pyc
+scripts/sandbox/**/backups/
+scripts/sandbox/**/installation.json
+scripts/sandbox/**/sandbox-destination.json
+scripts/sandbox/**/topic-seed-report.json
+archive/structure-snapshots/
+Experiment File Structure.txt
+Experiment Full Code Command.txt
+Experiment Sandbox Dump.txt

@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+/** D.1 deterministic evidence/uncertainty contracts. No network, no database. */
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(process.argv[2]||process.cwd());
+const read=p=>fs.readFileSync(path.join(root,...p.split('/')),'utf8');
+const assert=(ok,msg)=>{if(!ok)throw Error('V3.7D.1 TEST FAIL: '+msg)};
+const source=read('sandbox/probe-lab/learning-space/topic-memory-preview.ts');
+const route=read('app/api/sandbox/probe-lab/learning-space/retrieve/route.ts');
+const turn=read('sandbox/probe-lab/learning-space/learning-turn.client.ts');
+const workbench=read('sandbox/probe-lab/learning-space/workbench.tsx');
+const ts=await import('typescript');
+const compiled=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext},reportDiagnostics:true});
+assert(!(compiled.diagnostics||[]).some(d=>d.category===ts.DiagnosticCategory.Error),'TS syntax of topic-memory decision module');
+const module=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputText).toString('base64'));
+const compare=module.compareTopicMemory;
+const row=(topic_id,topic_label,rootProblem)=>({topic_id,topic_label,diagnosis:'representation_gap',topic_json:rootProblem?{root_problem:rootProblem}:{}});
+const input={topicName:'Electric circuit',rootProblem:'A complete electrical circuit needs a closed path for current',evidenceQuote:'current cannot flow',originalMessage:'I think current cannot flow if there is a gap.',currentMessage:'I think current cannot flow if there is a gap.',rootConfidence:0.91};
+const found=[{topicId:'abc',topicLabel:'Electric circuit',similarity:0.86}];
+const exact=compare({...input,retrievalStatus:'semantic_pgvector',matches:found,rows:[row('abc','Electric circuit',input.rootProblem)]});
+assert(exact.action==='associate_existing'&&exact.targetTopicId==='abc'&&exact.mode==='read_only','verified root-problem association');
+const labelOnly=compare({...input,retrievalStatus:'lexical_fallback',matches:[{...found[0],similarity:0}],rows:[row('abc','Electric circuit')]});
+assert(labelOnly.action==='hold'&&labelOnly.candidates[0].similarity===null,'lexical label alone must hold, no fake similarity');
+const semanticNoClose=compare({...input,retrievalStatus:'semantic_pgvector',matches:[{...found[0],similarity:0.2}],rows:[row('abc','Electric circuit')]});
+assert(semanticNoClose.action==='propose_new'&&semanticNoClose.targetTopicId===null,'low-similarity new proposal');
+const noRetrieval=compare({...input,retrievalStatus:'unavailable',matches:[],rows:[]});
+assert(noRetrieval.action==='hold','unavailable must not propose new');
+const unsupported=compare({...input,evidenceQuote:'invented statement',retrievalStatus:'semantic_pgvector',matches:found,rows:[row('abc','Electric circuit',input.rootProblem)]});
+assert(unsupported.action==='hold','unsupported evidence must hold');
+const protectedFiles=[source,route,turn,workbench];
+assert(protectedFiles.every(x=>!/(?:\.from\(\s*["']topic_state["']\s*\)\s*\.(?:upsert|update|insert|delete)|upsertTopicState\s*\(|queryTopics\s*\([^)]*write)/.test(x)),'no learning-state writes');
+assert(route.includes('querySemanticTopicCandidatesWithEmbedding')&&route.includes('getLatestTopicState')&&route.includes('withMemory('),'reuses existing semantic and topic-state reads');
+assert(route.includes('NODE_ENV!=="development"')&&route.includes('MYWAY_TOPIC_VECTOR_BACKEND')&&route.includes('localhost:3001'),'preserved request gate');
+assert(turn.includes('trace.topicMemory=trace.retrieval.topicMemory??null')&&workbench.includes('V3.7D.1 · Topic-memory decision'),'preview visible in Workbench');
+assert(workbench.includes('No Supabase writes')&&turn.includes('buildVisualHandoff'),'D.1 does not change Director behaviour');
+console.log('V3.7D.1 CONTRACT TEST PASS: root-problem comparison, hold/new/associate, safe fallback, read-only UI.');

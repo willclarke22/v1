@@ -261,6 +261,17 @@ function readTopicRootProblem(topic: LearningSpaceInputTopic): string | null {
     if (rootProblem) return rootProblem;
   }
 
+  // Earlier D.2A topics have no probe-contract snapshots yet. Only read
+  // explicitly approved learner-root-problem evidence, never infer one from a label.
+  const data=asRecord(topic.topicJson);
+  if(data?.myway_memory_origin==="v37d2a_explicit_user_approval"){
+    const events=Array.isArray(data.myway_learning_evidence)?data.myway_learning_evidence:[];
+    for(let i=events.length-1;i>=0;i--){
+      const problem=readString(asRecord(events[i])?.root_problem);
+      if(problem)return problem;
+    }
+    return readString(data.root_problem);
+  }
   return null;
 }
 
@@ -272,6 +283,10 @@ function readTopicRootProblemSource(topic: LearningSpaceInputTopic): string | nu
     }
   }
 
+  const data=asRecord(topic.topicJson);
+  if(data?.myway_memory_origin==="v37d2a_explicit_user_approval"){
+    if(readTopicRootProblem(topic))return "approved_topic_memory_evidence";
+  }
   return null;
 }
 

@@ -1,0 +1,34 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../app/api/sandbox/probe-lab/learning-space/retrieve/route.ts",
+    "../../../sandbox/probe-lab/learning-space/assessment-core.ts",
+    "../../../sandbox/probe-lab/learning-space/learning-turn.client.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-memory-preview.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-memory-commit.server.ts",
+    "../../../sandbox/probe-lab/learning-space/workbench.tsx",
+    "../../../sandbox/probe-lab/local-assessment/learning-plan.ts",
+    "../../../sandbox/probe-lab/learning-space/glm-client.ts",
+    "../../../sandbox/probe-lab/local-assessment/cloud-teaching-client.ts",
+    "../../../app/api/sandbox/probe-lab/local-assessment/teaching/route.ts",
+    "../../../app/api/sandbox/probe-lab/local-assessment/glm/route.ts",
+    "../../../sandbox/probe-lab/local-assessment/compact-teaching.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-memory-index.server.ts",
+    "../../../sandbox/probe-lab/learning-space/snapshot.server.ts",
+    "../../../sandbox/probe-lab/learning-space/learning-space-preview.tsx",
+    "../../../lib/learning-space/build-learning-space.ts",
+    "../../../sandbox/probe-lab/learning-space/root-problem-compare.server.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-memory-scores.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-memory-approval.server.ts",
+    "../../../sandbox/probe-lab/learning-space/topic-association-verifier.ts",
+    "../../../sandbox/probe-lab/local-assessment/model-token-usage.ts"
+  ],
+  "exclude": [
+    "../../../node_modules",
+    "../../../archive",
+    "../../../.next",
+    "../../../scripts/**/backups",
+    "../../../scripts/**/backups/**/*"
+  ]
+}

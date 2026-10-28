@@ -1,7 +1,9 @@
+import { readOpenAIUsage } from "@/sandbox/probe-lab/local-assessment/model-token-usage";
 /** Read-only development experiment; no learner records or production engine writes. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const SERVER_TIMEOUT_MS = 30_000;
+const ALLOWED_MODELS = new Set(["gpt-4o-mini", "gpt-4.1-mini"]);
 const FIELDS = ["topic_name", "evidence_quote", "root_problem", "confusion", "insight", "next_action", "clarifying_question", "root_problem_confidence"];
 const jsonError = (status: number, error: string, stage: string) => Response.json({ error, stage }, { status, headers: { "Cache-Control": "no-store" } });
 const respond = (data: Record<string, unknown>) => Response.json(data, { headers: { "Cache-Control": "no-store" } });
@@ -18,10 +20,17 @@ function guard(request: Request): Response | null {
   if (process.env.NODE_ENV !== "development") return jsonError(403, "Cloud assessment is restricted to the development server.", "access");
   const url = new URL(request.url);
   if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(url.hostname)) return jsonError(403, "Cloud assessment is available only on localhost.", "access");
+  // Next.js may normalize request.url independently of the browser's local Host header.
+  // Use the same loopback Host that the fail-closed proxy has already authorized.
+  const localHost = (request.headers.get("host") || "").trim().toLowerCase();
+  if (!new Set(["127.0.0.1:3001", "localhost:3001"]).has(localHost)) return jsonError(403, "Assessment host must be local port 3001.", "access");
   const origin = request.headers.get("origin");
   if (origin) {
-    try { if (new URL(origin).origin !== url.origin) return jsonError(403, "Cross-origin assessment rejected.", "access"); }
-    catch { return jsonError(403, "Invalid origin.", "access"); }
+    try {
+      const supplied = new URL(origin);
+      if (supplied.username || supplied.password || supplied.origin !== `http://${localHost}`)
+        return jsonError(403, "Cross-origin assessment rejected.", "access");
+    } catch { return jsonError(403, "Invalid origin.", "access"); }
   }
   return null;
 }
@@ -57,12 +66,14 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return jsonError(400, "Malformed JSON body.", "validation"); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return jsonError(400, "Expected an object.", "validation");
   const data = body as Record<string, unknown>;
-  if (typeof data.userPrompt !== "string" || !data.userPrompt.trim() || data.userPrompt.length > 4000 ||
+  if (typeof data.userPrompt !== "string" || !data.userPrompt.trim() || data.userPrompt.length > 6500 ||
       typeof data.systemPrompt !== "string" || !data.systemPrompt.trim() || data.systemPrompt.length > 5000 ||
       !validSchema(data.responseSchema) || JSON.stringify(data.responseSchema).length > 9000) return jsonError(400, "Invalid assessment prompt or schema.", "validation");
   let cfg: ReturnType<typeof openAIConfig>;
   try { cfg = openAIConfig(); } catch { return jsonError(503, "Invalid provider base URL; inspect OPENAI_BASE_URL.", "configuration"); }
   if (!cfg.apiKey) return jsonError(503, "Missing MYWAY_OPENAI_API_KEY or OPENAI_API_KEY on server.", "configuration");
+  const selectedModel = data.model === undefined ? cfg.model : data.model;
+  if (typeof selectedModel !== "string" || !ALLOWED_MODELS.has(selectedModel)) return jsonError(422, "Unsupported assessment model choice.", "validation");
   const aborter = new AbortController();
   const deadline = setTimeout(() => aborter.abort(), SERVER_TIMEOUT_MS);
   const began = Date.now();
@@ -70,7 +81,7 @@ export async function POST(request: Request) {
     const result = await fetch(cfg.endpoint.toString(), {
       method: "POST", signal: aborter.signal, cache: "no-store",
       headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: cfg.model, store: false, messages: [
+      body: JSON.stringify({ model: selectedModel, store: false, messages: [
         { role: "system", content: data.systemPrompt }, { role: "user", content: data.userPrompt },
       ], response_format: { type: "json_schema", json_schema: { name: "myway_assessment_v3_4_1", strict: true, schema: data.responseSchema } } }),
     });
@@ -83,7 +94,7 @@ export async function POST(request: Request) {
     const message = first && typeof first === "object" ? (first as Record<string, unknown>).message : null;
     const raw = message && typeof message === "object" ? (message as Record<string, unknown>).content : null;
     if (typeof raw !== "string") return jsonError(502, "Provider returned no assessment JSON (possibly a refusal or unsupported schema).", "provider_response");
-    return respond({ raw, model: typeof obj.model === "string" ? obj.model : cfg.model, providerMs: Date.now() - began });
+    return respond({ raw, model: typeof obj.model === "string" ? obj.model : selectedModel, providerMs: Date.now() - began, usage: readOpenAIUsage(obj) });
   } catch (error) {
     return jsonError(502, aborter.signal.aborted ? "OpenAI request reached the 30-second server timeout." : `Transport failure: ${error instanceof Error ? error.message : "Unknown error"}`, aborter.signal.aborted ? "server_timeout" : "transport");
   } finally { clearTimeout(deadline); }

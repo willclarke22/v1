@@ -1,3 +1,4 @@
+import { parseModelJson } from "./parse-model-json";
 /** V3.5 isolated, read-only experimental teaching contract. No durable learning claims. */
 export type TeachingStyle = "unsure" | "examples_first" | "rules_first" | "visual_first" | "step_by_step";
 export type LearnerProfile = { interests: string[]; preferred_style: TeachingStyle; goal: string };
@@ -7,6 +8,7 @@ export type CandidateRelationship = {
 };
 export type TeachingInput = {
   topic: string; root_problem: string; evidence_quote: string;
+  learner_statement: string; clarification_answer: string; prior_clarifying_question: string;
   root_problem_confidence: number;
   related_subjects: { label: string; similarity: number }[];
   candidate_relationships: CandidateRelationship[];
@@ -27,7 +29,7 @@ export const TEACH_SCHEMA = {
   },
   required: ["learner_reflection", "teaching_strategy", "next_step", "visual_intent", "use_interest", "chosen_interest", "reason"],
 } as const;
-export const TEACH_SYSTEM_PROMPT = `Plan one short way to help the learner, using only the supported difficulty and context. Return JSON only. Reflect the difficulty without inventing knowledge or progress. Choose a concrete teaching strategy, one doable next step, and visual intent (not asset IDs). Relationships are unverified candidates, not facts. Interests are optional; use only if they truly help, otherwise do_not_use. Don't claim a teaching style is proven effective. Be warm, clear, brief; no quizzes or full lesson.`;
+export const TEACH_SYSTEM_PROMPT = `Return JSON only. Help the learner with ONE short, accurate teaching move. Base it on their original statement, latest clarification answer (if any), and the evidence-grounded root-problem hypothesis. Clearly separate what the learner said from MyWay's prior question; MyWay's question is not learner evidence. Reflect the specific missing mechanism or conceptual gap, not just the topic label. The learner_reflection field is INTERNAL ONLY: a short summary of what the learner expressed; it will NOT be shown in chat. The teaching_strategy field is the ONLY learner-facing reply: write 1-3 natural, accurate, supportive sentences addressed directly to the learner that answer their actual question. Start immediately with the explanation; do not echo or paraphrase the learner's question, say "I am wondering", "you are wondering", or use planner instructions like "Explain that", "Tell the learner", "Describe how". Avoid generic praise and avoid unsupported causal generalizations. next_step is INTERNAL planning metadata, not a chat instruction. Provide a concrete next learning step and visual intent (not asset IDs). Do not invent learner beliefs, preferences, understanding, progress, interests, or unverified relationships. Related topics are retrieval candidates, not proven connections. If no interests are supplied, use do_not_use and an empty chosen_interest. Do not claim treatment efficacy or give a quiz/full lesson. Keep every field concise.`;
 export function normalizeProfile(raw: { interests: string; preferred_style: TeachingStyle; goal: string }): LearnerProfile {
   return {
     interests: raw.interests.split(/[,\n]/).map(x => x.trim()).filter(Boolean).slice(0, 5).map(x => x.slice(0, 45)),
@@ -49,10 +51,14 @@ export function makeTeachingInput(
   assessment: { topic_name: string; root_problem: string; evidence_quote: string; root_problem_confidence: number },
   comparisons: { subjects: { label: string; similarity: number }[]; difficulties: { label: string; rootProblem: string; similarity: number }[] },
   profile: LearnerProfile,
+  learnerContext: { originalStatement: string; clarificationAnswer?: string; clarifyingQuestion?: string } = { originalStatement: "" },
 ): TeachingInput {
   return {
     topic: assessment.topic_name.slice(0, 110), root_problem: assessment.root_problem.slice(0, 500),
     evidence_quote: assessment.evidence_quote.slice(0, 450),
+    learner_statement: (learnerContext.originalStatement || assessment.evidence_quote).slice(0, 2500),
+    clarification_answer: (learnerContext.clarificationAnswer ?? "").slice(0, 2500),
+    prior_clarifying_question: (learnerContext.clarifyingQuestion ?? "").slice(0, 400),
     root_problem_confidence: assessment.root_problem_confidence,
     related_subjects: comparisons.subjects.slice(0, 3).map(x => ({ label: x.label, similarity: x.similarity })),
     candidate_relationships: discoverRelationshipCandidates(assessment.root_problem, comparisons.difficulties),
@@ -61,7 +67,7 @@ export function makeTeachingInput(
 }
 export function validateTeachingPlan(raw: string, input: TeachingInput): { plan?: TeachingPlan; error?: string } {
   let obj: unknown;
-  try { obj = JSON.parse(raw); } catch { return { error: "Teaching model returned invalid JSON." }; }
+  try { obj = parseModelJson(raw); } catch { return { error: "Teaching model returned invalid JSON." }; }
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return { error: "Teaching plan must be an object." };
   const record = obj as Record<string, unknown>;
   const fields = TEACH_SCHEMA.required;

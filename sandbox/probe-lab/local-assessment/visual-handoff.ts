@@ -13,13 +13,13 @@ export type VisualHandoff = Readonly<{
   target_next_step: string;
   visual_intent: string;
   personalization: Readonly<{ use_interest: TeachingPlan["use_interest"]; chosen_interest: string | null; rationale: string; evidence_status: "model_proposal_not_effectiveness_evidence" }>;
-  providers: Readonly<{ assessment: "edge" | "openai"; teaching: "edge" | "openai" }>;
+  providers: Readonly<{ assessment: "edge" | "openai" | "glm"; teaching: "edge" | "openai" | "glm" }>;
   visual_stage: "not_run";
 }>;
 export function buildVisualHandoff(input: {
   learnerMessage: string; topic: string; rootProblem: string; evidenceQuote: string;
   rootConfidence: number; resolution: string; teaching: TeachingPlan;
-  assessmentProvider: "edge" | "openai"; teachingProvider: "edge" | "openai";
+  assessmentProvider: "edge" | "openai" | "glm"; teachingProvider: "edge" | "openai" | "glm";
 }): { handoff?: VisualHandoff; error?: string } {
   if (!["proceed", "provisional"].includes(input.resolution)) return { error: "Visual handoff requires a completed, supported assessment." };
   if (![input.learnerMessage, input.topic, input.rootProblem, input.evidenceQuote, input.teaching.teaching_strategy, input.teaching.next_step, input.teaching.visual_intent].every(x => typeof x === "string" && !!x.trim()))
@@ -28,7 +28,7 @@ export function buildVisualHandoff(input: {
   if (input.teaching.use_interest !== "do_not_use" && !input.teaching.chosen_interest.trim()) return { error: "Invalid personalization choice." };
   const handoff: VisualHandoff = {
     schema_version: "myway_visual_handoff_v1", source: "validated_assessment_and_teaching",
-    learner_message: input.learnerMessage.slice(0, 2500), topic: input.topic.slice(0, 110),
+    learner_message: input.learnerMessage.slice(0, 5600), topic: input.topic.slice(0, 110),
     root_problem: input.rootProblem.slice(0, 500), learner_evidence: input.evidenceQuote.slice(0, 450),
     root_problem_confidence: input.rootConfidence, resolution: input.resolution as "proceed" | "provisional",
     teaching_strategy: input.teaching.teaching_strategy,
