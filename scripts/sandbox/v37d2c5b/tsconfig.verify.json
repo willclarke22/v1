@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../app/sandbox/probe-lab/learning-space/page.tsx",
+    "../../../lib/sandbox/v37d2c5b/*.ts",
+    "../../../lib/sandbox/v37d2c5b/*.tsx"
+  ],
+  "exclude": ["../../../node_modules", "../../../archive", "../../../.next"]
+}
