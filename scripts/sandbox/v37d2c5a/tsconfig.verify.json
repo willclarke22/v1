@@ -1,0 +1,9 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../app/sandbox/probe-lab/learning-space/workbench/page.tsx",
+    "../../../lib/sandbox/v37d2c5a/cloud-auth-check.tsx"
+  ],
+  "exclude": ["../../../node_modules", "../../../archive", "../../../.next"]
+}

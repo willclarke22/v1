@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import assert from 'node:assert/strict';import {execFileSync} from 'node:child_process';
+const root=path.resolve(process.argv[2]||process.cwd());const at=p=>path.join(root,...p.split('/'));
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(at(p))).digest('hex');
+const git=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
+const workbench='app/sandbox/probe-lab/learning-space/workbench/page.tsx';
+assert.equal(path.basename(root),'v1-learning-experiment');
+assert.equal(git(root,'branch','--show-current'),'myway/learning-sandbox-v3_7a');
+const original=path.resolve(root,'../v1');
+assert.equal(git(original,'branch','--show-current'),'main');
+const common=cwd=>path.resolve(cwd,git(cwd,'rev-parse','--git-common-dir'));
+assert.equal(common(root),common(original));
+assert.equal(git(original,'rev-parse','--short=7','HEAD'),'462a7a4');
+const prior=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c3/installation.json'),'utf8'));
+const demo=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c4/installation.json'),'utf8'));
+const now=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c5a/installation.json'),'utf8'));
+assert.equal(prior.schema,'myway-v37d2c3-local-install-v1');
+assert.equal(demo.schema,'myway-v37d2c4-local-install-v1');
+assert.equal(now.schema,'myway-v37d2c5a-local-install-v1');
+assert.equal(now.baseline,'0ca44f3');
+assert.equal(now.cloud_database_reads,false);assert.equal(now.cloud_database_writes,false);assert.equal(now.cloud_apis_enabled,false);
+for(const [p,h] of Object.entries(prior.hashes)){
+  if(p===workbench||p==='app/sandbox/probe-lab/learning-space/page.tsx')continue;
+  assert.equal(sha(p),h,'D2C3 immutable source changed: '+p);
+}
+for(const [p,h] of Object.entries(demo.hashes))assert.equal(sha(p),h,'D2C4 immutable source changed: '+p);
+for(const [p,h] of Object.entries(now.hashes))assert.equal(sha(p),h,'D2C5A source drift: '+p);
+const identity=JSON.parse(fs.readFileSync(at('lib/sandbox/v37d2c3/cloud-identity.json'),'utf8'));
+assert.equal(identity.mode,'readonly_shell');
+const env=Object.fromEntries(fs.readFileSync(at('.env.local'),'utf8').split(/\r?\n/).flatMap(l=>{const m=l.match(/^\s*([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(.*)$/);return m?[[m[1],m[2].trim().replace(/^(?:"|')(.*)(?:"|')$/,'$1')]]:[];}));
+const url=String(env.NEXT_PUBLIC_SUPABASE_URL||'').replace(/\/+$/,'').trim().toLowerCase();
+const pin=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37b2/sandbox-destination.json'),'utf8'));
+assert.equal(crypto.createHash('sha256').update(url).digest('hex'),pin.url_sha256);
+assert.equal(new URL(url).hostname,identity.sandbox_host);
+const key=String(env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
+assert.ok(key,'local-only service key required to check sandbox pin');
+assert.equal(crypto.createHash('sha256').update(key).digest('hex'),pin.service_key_sha256);
+const boundary=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37b/isolation-boundary.json'),'utf8'));
+assert.notEqual(pin.url_sha256,boundary.original_supabase_url_sha256);
+assert.notEqual(pin.service_key_sha256,boundary.original_supabase_service_key_sha256);
+console.log('V3.7D.2C.5A LOCAL VERIFY PASS: original main, sandbox pin, previous immutable cloud files, and new Auth-only source hashes.');
