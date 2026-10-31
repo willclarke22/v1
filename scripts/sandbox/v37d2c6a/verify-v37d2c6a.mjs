@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import assert from 'node:assert/strict';import {execFileSync} from 'node:child_process';
+const root=path.resolve(process.argv[2]||process.cwd()),at=p=>path.join(root,...p.split('/'));
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(at(p))).digest('hex');
+const git=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
+assert.equal(path.basename(root),'v1-learning-experiment');
+assert.equal(git(root,'branch','--show-current'),'myway/learning-sandbox-v3_7a');
+const original=path.resolve(root,'../v1');
+assert.equal(git(original,'branch','--show-current'),'main');assert.equal(git(original,'rev-parse','--short=7','HEAD'),'462a7a4');
+const common=cwd=>path.resolve(cwd,git(cwd,'rev-parse','--git-common-dir'));
+assert.equal(common(root),common(original),'Worktrees must share Git repository');
+const marker=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c6a/installation.json'),'utf8'));
+assert.equal(marker.schema,'myway-v37d2c6a-local-install-v1');assert.equal(marker.database_changes,false);assert.equal(marker.cloud_api_changes,false);
+const pointer=JSON.parse(fs.readFileSync(at('scripts/sandbox/current-local-release.json'),'utf8'));
+assert.equal(pointer.release,'v37d2c6a');
+const d3=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c3/installation.json'),'utf8'));
+const d4=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c4/installation.json'),'utf8'));
+const a=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c5a/installation.json'),'utf8'));
+const b=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c5b/installation.json'),'utf8'));
+const c=JSON.parse(fs.readFileSync(at('scripts/sandbox/v37d2c5c/installation.json'),'utf8'));
+for(const [p,h] of Object.entries(d3.hashes))if(p!=='app/sandbox/probe-lab/learning-space/page.tsx'&&p!=='app/sandbox/probe-lab/learning-space/workbench/page.tsx')assert.equal(sha(p),h,'Original cloud gate unchanged '+p);
+for(const [p,h] of Object.entries(d4.hashes))if(p!=='app/sandbox/probe-lab/learning-space/page.tsx')assert.equal(sha(p),h,'Original demo unchanged '+p);
+for(const [p,h] of Object.entries(a.hashes))if(p!=='app/sandbox/probe-lab/learning-space/workbench/page.tsx')assert.equal(sha(p),h,'Auth component unchanged '+p);
+for(const [p,h] of Object.entries(b.hashes))if(p!=='lib/sandbox/v37d2c5b/cloud-topics-experience.tsx')assert.equal(sha(p),h,'Read-only topic snapshot preserved '+p);
+for(const [p,h] of Object.entries(c.hashes))assert.equal(sha(p),h,'Automatic sync preserved '+p);
+for(const [p,h] of Object.entries(marker.hashes))assert.equal(sha(p),h,'Current release source '+p);
+console.log('V3.7D.2C.6A LOCAL VERIFY PASS: original main, pinned cloud identity/policy, immutable Auth, read-only topics and sync, version-aware release hashes.');
