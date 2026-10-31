@@ -1,0 +1,8 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": [
+    "../../../next-env.d.ts",
+    "../../../lib/sandbox/v37d2c5b/cloud-topics-experience.tsx"
+  ],
+  "exclude": ["../../../node_modules", "../../../archive", "../../../.next"]
+}
