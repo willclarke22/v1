@@ -20,7 +20,7 @@ function cosine(a,b){if(!valid(a)||!valid(b))throw Error('Invalid 384-dimensiona
 function progress(id,message){postMessage({type:'progress',id,message})}
 self.onmessage=async event=>{
  const {type,id,backend,topic,rootProblem,labels}=event.data??{};
- if(!['run','search'].includes(type)||busy||!Number.isSafeInteger(id))return;
+ if(!['run','search','vector-query'].includes(type)||busy||!Number.isSafeInteger(id))return;
  busy=true; const started=performance.now();let libraryMs=0,loadMs=0,inferenceMs=0;
  try{
   if(!['wasm','webgpu'].includes(backend)||typeof topic!=='string'||!topic.trim()||topic.length>500||typeof rootProblem!=='string'||rootProblem.length>2500)throw Error('Topic or root problem is invalid or exceeds length limits.');
@@ -38,6 +38,25 @@ self.onmessage=async event=>{
      if(p?.status==='progress')progress(id,'Downloading '+String(p.file??'model')+' '+(Number.isFinite(p.progress)?Math.round(p.progress)+'%':''));
    }});
    loadMs=performance.now()-begin;activeBackend=backend;
+  }
+  if(type==='vector-query'){
+   // One user-triggered vector. It is sent only to the authenticated Supabase RPC by the caller.
+   // Optional labels are used for a small local ranking benchmark, not for authorization.
+   if(labels!==undefined && (!Array.isArray(labels)||labels.length>200||
+     !labels.every(x=>x&&typeof x.id==='string'&&x.id.length<=80&&typeof x.label==='string'&&x.label.trim()&&x.label.length<=140)))
+     throw Error('Invalid diagnostic comparison labels.');
+   const samples=[topic.trim(),...(labels??[]).map(x=>x.label.trim())];
+   progress(id,'Embedding query and '+(samples.length-1)+' optional comparison labels...');
+   const startedEmbedding=performance.now();
+   const output=await pipelineInstance(samples,{pooling:'mean',normalize:true});inferenceMs=performance.now()-startedEmbedding;
+   const vectors=output.tolist();
+   if(!Array.isArray(vectors)||vectors.length!==samples.length||!vectors.every(valid)||
+     vectors.some(v=>Math.abs(norm(v)-1)>.025))throw Error('Invalid or unnormalized 384-D MiniLM output.');
+   const comparison=(labels??[]).map((x,i)=>({id:x.id,label:x.label,similarity:cosine(vectors[0],vectors[i+1])}))
+     .sort((a,b)=>b.similarity-a.similarity).slice(0,10);
+   postMessage({type:'vector-query-result',id,result:{vector:vectors[0],model:MODEL_ID,backend,dimensions:384,
+     loadMs,inferenceMs,totalMs:performance.now()-started,reused,comparison,comparedLabels:(labels??[]).length}});
+   return;
   }
   if(type==='search'){
    if(!Array.isArray(labels)||labels.length===0||labels.length>200||
