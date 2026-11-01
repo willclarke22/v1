@@ -25,6 +25,7 @@ export type TopicMemoryPreview = {
   candidateCount: number;
   candidates: TopicMemoryCandidate[];
   limitations: string[];
+  proposedTopicLabel?: string | null;
   approvalToken?: string | null;
   reviewToken?: string | null;
   autoEligible?: boolean; // Local-only, high-bar same-topic association, never creation.
@@ -167,6 +168,20 @@ export function compareTopicMemory(args: {
     const candidate=topicCandidates[0];
     return base(status,candidates,"associate_existing","strong_topic_level_match",
       `The existing topic "${candidate.topicLabel}" strongly matches the SUBJECT of the learner's question. Store the assessed difficulty as a NEW evidence event under this topic; do not assume the difficulty matches any prior root problem.`,candidate.topicId,limitations);
+  }
+  // D.2C.6D: An empty search result is not evidence of novelty. In particular,
+  // an unhealthy or incomplete pgvector index could otherwise create a sphere
+  // because Array.every([]) returns true. Fail closed until candidates exist.
+  if (status === "semantic_pgvector" && candidates.length === 0) {
+    return base(status,candidates,"hold","semantic_candidates_empty",
+      "Semantic retrieval returned no topic candidates. Check index coverage before creating a topic; absence of results is not evidence of novelty.",null,limitations);
+  }
+  // Exact existing subject labels must never be automatically duplicated even
+  // when embeddings are unexpectedly poor. A different learning difficulty
+  // belongs under the existing subject only after a supported association.
+  if (status === "semantic_pgvector" && candidates.some(c=>normalized(c.topicLabel)===normalized(args.topicName))) {
+    return base(status,candidates,"hold","existing_label_needs_review",
+      "A retrieved topic already has this subject label. Review its difficulty evidence instead of creating a duplicate sphere.",null,limitations);
   }
   if (status === "semantic_pgvector" && args.rootConfidence >= 0.78 && args.topicName.trim() &&
       candidates.every(c => (c.similarity??0) < 0.55) &&

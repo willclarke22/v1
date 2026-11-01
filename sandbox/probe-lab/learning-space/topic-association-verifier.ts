@@ -7,11 +7,8 @@ export type VerifierDecision={relation:VerifierRelation;target_topic_id:string;r
 export const VERIFIER_SCHEMA={type:"object",additionalProperties:false,properties:{
  relation:{type:"string",enum:["same_topic_same_difficulty","same_topic_new_difficulty","new_topic","uncertain"]},
  target_topic_id:{type:"string"},rationale:{type:"string"}},required:["relation","target_topic_id","rationale"]} as const;
-export const VERIFIER_SYSTEM_PROMPT=`You compare a learner's diagnosed difficulty with up to three retrieved topic memories. This is a diagnostic SHADOW judgment, not authorization to change data.
-Choose exactly one: same_topic_same_difficulty, same_topic_new_difficulty, new_topic, uncertain.
-Distinguish the subject of the topic from the specific difficulty. Historical difficulty evidence takes priority over literal label overlap or uncalibrated cosine scores. A semantically similar subject does not prove a repeated misconception. An absence of retrieval matches is not proof of novelty.
-Only use candidate topic IDs supplied in the input. For either same_topic option, copy the exact ID; for new_topic or uncertain, target_topic_id must be an empty string.
-If information is insufficient or candidate topics conflict, say uncertain. Never invent learner beliefs, topic history, or confidence probabilities. Explain the deciding evidence in at most 45 words. Return only the requested JSON object.`;
+export const VERIFIER_SYSTEM_PROMPT=`Return strict schema JSON. Shadow-only diagnostic, never write authority. Compare the learner's *specific difficulty* against up to 3 retrieved topic memories; subject similarity is not proof of identical difficulty. Prioritize stored difficulty evidence over labels or uncalibrated cosine scores. Missing search hits do not prove novelty.
+Choose same_topic_same_difficulty, same_topic_new_difficulty, new_topic or uncertain. For same_topic values copy an exact supplied topic ID; otherwise use empty target_topic_id. Conflicting or insufficient evidence => uncertain. Do not invent beliefs, history or confidence. In <=45 words justify from supplied evidence only.`;
 const obj=(x:unknown):Record<string,unknown>|null=>x&&typeof x==="object"&&!Array.isArray(x)?x as Record<string,unknown>:null;
 export function verifierInput(x:{topicName:string;rootProblem:string;originalStatement:string;clarification:string;candidates:VerifierCandidate[]}):VerifierInput{
  const short=(s:string,n:number)=>s.replace(/\s+/g," ").trim().slice(0,n);

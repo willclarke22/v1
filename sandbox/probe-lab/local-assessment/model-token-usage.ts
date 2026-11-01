@@ -1,7 +1,8 @@
-/** MyWay V3.7D.2A cost observability. Pricing snapshot: 2026-10-27.
+/** MyWay provider-usage cost estimator. Verified Oct 31, 2026; standard USD rates.
  * Source: https://developers.openai.com/api/docs/models/gpt-4.1-mini
  *         https://developers.openai.com/api/docs/models/gpt-4o-mini
- * Figures are standard USD per 1M tokens; NOT an invoice or a provider's billing ledger.
+ * Counts MUST come from the provider; unknown GLM or missing usage stays unpriced.
+ * These are standard per-million-token rates, not invoice/account adjustments.
  */
 export type ModelTokenUsage = {
   promptTokens: number | null;

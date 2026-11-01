@@ -19,8 +19,8 @@ function norm(v){let s=0;for(const x of v)s+=x*x;return Math.sqrt(s)}
 function cosine(a,b){if(!valid(a)||!valid(b))throw Error('Invalid 384-dimensional embedding.');let dot=0;for(let i=0;i<384;i++)dot+=a[i]*b[i];return Math.max(-1,Math.min(1,dot/(norm(a)*norm(b))))}
 function progress(id,message){postMessage({type:'progress',id,message})}
 self.onmessage=async event=>{
- const {type,id,backend,topic,rootProblem}=event.data??{};
- if(type!=='run'||busy||!Number.isSafeInteger(id))return;
+ const {type,id,backend,topic,rootProblem,labels}=event.data??{};
+ if(!['run','search'].includes(type)||busy||!Number.isSafeInteger(id))return;
  busy=true; const started=performance.now();let libraryMs=0,loadMs=0,inferenceMs=0;
  try{
   if(!['wasm','webgpu'].includes(backend)||typeof topic!=='string'||!topic.trim()||topic.length>500||typeof rootProblem!=='string'||rootProblem.length>2500)throw Error('Topic or root problem is invalid or exceeds length limits.');
@@ -38,6 +38,18 @@ self.onmessage=async event=>{
      if(p?.status==='progress')progress(id,'Downloading '+String(p.file??'model')+' '+(Number.isFinite(p.progress)?Math.round(p.progress)+'%':''));
    }});
    loadMs=performance.now()-begin;activeBackend=backend;
+  }
+  if(type==='search'){
+   if(!Array.isArray(labels)||labels.length===0||labels.length>200||
+      !labels.every(x=>x&&typeof x.id==='string'&&x.id.length<=80&&typeof x.label==='string'&&x.label.trim()&&x.label.length<=140))
+     throw Error('Invalid owner-scoped topic labels.');
+   const texts=[topic.trim(),...labels.map(x=>x.label.trim())];
+   progress(id,'Embedding '+texts.length+' query/topic labels in browser...');
+   const begin=performance.now();const output=await pipelineInstance(texts,{pooling:'mean',normalize:true});inferenceMs=performance.now()-begin;
+   const vectors=output.tolist();if(!Array.isArray(vectors)||vectors.length!==texts.length||!vectors.every(valid))throw Error('Invalid 384-D search vectors.');
+   const rank=labels.map((x,i)=>({id:x.id,label:x.label,similarity:cosine(vectors[0],vectors[i+1])})).sort((a,b)=>b.similarity-a.similarity).slice(0,10);
+   postMessage({type:'search-result',id,result:{model:MODEL_ID,backend,dimensions:384,loadMs,inferenceMs,totalMs:performance.now()-started,reused,rank,scanned:labels.length}});
+   return;
   }
   const hasRoot=Boolean(rootProblem.trim());
   const texts=[topic.trim(),...(hasRoot?[rootProblem.trim()]:[]),...FIXTURES.map(x=>x.label),...FIXTURES.map(x=>x.root)];

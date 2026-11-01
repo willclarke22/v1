@@ -1,17 +1,18 @@
 param([string]$Experiment = 'C:\Users\willc\projects\MyWay\v1-learning-experiment')
 $ErrorActionPreference = 'Stop'
 function Halt([string]$Message){throw "MYWAY GUARDED LAUNCH STOP: $Message"}
-function InvokeGitSafe([string]$Directory, [string[]]$Args){
-  $out = & git.exe -C $Directory @Args
-  if ($LASTEXITCODE -ne 0){Halt "Git verification failed: $($Args -join ' ')"}
+function InvokeGitSafe([string]$Directory, [string[]]$GitArguments){
+  if (!$GitArguments -or $GitArguments.Count -eq 0){Halt 'Git command arguments missing'}
+  $out = & git.exe -C $Directory @GitArguments
+  if ($LASTEXITCODE -ne 0){Halt "Git verification failed: $($GitArguments -join ' ')"}
   return ($out | Out-String).Trim()
 }
 $Experiment = (Resolve-Path -LiteralPath $Experiment).Path
 $Original = 'C:\Users\willc\projects\MyWay\v1'
 if ((Split-Path $Experiment -Leaf) -cne 'v1-learning-experiment'){Halt 'Wrong experiment directory'}
-if ((InvokeGitSafe $Experiment @('branch','--show-current')) -cne 'myway/learning-sandbox-v3_7a'){Halt 'Wrong branch'}
-if ((InvokeGitSafe $Original @('branch','--show-current')) -cne 'main'){Halt 'Original branch changed'}
-if ((InvokeGitSafe $Original @('rev-parse','--short=7','HEAD')) -cne '462a7a4'){Halt 'Original main checkpoint changed'}
+if ((InvokeGitSafe -Directory $Experiment -GitArguments @('branch','--show-current')) -cne 'myway/learning-sandbox-v3_7a'){Halt 'Wrong branch'}
+if ((InvokeGitSafe -Directory $Original -GitArguments @('branch','--show-current')) -cne 'main'){Halt 'Original branch changed'}
+if ((InvokeGitSafe -Directory $Original -GitArguments @('rev-parse','--short=7','HEAD')) -cne '462a7a4'){Halt 'Original main checkpoint changed'}
 $ReleaseFile=Join-Path $Experiment 'scripts\sandbox\current-local-release.json'
 if (!(Test-Path -LiteralPath $ReleaseFile -PathType Leaf)){Halt 'Release pointer missing'}
 $r=Get-Content -LiteralPath $ReleaseFile -Raw | ConvertFrom-Json

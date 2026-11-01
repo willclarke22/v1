@@ -1,0 +1,6 @@
+
+cd "C:\Users\willc\projects\MyWay\v1-learning-experiment"
+
+$env:EMBEDDINGS_URL = "http://127.0.0.1:8001"
+
+& ".\scripts\sandbox\start-local.ps1"

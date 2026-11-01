@@ -9,6 +9,7 @@ import { validateReviewedAssociation } from "@/sandbox/probe-lab/learning-space/
 import { observationIsValid, saveIndependentObservation } from "@/sandbox/probe-lab/learning-space/score-observations.server";
 import { isRubricScore } from "@/sandbox/probe-lab/learning-space/topic-memory-scores";
 import { commitTopicMemory, repairApprovedTopicIndex, CommitRefused } from "@/sandbox/probe-lab/learning-space/topic-memory-commit.server";
+import { normalizeTopicLabel } from "@/sandbox/probe-lab/learning-space/topic-label-normalization";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 type Step={label:string;durationMs:number;status:"ok"|"failed"|"fallback"|"skipped"};
@@ -104,6 +105,52 @@ export async function POST(request:Request){
    console.warn("V3.7D.2C automatic association refused",code);
    return json({error:error instanceof CommitRefused?error.message:"Automatic association failed; inspect logs.",code},409);}
  }
+ if(x.operation === "rename_topic_proposal"){
+  const ownOrigin=`http://${host}`;
+  if(origin!==ownOrigin||request.headers.get("x-myway-approval")!=="v37d2c6b-label"||
+     x.approvalPhrase!=="I_REVIEWED_TOPIC_LABEL"||typeof x.approvalToken!=="string"||
+     typeof x.topicLabel!=="string"||Object.keys(x).sort().join("|")!==
+       ["operation","approvalPhrase","approvalToken","topicLabel"].sort().join("|"))
+    return json({error:"One-use label-edit approval required",code:"label_guard"},403);
+  const prepared=consumeApproval(x.approvalToken);
+  if(!prepared||prepared.preview.action!=="propose_new"||prepared.preview.reasonCode!=="no_close_semantic_candidate"||prepared.preview.retrievalStatus!=="semantic_pgvector")
+    return json({error:"Fresh new-topic proposal required",code:"label_expired"},409);
+  const label=normalizeTopicLabel(x.topicLabel);
+  if(!label)return json({error:"Topic label must be 3–110 characters and at most 12 words",code:"invalid_label"},400);
+  const next=issueApproval({...prepared,topicName:label});
+  if(!next)return json({error:"Could not issue a new single-use proposal",code:"label_not_approved"},409);
+  return NextResponse.json({status:"ready",topicLabel:label,approvalToken:next},{headers:{"Cache-Control":"no-store","X-MyWay-Mode":"no-state-writes"}});
+ }
+ if(x.operation === "auto_create_new_topic"){
+  const ownOrigin=`http://${host}`;
+  if(origin!==ownOrigin||request.headers.get("x-myway-approval")!=="v37d2c6b-auto"||
+    x.approvalPhrase!=="I_ENABLED_HIGH_CONFIDENCE_NEW_TOPIC_CREATION_THIS_TAB"||
+    typeof x.approvalToken!=="string"||Object.keys(x).sort().join("|")!==
+      ["operation","approvalPhrase","approvalToken"].sort().join("|"))
+    return json({error:"Explicit one-tab opt-in required",code:"auto_create_guard"},403);
+  const p=consumeApproval(x.approvalToken);
+  if(!p)return json({error:"Proposal expired or already used",code:"auto_create_expired"},409);
+  const candidates=p.preview.candidates;
+  // "Auto-create" is one explicit browser-tab opt-in, not a per-turn approval.
+  // Accept only a server-issued, fresh semantic proposal. The underlying preview
+  // already enforces root confidence >=0.78, evidence grounding, no close topic,
+  // and the explicit no_close_semantic_candidate rationale. Never widen "hold".
+  // The existing commit rechecks snapshot freshness and duplicate labels.
+  const canonical=normalizeTopicLabel(p.topicName);
+  if(p.preview.action!=="propose_new"||p.preview.reasonCode!=="no_close_semantic_candidate"||
+     p.preview.retrievalStatus!=="semantic_pgvector"||p.rootConfidence<0.78||
+     p.rootProblem.trim().length<20||!candidates.length||
+     !candidates.every(c=>typeof c.similarity==="number" && c.similarity<0.55)||!canonical)
+    return json({error:"Semantic evidence or naming was insufficient for automatic creation; no topic was created.",code:"auto_create_not_eligible"},409);
+  try{
+    // Canonicalization is performed on trusted server-held approval data.
+    // This does not permit a client to inject a different label or bypass
+    // the one-time token, snapshot digest, or database duplication checks.
+    const result=await commitTopicMemory({...p,topicName:canonical});
+    return NextResponse.json(result,{headers:{"Cache-Control":"no-store","X-MyWay-Mode":"sandbox-opt-in-auto-new-topic"}});
+  }catch(error){const code=error instanceof CommitRefused?error.code:"unexpected_failure";
+    return json({error:error instanceof CommitRefused?error.message:"Auto-create refused",code},409);}
+ }
  if(x.operation === "commit_topic_memory"){
   const ownOrigin=`http://${host}`;
   if(origin!==ownOrigin || request.headers.get("x-myway-approval")!=="v37d2a" ||
@@ -158,11 +205,12 @@ export async function POST(request:Request){
      originalMessage:x.originalMessage as string,currentMessage:x.message as string,rootConfidence:x.rootConfidence as number});
     const review= {preview:topicMemory,topicName:x.topicName as string,rootProblem:x.rootProblem as string,evidenceQuote:x.evidenceQuote as string,originalMessage:x.originalMessage as string,currentMessage:x.message as string,rootConfidence:x.rootConfidence as number,confusion:x.confusion as number,insight:x.insight as number,snapshotDigest:memoryDigest(rows)};
     const reviewToken=issueReview(review);
-    const approvalToken=issueApproval({preview:topicMemory,topicName:x.topicName as string,
+    const proposedTopicLabel=topicMemory.action==="propose_new" ? normalizeTopicLabel(x.topicName as string) : null;
+    const approvalToken=issueApproval({preview:topicMemory,topicName:proposedTopicLabel??(x.topicName as string),
      rootProblem:x.rootProblem as string,evidenceQuote:x.evidenceQuote as string,
      originalMessage:x.originalMessage as string,currentMessage:x.message as string,
      rootConfidence:x.rootConfidence as number,confusion:x.confusion as number,insight:x.insight as number,snapshotDigest:memoryDigest(rows)});
-    return {...response,topicMemory:{...topicMemory,approvalToken,reviewToken}};
+    return {...response,topicMemory:{...topicMemory,approvalToken,reviewToken,proposedTopicLabel}};
    }catch{
     serverTimings.push({label:"Sandbox topic memory unavailable; proposal held",durationMs:0,status:"fallback"});
     return {...response,topicMemory:unavailableMemoryPreview("read failed")};
