@@ -3,6 +3,7 @@ import CloudAuthCheck from "@/lib/sandbox/v37d2c5a/cloud-auth-check";
 import BrowserEmbeddingDiagnostic from "@/lib/sandbox/v37d2c6a/browser-embedding-diagnostic";
 import CloudOwnerTopicSearch from "@/lib/sandbox/v37d2c6b/cloud-owner-topic-search";
 import CloudProtectedVectorSearch from "@/lib/sandbox/v37d2c6e/cloud-protected-vector-search";
+import CloudDifficultySearch from "@/lib/sandbox/v37d2c7a/cloud-difficulty-search";
 import LearningSpaceWorkbench from "@/sandbox/probe-lab/learning-space/workbench";
 
 /**
@@ -17,6 +18,7 @@ export default function Page() {
         <BrowserEmbeddingDiagnostic />
         <CloudOwnerTopicSearch />
         <CloudProtectedVectorSearch />
+        <CloudDifficultySearch />
         <CloudReadonlyView view="workbench"/>
       </>
     : <LearningSpaceWorkbench/>;

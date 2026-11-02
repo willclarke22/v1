@@ -1,7 +1,7 @@
 {
   "schema": "myway-current-local-release-v1",
-  "release": "v37d2c6e",
-  "verify": "scripts/sandbox/v37d2c6e/verify-v37d2c6e.mjs",
-  "test": "scripts/sandbox/v37d2c6e/test-v37d2c6e.mjs",
-  "marker": "scripts/sandbox/v37d2c6e/installation.json"
+  "release": "v37d2c7a",
+  "verify": "scripts/sandbox/v37d2c7a/verify-v37d2c7a.mjs",
+  "test": "scripts/sandbox/v37d2c7a/test-v37d2c7a.mjs",
+  "marker": "scripts/sandbox/v37d2c7a/installation.json"
 }

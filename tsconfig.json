@@ -43,6 +43,10 @@
     ".next",
     "out",
     "sandbox",
-    "sandbox/**/*"
+    "sandbox/**/*",
+    "scripts/sandbox/**/backups",
+    "scripts/sandbox/**/backups/**/*",
+    ".myway-patch-backups",
+    ".myway-patch-backups/**/*"
   ]
 }
