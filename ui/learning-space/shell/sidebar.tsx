@@ -12,12 +12,21 @@ import type { RelationshipViewMode } from "@/types/learning-space";
 
 export type SidebarTab = "myway" | "progress" | "view-options" | "settings";
 
+/** Transient, read-only search candidates; these are NOT newly created topics. */
+export type LiveTopicPreview = {
+  phase: "assessing" | "retrieving" | "teaching";
+  semantic: boolean;
+  matches: ReadonlyArray<{ topicId: string; topicLabel: string; similarity: number }>;
+};
+
 type SidebarProps = {
   activeTab: SidebarTab;
   onChangeTab: (tab: SidebarTab) => void;
   latestReply?: string;
   suggestedAction?: string;
   isSending?: boolean;
+  liveTopicPreview?: LiveTopicPreview | null;
+  onSelectLiveTopic?: (topicId: string) => void;
   progressSummary: ProgressSummary;
   relationshipViewMode: RelationshipViewMode;
   onChangeRelationshipViewMode: (mode: RelationshipViewMode) => void;
@@ -150,6 +159,8 @@ export default function Sidebar({
   latestReply = "",
   suggestedAction = "",
   isSending = false,
+  liveTopicPreview = null,
+  onSelectLiveTopic,
   progressSummary,
   relationshipViewMode,
   onChangeRelationshipViewMode,
@@ -215,6 +226,39 @@ export default function Sidebar({
                   </p>
 
                   <div className="rounded-[1.75rem] border border-white/6 bg-white/[0.024] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.13)] backdrop-blur-md">
+                    {liveTopicPreview && (
+                      <section aria-label="Live topic search bubbles" aria-live="polite" className="mb-4 rounded-2xl border border-sky-300/15 bg-sky-500/[0.055] p-3">
+                        <p className="mb-2 text-xs font-medium text-sky-100">
+                          {liveTopicPreview.phase === "assessing" ? "Understanding your question" :
+                            liveTopicPreview.phase === "retrieving" ? "Searching your topic space" :
+                              "Related topics found"}
+                        </p>
+                        {liveTopicPreview.matches.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {liveTopicPreview.matches.slice(0, 5).map(match => (
+                              <button key={match.topicId} type="button"
+                                onClick={() => onSelectLiveTopic?.(match.topicId)}
+                                disabled={!onSelectLiveTopic}
+                                title={liveTopicPreview.semantic ? `Topic-label cosine ${match.similarity.toFixed(3)}; not proof of the same difficulty` : "Lexical topic candidate; semantic score unavailable"}
+                                className="max-w-full break-words rounded-full border border-sky-300/30 bg-sky-500/10 px-2.5 py-1.5 text-left text-xs text-sky-50 transition hover:border-sky-200 hover:bg-sky-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-200 disabled:cursor-default">
+                                {match.topicLabel}
+                                <span className="ml-1.5 text-[10px] text-sky-200/70">{liveTopicPreview.semantic ? match.similarity.toFixed(2) : "lexical"}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 py-2" aria-label="Topic search in progress">
+                            {[0, 1, 2, 3].map(i => <span key={i} aria-hidden="true"
+                              className="h-3 w-3 animate-pulse rounded-full border border-sky-300/30 bg-sky-400/20"
+                              style={{ animationDelay: `${i * 170}ms` }} />)}
+                          </div>
+                        )}
+                        <p className="mt-2 text-[10px] leading-4 text-sky-200/65">
+                          {liveTopicPreview.matches.length ? "Existing topic previews only; selecting one inspects its sphere." :
+                            "Checking existing topics; no sphere has been created."}
+                        </p>
+                      </section>
+                    )}
                     <p className="text-sm leading-7 text-zinc-200">
                       {isSending
                         ? "MyWay is interpreting your message and deciding where to guide you next..."

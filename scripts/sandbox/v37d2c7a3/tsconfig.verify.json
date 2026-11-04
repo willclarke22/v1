@@ -1,0 +1,14 @@
+{
+ "extends":"../../../tsconfig.json",
+ "compilerOptions":{"noEmit":true},
+ "include":[
+  "../../../next-env.d.ts",
+  "../../../app/api/sandbox/probe-lab/learning-space/retrieve/route.ts",
+  "../../../sandbox/probe-lab/learning-space/learning-space-preview.tsx",
+  "../../../sandbox/probe-lab/learning-space/workbench.tsx",
+  "../../../sandbox/probe-lab/learning-space/topic-memory-preview.ts",
+  "../../../sandbox/probe-lab/learning-space/topic-memory-commit.server.ts",
+  "../../../sandbox/probe-lab/learning-space/difficulty-identity.ts",
+  "../../../sandbox/probe-lab/learning-space/topic-decision-explanation.ts"
+ ]
+}

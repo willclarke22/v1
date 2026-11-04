@@ -6,6 +6,7 @@ import "server-only";
 import { randomBytes, createHash } from "node:crypto";
 import type { TopicStateRow } from "@/lib/persistence/read";
 import type { TopicMemoryPreview } from "./topic-memory-preview";
+import { validateReviewedAssociation } from "./verifier-association-policy";
 
 export type MemoryApproval = {
   preview: TopicMemoryPreview;
@@ -58,7 +59,9 @@ export function consumeApproval(token:unknown): MemoryApproval | null {
  * A verifier decision sent by a browser is never sufficient authority to write.
  */
 export function issueReview(p: Omit<MemoryApproval,"createdAt">):string|null {
- if(p.preview.retrievalStatus!=="semantic_pgvector"||!p.preview.candidates.length)return null;
+ if(p.preview.retrievalStatus!=="semantic_pgvector" ||
+    !p.preview.candidates.some(c => validateReviewedAssociation(
+      p.preview,c.topicId,"same_topic_new_difficulty",p.rootConfidence).ok))return null;
  sweep(); const token=randomBytes(32).toString("hex");
  reviews.set(token,{...p,createdAt:Date.now()}); return token;
 }

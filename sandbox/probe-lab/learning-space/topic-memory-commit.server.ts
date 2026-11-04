@@ -3,13 +3,14 @@
  */
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { resolveReviewedIdentity } from "./difficulty-identity";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { canonicalLabel, memoryDigest, type MemoryApproval } from "./topic-memory-approval.server";
 import { isRubricScore, scoredObservation, scoreSummary } from "./topic-memory-scores";
 import { is384Vector, prepareTopicIndex } from "./topic-memory-index.server";
 
-export type CommitOutcome={status:"committed";action:"associate_existing"|"propose_new";topicId:string;topicLabel:string;verified:boolean;embeddingReady?:boolean;positionReady?:boolean;warning?:string};
+export type CommitOutcome={status:"committed";action:"associate_existing"|"propose_new";topicId:string;topicLabel:string;verified:boolean;eventId?:string;difficultyId?:string;difficultyRelation?:string;embeddingReady?:boolean;positionReady?:boolean;warning?:string};
 export class CommitRefused extends Error {constructor(public code:string,message:string){super(message);this.name="CommitRefused";}}
 const asObject=(value:unknown):Record<string,unknown>=>value&&typeof value==="object"&&!Array.isArray(value)?{...(value as Record<string,unknown>)}:{};
 const asArray=(v:unknown):unknown[]=>Array.isArray(v)?v:[];
@@ -23,7 +24,7 @@ export async function exclusive<T>(callback:()=>Promise<T>):Promise<T>{
   gate=new Promise<void>(resolve=>{release=resolve;});
   await previous;try{return await callback();}finally{release();}
 }
-export async function commitTopicMemory(p:MemoryApproval):Promise<CommitOutcome>{
+export async function commitTopicMemory(p:MemoryApproval,difficultyChoice?:unknown):Promise<CommitOutcome>{
  return exclusive(async()=>{
   if(process.env.NODE_ENV!=="development"||process.env.MYWAY_EXPERIMENTAL_RUNTIME!=="v37b"||
     process.env.MYWAY_TOPIC_VECTOR_BACKEND!=="supabase"||process.env.MYWAY_EXPERIMENTAL_LAUNCH_APPROVAL!=="v37c-route-audit-passed"){
@@ -39,12 +40,24 @@ export async function commitTopicMemory(p:MemoryApproval):Promise<CommitOutcome>
   }
   const {action,targetTopicId,reasonCode}=p.preview;
   if(action!=="associate_existing"&&action!=="propose_new")throw new CommitRefused("not_actionable","A hold decision cannot be committed.");
-  if(action==="associate_existing"&&!new Set(["historical_root_problem_match","strong_topic_level_match","semantic_root_problem_match","model_verifier_manual_review"]).has(reasonCode))throw new CommitRefused("not_supported","Association requires explicit historical difficulty evidence or a strong subject-level match.");
+  if(action==="associate_existing"&&!p.preview.difficultyContinuity)throw new CommitRefused("missing_identity_preview","Existing topic needs a server-verified difficulty continuity proposal.");
+  if(action==="associate_existing"&&!new Set(["historical_root_problem_match","strong_topic_level_match","semantic_root_problem_match","model_verifier_manual_review","reviewed_topic_new_difficulty"]).has(reasonCode))throw new CommitRefused("not_supported","Association requires explicit historical difficulty evidence or a strong subject-level match.");
   if(action==="propose_new"&&reasonCode!=="no_close_semantic_candidate"||action==="propose_new"&&p.preview.retrievalStatus!=="semantic_pgvector"){
     throw new CommitRefused("not_supported","New topic requires a successful semantic search and a supported proposal.");
   }
   const now=new Date().toISOString();
-  const item={event_id:randomUUID(),recorded_at:now,root_problem:safe(p.rootProblem,500),evidence_quote:safe(p.evidenceQuote,500),
+  const eventId=randomUUID();
+  const topic=action==="associate_existing"?rows.find(r=>r.topic_id===targetTopicId):null;
+  const choice=difficultyChoice??(action==="propose_new"?"new_distinct":null);
+  if(action==="propose_new"&&choice!=="new_distinct")throw new CommitRefused("invalid_difficulty_choice","New topic must begin with a new difficulty.");
+  const continuity=action==="associate_existing"?
+    resolveReviewedIdentity(topic?.topic_json,p.rootProblem,p.preview.difficultyContinuity,choice):
+    {relation:"new_difficulty" as const,difficultyId:null,relatedEventId:null};
+  if(!continuity)throw new CommitRefused("difficulty_identity_unverified","Difficulty approval choice did not match the fresh server-held approved history. Run another learning turn.");
+  const difficultyId=continuity.difficultyId??eventId;
+  const item={event_id:eventId,difficulty_id:difficultyId,difficulty_relation:continuity.relation,
+    ...(continuity.relatedEventId?{related_event_id:continuity.relatedEventId}:{}),
+    difficulty_identity_schema:"myway-difficulty-observation-v1",recorded_at:now,root_problem:safe(p.rootProblem,500),evidence_quote:safe(p.evidenceQuote,500),
     original_statement:safe(p.originalMessage,2500),clarification_answer:p.currentMessage===p.originalMessage?"":safe(p.currentMessage,2500),
     origin:"v37d2c_validated_assessment",reason_code:reasonCode,
     ...scoredObservation(p.confusion,p.insight),model_estimated_evidence_confidence:p.rootConfidence};
@@ -69,8 +82,12 @@ export async function commitTopicMemory(p:MemoryApproval):Promise<CommitOutcome>
     const verified=await getLatestTopicState();
     const result=verified.find(r=>r.topic_id===target.topic_id);
     const evidence=asArray(asObject(result?.topic_json).myway_learning_evidence);
-    if(!evidence.some(v=>asObject(v).event_id===item.event_id))throw new CommitRefused("verification_failed","Write response was not visible in a verification read.");
-    return {status:"committed",action,topicId:target.topic_id,topicLabel:target.topic_label,verified:true};
+    const stored=evidence.map(asObject).find(v=>v.event_id===item.event_id);
+    if(!stored || stored.difficulty_id!==difficultyId || stored.difficulty_relation!==continuity.relation ||
+        evidence.length!==prior.length+1 || prior.some((v,i)=>JSON.stringify(v)!==JSON.stringify(evidence[i])))
+      throw new CommitRefused("verification_failed","Immutable history or the approved difficulty identity failed database read-back verification.");
+    return {status:"committed",action,topicId:target.topic_id,topicLabel:target.topic_label,verified:true,
+      eventId,difficultyId,difficultyRelation:continuity.relation};
   }
   // Label duplication check including different capitalization/spacing. Recheck under
   // the local commit mutex. The database has no proven unique normalized-label index.
@@ -111,7 +128,7 @@ export async function commitTopicMemory(p:MemoryApproval):Promise<CommitOutcome>
   const indexed=await db.from("topic_vectors").select("topic_id,embedding_model")
     .eq("topic_id",topicId).eq("kind","label").maybeSingle();
   const embeddingReady=!indexed.error&&indexed.data?.embedding_model===prepared.model;
-  return {status:"committed",action,topicId,topicLabel:label,verified:true,embeddingReady,positionReady:true,
+  return {status:"committed",action,topicId,topicLabel:label,verified:true,eventId,difficultyId,difficultyRelation:continuity.relation,embeddingReady,positionReady:true,
     ...(embeddingReady?{}:{warning:"Topic created, but its pgvector index could not be verified. Do not recreate; inspect before repair."})};
  });
 }

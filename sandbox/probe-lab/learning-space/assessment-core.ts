@@ -42,7 +42,7 @@ export const ASSESSMENT_SCHEMA: Record<string, unknown> = {
 
 const SCHEMA_FIELDS = ["topic_name", "evidence_quote", "root_problem", "confusion", "insight", "next_action", "clarifying_question", "root_problem_confidence"];
 export const ASSESSMENT_SYSTEM_PROMPT = `Assess learner statements, not MyWay questions. Return schema JSON only; no teaching.
-topic_name: reusable 2–5 word subject label, not a broad discipline or difficulty sentence. root_problem: <=30 words describing the narrowest evidenced gap (not its solution); do not exaggerate learner certainty. evidence_quote: exact learner words or "". Never invent evidence. Leave root_problem empty when unsupported.
+topic_name: reusable 2–5 word subject label, not a broad discipline or difficulty sentence. root_problem: <=30 words describing the narrowest evidenced gap (not its solution); do not exaggerate learner certainty. If a learner contrasts what they understand with what is still confusing, describe ONLY the unresolved gap; do not conflate the two. evidence_quote: exact learner words or "". Never invent evidence. Leave root_problem empty when unsupported.
 Confusion (-1 if unclear; otherwise 0..10):
 0 complete clarity; 1 almost full clarity but slight checking; 2 light uncertainty; 3 mild confusion, small gaps; 4 noticeable confusion; 5 moderate confusion, incomplete model; 6 strong confusion; 7 significant confusion, major misinterpretations; 8 deep confusion; 9 severe confusion, close to giving up; 10 total confusion or frustration.
 Insight (-1 if unclear; otherwise 0..10):

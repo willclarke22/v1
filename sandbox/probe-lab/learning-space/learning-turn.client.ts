@@ -144,15 +144,18 @@ async function runTeaching(assessment:Assessment,provider:Provider,model:string|
  if(!checked.plan)throw Error(checked.error||"Invalid compact teaching response");
  return {plan:checked.plan,model:answer.model,warnings:[] as string[],io:{promptChars,outputChars:answer.raw.length,usage:answer.usage,providerMs:answer.providerMs}};
 }
-/** Retrieval context is an index query, not learner evidence or a topic-memory write. */
+/** The semantic search query reflects Model A's *unresolved* difficulty,
+ * not an entire mixed learner message containing explicitly understood concepts.
+ * The full original/clarification statements still reach assessment and teaching.
+ * No model output or heuristic query is permitted to authorize a memory write.
+ */
 export function buildContextualTopicQuery(topicName:string,rootProblem:string,originalMessage:string,clarificationAnswer:string):string {
  const clean=(value:string,max:number)=>value.replace(/\s+/g," ").trim().slice(0,max);
- return [
-  `Topic: ${clean(topicName,100)}`,
-  `Learning difficulty: ${clean(rootProblem,440)}`,
-  `Original question: ${clean(originalMessage,370)}`,
-  clarificationAnswer.trim()?`Clarification: ${clean(clarificationAnswer,200)}`:"",
- ].filter(Boolean).join("\n").slice(0,1450);
+ const topic=clean(topicName,100);
+ const problem=clean(rootProblem,440);
+ if (problem) return [`Topic: ${topic}`,`Unresolved difficulty: ${problem}`].join("\n");
+ // Diagnostic fallback only: actual memory decisions still require supported root evidence.
+ return [`Topic: ${topic}`,`Learner statement: ${clean(clarificationAnswer||originalMessage,400)}`].join("\n");
 }
 /** Only tutor-facing prose is presented as a reply; the plan fields remain available for Director. */
 export function learnerFacingTeachingReply(strategy:string):string {

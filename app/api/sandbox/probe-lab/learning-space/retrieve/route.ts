@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { querySemanticTopicCandidatesWithEmbedding } from "@/lib/vector/query-topics";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { compareTopicMemory, unavailableMemoryPreview, type MemoryRetrievalStatus } from "@/sandbox/probe-lab/learning-space/topic-memory-preview";
-import { issueApproval, memoryDigest, consumeApproval, issueReview, consumeReview } from "@/sandbox/probe-lab/learning-space/topic-memory-approval.server";
-import { rootSemanticMatches } from "@/sandbox/probe-lab/learning-space/root-problem-compare.server";
+import { classifyDifficulty, eligibleDifficultyEvents } from "@/sandbox/probe-lab/learning-space/difficulty-identity";
+import { issueApproval, memoryDigest, consumeApproval } from "@/sandbox/probe-lab/learning-space/topic-memory-approval.server";
+import { rootSemanticMatches, approvedEventSemanticMatches } from "@/sandbox/probe-lab/learning-space/root-problem-compare.server";
+import type { ApprovedEventSimilarity } from "@/sandbox/probe-lab/learning-space/difficulty-identity";
 import { validateReviewedAssociation } from "@/sandbox/probe-lab/learning-space/verifier-association-policy";
 import { observationIsValid, saveIndependentObservation } from "@/sandbox/probe-lab/learning-space/score-observations.server";
 import { isRubricScore } from "@/sandbox/probe-lab/learning-space/topic-memory-scores";
@@ -57,23 +59,7 @@ export async function POST(request:Request){
   catch{return json({error:"Observation table unavailable or write refused. Apply the sandbox-only SQL migration, or leave observation saving off.",code:"observation_unavailable"},409);}
  }
  if(x.operation === "approve_verifier_existing"){
-  const ownOrigin=`http://${host}`;
-  if(origin!==ownOrigin||request.headers.get("x-myway-approval")!=="v37d2c2-human-review"||
-     x.approvalPhrase!=="I_REVIEWED_AND_APPROVE_EXISTING_TOPIC_ASSOCIATION"||
-     typeof x.reviewToken!=="string"||typeof x.targetTopicId!=="string"||
-     !["same_topic_same_difficulty","same_topic_new_difficulty"].includes(String(x.relation))||
-     Object.keys(x).sort().join("|")!==["operation","approvalPhrase","reviewToken","targetTopicId","relation"].sort().join("|"))
-    return json({error:"Explicit manual verifier review required",code:"review_guard"},403);
-  const preview=consumeReview(x.reviewToken);
-  if(!preview)return json({error:"Review preview expired or already used. Run a new learning turn.",code:"review_expired"},409);
-  const validated=validateReviewedAssociation(preview.preview,String(x.targetTopicId),String(x.relation),preview.rootConfidence);
-  if(!validated.ok)
-    return json({error:"Existing topic lacks supported semantic evidence; manual association refused",code:"review_evidence_insufficient"},409);
-  const approved={...preview,preview:{...preview.preview,action:"associate_existing" as const,
-    targetTopicId:String(x.targetTopicId),reasonCode:"model_verifier_manual_review",autoEligible:false}};
-  try{return NextResponse.json(await commitTopicMemory(approved),{headers:{"Cache-Control":"no-store","X-MyWay-Mode":"manual-reviewed-verifier-association"}});}
-  catch(error){const code=error instanceof CommitRefused?error.code:"unexpected_failure";
-    return json({error:error instanceof CommitRefused?error.message:"Review association failed",code},409);}
+  return json({error:"Model C is advisory. Use the single canonical difficulty approval path.",code:"verifier_review_retired"},409);
  }
  if(x.operation === "repair_approved_topic_index"){
   const ownOrigin=`http://${host}`;
@@ -88,22 +74,7 @@ export async function POST(request:Request){
     return json({error:error instanceof CommitRefused?error.message:"Repair failed. Inspect server logs.",code},409);}
  }
  if(x.operation === "auto_associate_existing"){
-  const ownOrigin=`http://${host}`;
-  if(origin!==ownOrigin||request.headers.get("x-myway-approval")!=="v37d2c-auto"||
-     x.approvalPhrase!=="I_ENABLED_AUTO_ASSOCIATION_THIS_SESSION"||typeof x.approvalToken!=="string"||
-     Object.keys(x).sort().join("|")!==["operation","approvalToken","approvalPhrase"].sort().join("|"))
-   return json({error:"Session opt-in and same-origin automatic association required",code:"auto_guard"},403);
-  const p=consumeApproval(x.approvalToken);
-  if(!p)return json({error:"Auto-association capability expired or already used",code:"auto_expired"},409);
-  if(p.preview.action!=="associate_existing"||p.preview.reasonCode!=="semantic_root_problem_match"||
-     p.preview.autoEligible!==true||!p.preview.targetTopicId||p.preview.retrievalStatus!=="semantic_pgvector"||
-     p.rootProblem.length<15||(p.preview.candidates.find(c=>c.topicId===p.preview.targetTopicId)?.rootProblemSemanticSimilarity??-1)<0.90)
-   return json({error:"Match does not meet automatic association requirements",code:"auto_not_eligible"},403);
-  try{const result=await commitTopicMemory(p);
-   return NextResponse.json(result,{headers:{"Cache-Control":"no-store","X-MyWay-Mode":"sandbox-auto-association"}});
-  }catch(error){const code=error instanceof CommitRefused?error.code:"unexpected_failure";
-   console.warn("V3.7D.2C automatic association refused",code);
-   return json({error:error instanceof CommitRefused?error.message:"Automatic association failed; inspect logs.",code},409);}
+  return json({error:"Automatic existing-difficulty writes are disabled pending explicit difficulty identity review.",code:"manual_difficulty_review_required"},409);
  }
  if(x.operation === "rename_topic_proposal"){
   const ownOrigin=`http://${host}`;
@@ -155,14 +126,15 @@ export async function POST(request:Request){
   const ownOrigin=`http://${host}`;
   if(origin!==ownOrigin || request.headers.get("x-myway-approval")!=="v37d2a" ||
      x.approvalPhrase!=="I_APPROVE_ONE_TOPIC_MEMORY_WRITE" ||
-     typeof x.approvalToken!=="string" || Object.keys(x).sort().join("|")!==
-       ["approvalPhrase","approvalToken","operation"].sort().join("|")){
+     typeof x.approvalToken!=="string" || !["reuse_existing","new_distinct"].includes(String(x.difficultyChoice)) ||
+     Object.keys(x).sort().join("|")!==
+       ["approvalPhrase","approvalToken","operation","difficultyChoice"].sort().join("|")){
    return json({error:"Explicit same-origin memory approval required",code:"approval_guard"},403);
   }
   const approved=consumeApproval(x.approvalToken);
   if(!approved)return json({error:"Approval expired, already used, or not recognized. Run another learning turn.",code:"approval_expired"},409);
   try{
-   const result=await commitTopicMemory(approved);
+   const result=await commitTopicMemory(approved,x.difficultyChoice);
    return NextResponse.json(result,{headers:{"Cache-Control":"no-store","X-MyWay-Mode":"approved-sandbox-memory-write"}});
   }catch(error){
    const code=error instanceof CommitRefused?error.code:"unexpected_failure";
@@ -174,7 +146,7 @@ export async function POST(request:Request){
  if(typeof x.message!=="string"||typeof x.topicName!=="string"||x.message.length>2500||x.topicName.length>110||!x.message.trim())return json({error:"Invalid query"},400);
  if(x.searchText!==undefined && (typeof x.searchText!=="string" || x.searchText.length>1500 || !x.searchText.trim()))return json({error:"Invalid contextual search text"},400);
  const embeddingQuery=typeof x.searchText==="string"?x.searchText:x.message as string;
- const queryMode=typeof x.searchText==="string"?"assessment_and_full_learner_context":"latest_message_only";
+ const queryMode=typeof x.searchText==="string"?"caller_supplied_search_text":"latest_message_only";
  // D.1 accepts validated learner evidence only for a read-only preview; no write authority.
  const hasMemoryRequest=typeof x.rootProblem==="string" && typeof x.evidenceQuote==="string" &&
   typeof x.originalMessage==="string" && typeof x.rootConfidence==="number" && isRubricScore(x.confusion) && isRubricScore(x.insight);
@@ -194,17 +166,51 @@ export async function POST(request:Request){
    try{
     const rows=await stage("Sandbox topic memory SELECT (read only)",()=>getLatestTopicState());
     let semanticProblems:Record<string,number>={};
+    let eventScores:ApprovedEventSimilarity[]=[];
     if(status==="semantic_pgvector"){
      try{semanticProblems=await stage("Local difficulty-to-difficulty embedding comparison",()=>
        rootSemanticMatches(x.rootProblem as string,rows,matches));}
      catch{serverTimings.push({label:"Root-problem comparison unavailable; conservative decision",durationMs:0,status:"fallback"});}
+     try{eventScores=await stage("Approved difficulty-event semantic comparison (read only)",()=>
+       approvedEventSemanticMatches(x.rootProblem as string,rows,matches));}
+     catch{serverTimings.push({label:"Approved event comparison unavailable; no semantic ID reuse",durationMs:0,status:"fallback"});}
     }
     const topicMemory=compareTopicMemory({retrievalStatus:status,matches,rows,rootSemanticMatches:semanticProblems,
      confusion:x.confusion as number,insight:x.insight as number,
      topicName:x.topicName as string,rootProblem:x.rootProblem as string,evidenceQuote:x.evidenceQuote as string,
      originalMessage:x.originalMessage as string,currentMessage:x.message as string,rootConfidence:x.rootConfidence as number});
+    // Read-only continuity annotation: never write, infer mastery, or link uncertain events.
+    if(topicMemory.action==="associate_existing"&&topicMemory.targetTopicId){
+      const target=rows.find(row=>row.topic_id===topicMemory.targetTopicId);
+      if(target){
+       const candidate=topicMemory.candidates.find(c=>c.topicId===target.topic_id);
+       const inTopic=eventScores.filter(score=>score.topicId===target.topic_id);
+       const rivals=eventScores.filter(score=>score.topicId!==target.topic_id).map(score=>score.similarity);
+       topicMemory.difficultyContinuity=classifyDifficulty(target.topic_json,x.rootProblem as string,{
+         approvedEventScores:inTopic,competingTopicSimilarity:rivals.length?Math.max(...rivals):-1,
+         retrievalStatus:status,topicSimilarity:candidate?.similarity??null,topicLabelFit:candidate?.topicLabelFit??0,
+         rootConfidence:x.rootConfidence as number});
+       if(["review_candidate","repeated_difficulty"].includes(topicMemory.difficultyContinuity.relation)){
+         topicMemory.rationale="The existing topic is supported. A specific approved historical difficulty may be repeated or distinct; inspect both root statements and choose explicitly before any write.";
+       }
+       // If topic-level semantic history matched but event-level comparison failed,
+       // never quietly create a second ID for a potentially recurring approved difficulty.
+       const approvedHistoryPresent=eligibleDifficultyEvents(target.topic_json).length>0;
+       if(approvedHistoryPresent && !inTopic.length){
+         topicMemory.difficultyContinuity={relation:"uncertain",difficultyId:null,relatedEventId:null,
+           rationale:"This topic has approved difficulty history but no valid approved-event semantic scores. Check retrieval; do not create a potentially duplicate ID."};
+       }
+       if(["uncertain","possible_refinement"].includes(topicMemory.difficultyContinuity.relation)){
+         topicMemory.action="hold";topicMemory.reasonCode="difficulty_identity_review_needed";
+         topicMemory.rationale="The subject is plausible, but prior difficulty identity is unresolved. Clarify before creating or linking another difficulty.";
+         topicMemory.autoEligible=false;
+       }
+     }
+    }
     const review= {preview:topicMemory,topicName:x.topicName as string,rootProblem:x.rootProblem as string,evidenceQuote:x.evidenceQuote as string,originalMessage:x.originalMessage as string,currentMessage:x.message as string,rootConfidence:x.rootConfidence as number,confusion:x.confusion as number,insight:x.insight as number,snapshotDigest:memoryDigest(rows)};
-    const reviewToken=issueReview(review);
+    // Model C remains shadow-only. No second verifier approval capability is issued.
+    const reviewToken=null;
+    topicMemory.autoEligible=false; // 7A.3R requires human review of difficulty identity.
     const proposedTopicLabel=topicMemory.action==="propose_new" ? normalizeTopicLabel(x.topicName as string) : null;
     const approvalToken=issueApproval({preview:topicMemory,topicName:proposedTopicLabel??(x.topicName as string),
      rootProblem:x.rootProblem as string,evidenceQuote:x.evidenceQuote as string,

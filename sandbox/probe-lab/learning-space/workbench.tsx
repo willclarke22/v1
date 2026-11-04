@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { TRACE_KEY, CLARIFICATION_KEY, METRICS_KEY, type TurnTrace, type MetricRow } from "./learning-turn.client";
 import Link from "next/link";
 import {calculateTurnCost,formatUsd,type StageCost} from "@/sandbox/probe-lab/local-assessment/model-token-usage";
+import { validateReviewedAssociation } from "./verifier-association-policy";
+import { topicDecisionExplanation, verifierComparisonExplanation } from "./topic-decision-explanation";
 
 function CostBreakdown({label,info}:{label:string;info:StageCost}) {
   const billed = info.status === "estimated";
@@ -28,40 +30,13 @@ export default function LearningSpaceWorkbench(){
   const [trace,setTrace]=useState<TurnTrace|null>(null);
   const [history,setHistory]=useState<MetricRow[]>([]);
   const [approveChecked,setApproveChecked]=useState(false);
-  const [reviewChecked,setReviewChecked]=useState(false);
-  const [reviewBusy,setReviewBusy]=useState(false);
-  const [reviewStatus,setReviewStatus]=useState<string|null>(null);
+  const [difficultyChoice,setDifficultyChoice]=useState<"reuse_existing"|"new_distinct"|"">("");
   const [commitBusy,setCommitBusy]=useState(false);
   const [commitMessage,setCommitMessage]=useState<string|null>(null);
   const [commitOk,setCommitOk]=useState(false);
   const [repairChecked,setRepairChecked]=useState(false);
   const [repairBusy,setRepairBusy]=useState(false);
   const [repairNotice,setRepairNotice]=useState<string|null>(null);
-  async function approveVerifierMatch(){
-    const recommendation=trace?.verifier?.decision;
-    const token=trace?.topicMemory?.reviewToken;
-    if(!reviewChecked||reviewBusy||!token||!recommendation||
-       !["same_topic_same_difficulty","same_topic_new_difficulty"].includes(recommendation.relation))return;
-    setReviewBusy(true);setReviewStatus(null);
-    try{
-      const res=await fetch("/api/sandbox/probe-lab/learning-space/retrieve",{
-        method:"POST",cache:"no-store",credentials:"same-origin",
-        headers:{"Content-Type":"application/json","X-MyWay-Approval":"v37d2c2-human-review"},
-        body:JSON.stringify({operation:"approve_verifier_existing",reviewToken:token,
-          targetTopicId:recommendation.target_topic_id,relation:recommendation.relation,
-          approvalPhrase:"I_REVIEWED_AND_APPROVE_EXISTING_TOPIC_ASSOCIATION"})
-      });
-      const result=await res.json() as {status?:string;verified?:boolean;topicId?:string;error?:string};
-      if(!res.ok||result.status!=="committed"||!result.verified)throw Error(result.error??`Review HTTP ${res.status}`);
-      setReviewStatus(`Verified manual association with topic ${result.topicId}. A scored observation was appended to that topic; no new sphere created.`);
-      if(result.topicId)setSelection(result.topicId);
-      setReload(n=>n+1);
-    }catch(e){setReviewStatus(e instanceof Error?e.message:"Review refused");}
-    finally{
-      setReviewChecked(false);setReviewBusy(false);
-      if(trace){const next={...trace,topicMemory:trace.topicMemory?{...trace.topicMemory,reviewToken:null}:null};setTrace(next);sessionStorage.setItem(TRACE_KEY,JSON.stringify(next));}
-    }
-  }
   async function repairMissingIndex(topicId:string){
     if(!repairChecked||repairBusy)return;
     setRepairBusy(true);setRepairNotice(null);
@@ -81,6 +56,7 @@ export default function LearningSpaceWorkbench(){
   async function approveMemoryWrite(){
     const proposal=trace?.topicMemory;
     if(!approveChecked||commitBusy||!proposal?.approvalToken||
+       (proposal.action==="associate_existing"&&["repeated_difficulty","review_candidate"].includes(proposal.difficultyContinuity?.relation??"")&&!difficultyChoice)||
        !["associate_existing","propose_new"].includes(proposal.action))return;
     setCommitBusy(true);setCommitMessage(null);setCommitOk(false);
     try{
@@ -88,7 +64,9 @@ export default function LearningSpaceWorkbench(){
         method:"POST",cache:"no-store",credentials:"same-origin",
         headers:{"Content-Type":"application/json","X-MyWay-Approval":"v37d2a"},
         body:JSON.stringify({operation:"commit_topic_memory",approvalToken:proposal.approvalToken,
-          approvalPhrase:"I_APPROVE_ONE_TOPIC_MEMORY_WRITE"})
+          approvalPhrase:"I_APPROVE_ONE_TOPIC_MEMORY_WRITE",
+          difficultyChoice:proposal.action==="propose_new"?"new_distinct":
+            ["repeated_difficulty","review_candidate"].includes(proposal.difficultyContinuity?.relation??"")?difficultyChoice:"new_distinct"})
       });
       const data=await res.json() as {status?:string;action?:string;topicId?:string;verified?:boolean;embeddingReady?:boolean;positionReady?:boolean;warning?:string;error?:string;code?:string};
       if(!res.ok||data.status!=="committed"||!data.verified)throw Error(data.error??`Commit HTTP ${res.status}`);
@@ -103,7 +81,7 @@ export default function LearningSpaceWorkbench(){
       setCommitMessage(error instanceof Error?error.message:"Commit rejected");
       if(trace){const next={...trace,topicMemory:trace.topicMemory?{...trace.topicMemory,approvalToken:null}:null};
         setTrace(next);sessionStorage.setItem(TRACE_KEY,JSON.stringify(next));}
-    }finally{setApproveChecked(false);setCommitBusy(false);}
+    }finally{setApproveChecked(false);setDifficultyChoice("");setCommitBusy(false);}
   }
   useEffect(()=>{
     try{
@@ -114,6 +92,8 @@ export default function LearningSpaceWorkbench(){
     }
     catch{/* Ignore malformed session trace. */}
   },[reload]);
+  // A new turn must never inherit a previous turn's review confirmation.
+  useEffect(()=>{setApproveChecked(false);setDifficultyChoice("");},[trace?.id]);
   // A topic selected in the 3D scene opens directly in this inspector.
   useEffect(()=>{
     const topic=new URLSearchParams(window.location.search).get("topic");
@@ -131,6 +111,13 @@ export default function LearningSpaceWorkbench(){
     return()=>{mounted=false;};
   },[reload]);
   const cost=trace?calculateTurnCost(trace):null;
+  const verifierDecision=trace?.verifier?.decision??null;
+  const verifierProposesExisting=verifierDecision &&
+    ["same_topic_same_difficulty","same_topic_new_difficulty"].includes(verifierDecision.relation);
+  const reviewEligibility=verifierProposesExisting && trace?.topicMemory
+    ? validateReviewedAssociation(trace.topicMemory,verifierDecision.target_topic_id,
+        verifierDecision.relation,trace.assessment?.root_problem_confidence??0)
+    : null;
   const topic=data?.inspect.find(t=>t.topicId===selection)??null;
   const metrics=[
     ["Topics",data?.summary.topicCount],["Label vectors",data?.summary.labelVectors],
@@ -210,17 +197,17 @@ export default function LearningSpaceWorkbench(){
             {trace.verifier?.decision&&<div className="space-y-1 text-sm"><p><strong>Candidate topic ID:</strong> {trace.verifier.decision.target_topic_id||"None"}</p><p className="text-blue-100/85">{trace.verifier.decision.rationale}</p></div>}
             {trace.verifier?.error&&<p className="text-xs text-amber-200/80">{trace.verifier.error}</p>}
             <p className="text-xs text-blue-200/65">Model C is advisory: it never authorizes automatic writes. A human-reviewed association is checked again against the server-held retrieval snapshot and existing difficulty evidence.</p>
-            {trace.verifier?.status==="complete" && trace.verifier.decision && ["same_topic_same_difficulty","same_topic_new_difficulty"].includes(trace.verifier.decision.relation) && trace.topicMemory?.reviewToken && <div className="mt-3 space-y-2 rounded-lg border border-amber-400/25 bg-amber-900/10 p-3">
-              <p className="text-xs text-amber-100">Review Model C's proposed existing topic. This action appends scored evidence; it cannot create a topic or change mastery.</p>
-              <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={reviewChecked} onChange={e=>setReviewChecked(e.target.checked)}/>I reviewed the topic ID, stored difficulty and learner evidence and approve one existing-topic update.</label>
-              <button type="button" disabled={!reviewChecked||reviewBusy} onClick={()=>void approveVerifierMatch()} className="rounded-lg border border-amber-300/30 bg-amber-300/15 px-3 py-2 text-xs font-semibold disabled:opacity-40">{reviewBusy?"Validating...":"Approve reviewed association once"}</button>
-            </div>}
-            {reviewStatus&&<p role="status" className="rounded-lg bg-sky-400/10 p-2 text-xs text-sky-100">{reviewStatus}</p>}
+            {verifierDecision && trace.topicMemory &&
+              <p className="rounded-lg border border-indigo-300/15 bg-indigo-950/25 p-2 text-xs text-blue-100/85">
+                {verifierComparisonExplanation(trace.topicMemory,verifierDecision,reviewEligibility)}
+              </p>}
+            <p className="text-xs text-amber-200/80">Model C is diagnostic only. Any eligible write uses the one canonical server-reviewed topic and difficulty approval below.</p>
           </section>
           <div className="rounded-xl border border-emerald-300/20 bg-emerald-900/10 p-4 space-y-2">
             <h3 className="font-semibold text-blue-50">V3.7D.2C · Topic memory and scored evidence</h3>
             {trace.topicMemory?.schema === "myway-v37d1-memory-preview-v1" ? <>
               <p><strong>Proposed action:</strong> {trace.topicMemory.action.replaceAll("_"," ")} · {trace.topicMemory.reasonCode}</p>
+              <p className="rounded-lg border border-indigo-300/20 bg-indigo-900/15 px-3 py-2 text-xs text-blue-100">{topicDecisionExplanation(trace.topicMemory)}</p>
               <p><strong>Automatic evidence update eligibility:</strong> {trace.topicMemory.autoEligible===true?"Eligible after session opt-in":"Not eligible for automatic association"}</p>
               <p><strong>Assessed topic label:</strong> {trace.assessment?.topic_name??"—"} {trace.topicMemory.action==="propose_new"?"(will be used as the new topic label)":"(candidate topic, not necessarily a database label)"}</p>
               <p className="text-xs text-blue-200/70">Subject matching and historical root-problem matching are distinct; legacy topics can receive new difficulty evidence without claiming they already contain that difficulty.</p>
@@ -234,15 +221,27 @@ export default function LearningSpaceWorkbench(){
                 {c.storedRootProblems.map((problem,i)=><p key={i} className="text-blue-200/75">Stored difficulty: {problem}</p>)}
               </div>)}
               </details>
+              {trace.topicMemory.difficultyContinuity && <p className="rounded border border-sky-300/20 bg-sky-900/10 p-2 text-xs text-sky-100">
+                <strong>Difficulty continuity (provisional):</strong> {trace.topicMemory.difficultyContinuity.relation.replaceAll("_"," ")} · {trace.topicMemory.difficultyContinuity.rationale}
+                {trace.topicMemory.difficultyContinuity.relation==="possible_refinement"?" Previous evidence will be preserved; the assessment will not silently revise or merge a difficulty.":""}
+              </p>}
               {trace.topicMemory.limitations.map((limit,i)=><p key={i} className="text-amber-200/80 text-xs">Limitation: {limit}</p>)}
             </> : <p className="text-xs text-blue-200/70">No topic-memory preview. Complete a new C.3/D.1 learning turn. Older traces do not contain this result.</p>}
             <p className="text-xs text-emerald-200/75">New topics still require one explicit approval. Strong existing-topic matches may save model-estimated confusion/insight evidence after an opt-in in Learning Space. No automatic creation or mastery updates.</p>
             {trace.topicMemory?.approvalToken && ["associate_existing","propose_new"].includes(trace.topicMemory.action) ?
               <div className="rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 space-y-3">
                 <p className="text-sm font-semibold text-amber-100">Approve one sandbox database write</p>
-                <p className="text-xs text-amber-100/80">{trace.topicMemory.action==="associate_existing"?"Append this learner's evidence to the matched topic.":"Create a new topic from this assessed difficulty."} This records the learner's evidence and valid 0–10 confusion/insight observations; new topic creation is never automatic.</p>
+                <p className="text-xs text-amber-100/80">{trace.topicMemory.action==="associate_existing"?"Append this learner's evidence to the matched existing topic, preserving all earlier difficulty observations.":"Create a new topic from this assessed difficulty."} This records the learner's evidence and valid 0–10 confusion/insight observations; new topic creation is never automatic.</p>
+                {trace.topicMemory.action==="associate_existing" && ["repeated_difficulty","review_candidate"].includes(trace.topicMemory.difficultyContinuity?.relation??"") &&
+                  <fieldset className="space-y-2 rounded border border-amber-300/20 p-2 text-xs"><legend>Review approved difficulty identity (never automatic)</legend>
+                    <p>Current root: {trace.assessment?.root_problem??"Not available"}</p>
+                    <p>Approved historical root: {trace.topicMemory.difficultyContinuity?.matchedRootProblem??"See historical evidence above"}</p>
+                    <p>Approved event similarity: {typeof trace.topicMemory.difficultyContinuity?.semanticSimilarity==="number"?trace.topicMemory.difficultyContinuity?.semanticSimilarity.toFixed(3):"Exact wording"} · This score is not proof of identical meaning.</p>
+                    <label className="flex items-start gap-2"><input type="radio" name="workbench-difficulty-choice" checked={difficultyChoice==="reuse_existing"} onChange={()=>setDifficultyChoice("reuse_existing")}/>Same difficulty: append observation to the approved existing ID ({trace.topicMemory.difficultyContinuity?.difficultyId?.slice(0,8)}…).</label>
+                    <label className="flex items-start gap-2"><input type="radio" name="workbench-difficulty-choice" checked={difficultyChoice==="new_distinct"} onChange={()=>setDifficultyChoice("new_distinct")}/>Different difficulty: new ID under the same topic, with historical reference; only choose if meaning is distinct.</label>
+                  </fieldset>}
                 <label className="flex items-start gap-2 text-xs text-amber-50"><input type="checkbox" checked={approveChecked} onChange={e=>setApproveChecked(e.target.checked)} />I authorize this one topic-memory change in the isolated myway_sandbox database.</label>
-                <button type="button" disabled={!approveChecked||commitBusy} onClick={approveMemoryWrite}
+                <button type="button" disabled={!approveChecked||commitBusy||(trace.topicMemory.action==="associate_existing"&&["repeated_difficulty","review_candidate"].includes(trace.topicMemory.difficultyContinuity?.relation??"")&&!difficultyChoice)} onClick={approveMemoryWrite}
                   className="rounded-md border border-amber-200/35 bg-amber-300/20 px-3 py-2 text-xs font-semibold text-amber-50 disabled:cursor-not-allowed disabled:opacity-40">
                   {commitBusy?"Verifying and writing...":"Approve and commit once"}</button>
               </div>:

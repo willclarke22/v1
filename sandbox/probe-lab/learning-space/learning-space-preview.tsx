@@ -5,7 +5,7 @@ import type {ClarificationContext} from "./assessment-core";
 import Link from "next/link";
 import { calculateTurnCost, formatUsd } from "@/sandbox/probe-lab/local-assessment/model-token-usage";
 import SpaceCanvas from "@/ui/learning-space/scene/canvas";
-import Sidebar, { type SidebarTab } from "@/ui/learning-space/shell/sidebar";
+import Sidebar, { type SidebarTab, type LiveTopicPreview } from "@/ui/learning-space/shell/sidebar";
 import TopicPanel from "@/ui/learning-space/shell/topic-panel";
 import BottomComposer from "@/ui/learning-space/shell/bottom-composer";
 import { deriveProgressSummary } from "@/lib/learning-progress/derive-progress-summary";
@@ -28,14 +28,16 @@ export default function LearningSpacePreview() {
   const [leftOpen,setLeftOpen]=useState(true);
   const [rightOpen,setRightOpen]=useState(true);
   const [notice,setNotice]=useState("Assessment and teaching are enabled. Auto-create is off by default; enable it for this tab to create eligible new topics without per-topic approval.");
-  const [assessmentChoice,setAssessmentChoice]=useState<ModelChoice>("edge");
-  const [teachingChoice,setTeachingChoice]=useState<ModelChoice>("edge");
+  const [assessmentChoice,setAssessmentChoice]=useState<ModelChoice>("openai:gpt-4.1-mini");
+  const [teachingChoice,setTeachingChoice]=useState<ModelChoice>("openai:gpt-4.1-mini");
   const [verifierChoice,setVerifierChoice]=useState<ModelChoice>("openai:gpt-4.1-mini");
+  const [modelPreferencesReady,setModelPreferencesReady]=useState(false);
   const [running,setRunning]=useState(false);
-  const [autoAssociate,setAutoAssociate]=useState(false);
+  const autoAssociate=false;
   const [autoCreate,setAutoCreate]=useState(false); // OFF by default; only for current browser tab
   const [proposalLabel,setProposalLabel]=useState("");
   const [approveOnce,setApproveOnce]=useState(false);
+  const [difficultyChoice,setDifficultyChoice]=useState<"reuse_existing"|"new_distinct"|"">("");
   const [proposalBusy,setProposalBusy]=useState(false);
   const [saveObservations,setSaveObservations]=useState(false); // per-tab, opt-in, never persisted
   const [autoStatus,setAutoStatus]=useState<string|null>(null);
@@ -51,6 +53,26 @@ export default function LearningSpacePreview() {
     }catch{/* Ignore stale session data. */}
     return ()=>{active.current?.abort();};
   },[]);
+  // Persist explicit model choices only in this browser tab, not a server or public URL.
+  // The verifier remains independently selectable. Missing/malformed storage defaults
+  // Assessment + Teaching to GPT-4.1 mini.
+  useEffect(()=>{
+    try{
+      const raw=sessionStorage.getItem("myway-learning-model-choices-v37d2c7a3");
+      const value=raw?JSON.parse(raw) as Record<string,unknown>:{};
+      const valid=(x:unknown):x is ModelChoice=>typeof x==="string"&&MODEL_CHOICES.some(c=>c.value===x);
+      if(valid(value.assessment))setAssessmentChoice(value.assessment);
+      if(valid(value.teaching))setTeachingChoice(value.teaching);
+      if(valid(value.verifier))setVerifierChoice(value.verifier);
+    }catch{/* Storage disabled: use declared defaults. */}
+    setModelPreferencesReady(true);
+  },[]);
+  useEffect(()=>{
+    if(!modelPreferencesReady)return;
+    try{sessionStorage.setItem("myway-learning-model-choices-v37d2c7a3",JSON.stringify({
+      assessment:assessmentChoice,teaching:teachingChoice,verifier:verifierChoice
+    }));}catch{/* Storage disabled: choices remain for this mount. */}
+  },[modelPreferencesReady,assessmentChoice,teachingChoice,verifierChoice]);
   const refreshTopics=useCallback(async()=>{
     const response=await fetch("/api/sandbox/probe-lab/learning-space/readonly",{cache:"no-store"});
     if(!response.ok)throw Error(`Snapshot HTTP ${response.status}`);
@@ -61,6 +83,7 @@ export default function LearningSpacePreview() {
   const approveTopic=useCallback(async()=>{
     const proposal=trace?.topicMemory;
     if(!approveOnce||proposalBusy||!proposal?.approvalToken||
+      (proposal.action==="associate_existing"&&["repeated_difficulty","review_candidate"].includes(proposal.difficultyContinuity?.relation??"")&&!difficultyChoice)||
       !["propose_new","associate_existing"].includes(proposal.action))return;
     setProposalBusy(true);setAutoStatus(null);
     let token=proposal.approvalToken;
@@ -82,7 +105,9 @@ export default function LearningSpacePreview() {
         method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json","X-MyWay-Approval":"v37d2a"},
         body:JSON.stringify({operation:"commit_topic_memory",approvalToken:token,
-          approvalPhrase:"I_APPROVE_ONE_TOPIC_MEMORY_WRITE"})});
+          approvalPhrase:"I_APPROVE_ONE_TOPIC_MEMORY_WRITE",
+          difficultyChoice:proposal.action==="propose_new"?"new_distinct":
+            ["repeated_difficulty","review_candidate"].includes(proposal.difficultyContinuity?.relation??"")?difficultyChoice:"new_distinct"})});
       const data=await saved.json() as {status?:string;topicId?:string;verified?:boolean;error?:string;warning?:string};
       used=true;
       if(!saved.ok||data.status!=="committed"||!data.verified)throw Error(data.error??`Commit HTTP ${saved.status}`);
@@ -95,16 +120,19 @@ export default function LearningSpacePreview() {
         const next={...trace,topicMemory:trace.topicMemory?{...trace.topicMemory,approvalToken:null}:null};
         setTrace(next);try{sessionStorage.setItem(TRACE_KEY,JSON.stringify(next));}catch{}
       }
-      setApproveOnce(false);setProposalBusy(false);
+      setApproveOnce(false);setDifficultyChoice("");setProposalBusy(false);
     }
-  },[trace,approveOnce,proposalBusy,proposalLabel,refreshTopics]);
+  },[trace,approveOnce,proposalBusy,proposalLabel,difficultyChoice,refreshTopics]);
   useEffect(()=>{
-    if(trace?.status==="complete"&&trace.topicMemory?.approvalToken)
-      setProposalLabel(trace.topicMemory.proposedTopicLabel??trace.assessment?.topic_name??"");
+    if(trace?.status==="complete"&&trace.topicMemory?.approvalToken){
+      setDifficultyChoice("");
+      setProposalLabel(trace.topicMemory.proposedTopicLabel??trace.assessment?.topic_name??"");}
   },[trace?.id,trace?.status,trace?.topicMemory?.approvalToken]);
   const send=useCallback(async(message:string)=>{
     if(running||!message.trim())return;
     const controller=new AbortController();active.current=controller;setRunning(true);setAutoStatus(null);
+    // Make the transient search feedback visible in MyWay Response, never over the 3D space.
+    setTab("myway");setLeftOpen(true);
     try {
       const outcome=await executeLearningTurn({message:message.slice(0,2500),context:pending,
        assessmentChoice,teachingChoice,verifierChoice,signal:controller.signal,onStage:t=>{
@@ -221,11 +249,15 @@ export default function LearningSpacePreview() {
   const current=topics.find(t=>t.id===selected)??null;
   const learningSpace=useMemo(()=>snapshot?.learningSpace??buildLearningSpace([]),[snapshot]);
   const progress=useMemo(()=>deriveProgressSummary(topics,focused),[topics,focused]);
-  // Live, ephemeral search bubbles: show while assessment/retrieval/teaching
-  // is in progress, not only after the finished teaching response. They are
-  // previews of existing spheres, NEVER fabricated or persisted topic records.
+  // Existing topic previews remain transient and read-only. This object is
+  // presented INSIDE the MyWay Response sidebar, never as a canvas overlay.
   const searching=running&&["assessing","retrieving","teaching"].includes(trace?.status??"");
-  const searchMatches=searching&&trace?.status==="teaching"?trace.retrieval?.matches.slice(0,5)??[]:[];
+  const liveTopicPreview:LiveTopicPreview|null=searching && trace &&
+    (trace.status==="assessing"||trace.status==="retrieving"||trace.status==="teaching")
+    ? {phase:trace.status,
+       semantic:trace.retrieval?.status==="semantic_pgvector",
+       matches:trace.status==="teaching"?(trace.retrieval?.matches.slice(0,5)??[]):[]}
+    : null;
   return <main className="relative h-screen overflow-hidden bg-[#080b1c] text-white">
     <div className="absolute inset-0">
       <SpaceCanvas learningSpace={learningSpace} selectedTopicId={selected} focusedTopicId={focused}
@@ -237,7 +269,9 @@ export default function LearningSpacePreview() {
     <div className="pointer-events-none absolute left-0 top-0 z-40 h-full">
       <div className={`pointer-events-auto relative h-full w-70 rounded-r-[2rem] bg-gradient-to-r from-violet-950/20 via-indigo-950/10 to-transparent transform transition-transform duration-300 ${leftOpen?"translate-x-0":"-translate-x-[calc(100%-18px)]"}`}>
         <Sidebar activeTab={tab} onChangeTab={setTab} latestReply={notice} suggestedAction="Experimental inference · automatic association opt-in"
-          isSending={running} progressSummary={progress} relationshipViewMode={mode} onChangeRelationshipViewMode={setMode}/>
+          isSending={running} liveTopicPreview={liveTopicPreview}
+          onSelectLiveTopic={id=>{setSelected(id);setRightOpen(true);}}
+          progressSummary={progress} relationshipViewMode={mode} onChangeRelationshipViewMode={setMode}/>
         <button type="button" aria-label="Toggle MyWay panel" onClick={()=>setLeftOpen(v=>!v)}
           className="absolute right-0 top-1/2 rounded-r-xl border border-violet-300/20 bg-[#171b37]/90 px-1 py-5 text-[10px] text-blue-100 shadow-[0_4px_20px_rgba(76,66,180,0.18)]">{leftOpen?"‹":"›"}</button>
       </div>
@@ -262,8 +296,8 @@ export default function LearningSpacePreview() {
       <div className="pointer-events-auto mx-auto flex max-w-[960px] flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-indigo-300/15 bg-[#111a34]/70 px-2 py-1 text-[10px] leading-4 text-blue-100 shadow-[0_5px_20px_rgba(15,23,80,0.18)] backdrop-blur-md">
         {([ ["Assessment",assessmentChoice,setAssessmentChoice], ["Teaching",teachingChoice,setTeachingChoice], ["Verifier",verifierChoice,setVerifierChoice] ] as const).map(([label,value,setValue])=><label key={label} className="flex min-w-0 items-center gap-1 whitespace-nowrap"><span className="text-blue-200/75">{label}</span><select aria-label={`${label} model`} value={value} disabled={running} onChange={e=>setValue(e.target.value as ModelChoice)} className="max-w-[158px] rounded-md border border-indigo-300/20 bg-[#1b2446]/90 px-1 py-0.5 text-[10px] text-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300">{MODEL_CHOICES.map(m=><option key={m.value} value={m.value}>{m.label}</option>)}</select></label>)}
         <label className="flex items-center gap-2 text-xs text-blue-100/80" title="Off by default. While enabled in this tab, valid server-issued proposals create topics without another confirmation; no cloud writes."><input type="checkbox" checked={autoCreate} disabled={running} onChange={e=>setAutoCreate(e.target.checked)}/><span>Auto-create eligible topics (this tab; no per-topic approval)</span></label>
-      <label className="inline-flex items-center gap-1 rounded-md border border-amber-400/20 px-1.5 py-0.5" title="Existing-topic auto-save is restricted to proven deterministic matches; model C remains review-only.">
-          <input type="checkbox" checked={autoAssociate} disabled={running} onChange={e=>setAutoAssociate(e.target.checked)}/><span>Auto-match (strict)</span>
+      <label className="inline-flex items-center gap-1 rounded-md border border-amber-400/20 px-1.5 py-0.5" title="7A.3R: automatic existing-topic writes are paused until difficulty IDs can be reviewed.">
+          <input type="checkbox" checked={false} disabled={true} onChange={()=>{}}/><span>Auto-match paused (manual review)</span>
         </label>
         <label className="inline-flex items-center gap-1 rounded-md border border-sky-400/20 px-1.5 py-0.5" title="Store validated 0–10 model-estimated scores as unassigned events in the separate sandbox table; requires SQL migration.">
           <input type="checkbox" checked={saveObservations} disabled={running} onChange={e=>setSaveObservations(e.target.checked)}/><span>Save score observations</span>
@@ -271,13 +305,6 @@ export default function LearningSpacePreview() {
         <span className="text-blue-200/60">{running?"Working":pending?"Clarify":"Ready"} · {trace?.retrieval?.status??"No search"}</span>
       </div>
     </div>
-    {searching&&<section aria-label="Live topic search bubbles" aria-live="polite" className="pointer-events-auto absolute left-1/2 top-24 z-40 w-[min(92vw,490px)] -translate-x-1/2 rounded-2xl border border-sky-300/25 bg-[#0a1630]/90 p-3 text-xs shadow-2xl backdrop-blur-md xl:top-24">
-      <p className="mb-2 text-center font-semibold text-sky-100">{trace?.status==="assessing"?"Understanding your question":trace?.status==="retrieving"?"Searching your topic space": "Related topics found · preparing response"}</p>
-      {searchMatches.length>0?<div className="flex flex-wrap justify-center gap-2">{searchMatches.map((m,i)=><button key={m.topicId} type="button" onClick={()=>setSelected(m.topicId)} title={trace?.retrieval?.status==="semantic_pgvector"?`Semantic similarity ${m.similarity.toFixed(3)}`:"Lexical match only; semantic similarity unavailable"}
-        className="rounded-full border border-sky-300/35 bg-sky-500/15 px-3 py-2 text-sky-50 shadow-[0_0_18px_rgba(56,189,248,0.15)] transition hover:border-sky-200 hover:bg-sky-500/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-200">{m.topicLabel}<span className="ml-2 text-[10px] text-sky-200/65">{trace?.retrieval?.status==="semantic_pgvector"?m.similarity.toFixed(2):"lexical"}</span></button>)}</div>:
-        <div className="flex items-center justify-center gap-4 py-2" aria-label="Search running">{[0,1,2,3].map(i=><span key={i} aria-hidden="true" className="h-5 w-5 animate-pulse rounded-full border border-indigo-300/40 bg-sky-400/25 shadow-[0_0_14px_rgba(125,211,252,0.2)]" style={{animationDelay:`${i*170}ms`}}/>)}</div>}
-      <p className="mt-2 text-center text-[10px] text-blue-200/60">{searchMatches.length?"Existing topic previews · click a bubble to inspect":"Waiting for assessment and retrieval · no topic has been created"}</p>
-    </section>}
     {trace?.status==="complete" && trace.topicMemory?.approvalToken &&
        ["associate_existing","propose_new"].includes(trace.topicMemory.action) &&
        !(autoCreate && trace.topicMemory.action==="propose_new") &&
@@ -289,8 +316,17 @@ export default function LearningSpacePreview() {
             onChange={e=>setProposalLabel(e.target.value)} className="mt-1 w-full rounded border border-indigo-300/30 bg-slate-950 px-2 py-2 text-white" />
           <span className="mt-1 block text-blue-200/55">Style is normalized before writing. An edited label requires a new one-use approval token.</span>
         </label>}
+        {trace.topicMemory.action==="associate_existing" && ["repeated_difficulty","review_candidate"].includes(trace.topicMemory.difficultyContinuity?.relation??"") ?
+          <fieldset className="mt-3 space-y-2 rounded border border-sky-300/25 p-2"><legend className="font-semibold">Review same vs distinct difficulty</legend>
+            <p>Current root: {trace.assessment?.root_problem??"Not available"}</p>
+            <p>Approved historical root: {trace.topicMemory.difficultyContinuity?.matchedRootProblem??"See Workbench history"}</p>
+            <p>Approved-event similarity: {typeof trace.topicMemory.difficultyContinuity?.semanticSimilarity==="number"?trace.topicMemory.difficultyContinuity?.semanticSimilarity.toFixed(3):"Exact wording"}; meaning must still be reviewed.</p>
+            <label className="flex items-start gap-2"><input type="radio" name="learning-difficulty-choice" checked={difficultyChoice==="reuse_existing"} onChange={()=>setDifficultyChoice("reuse_existing")}/>Append a new observation to the existing approved difficulty ID ({trace.topicMemory.difficultyContinuity?.difficultyId?.slice(0,8)}…).</label>
+            <label className="flex items-start gap-2"><input type="radio" name="learning-difficulty-choice" checked={difficultyChoice==="new_distinct"} onChange={()=>setDifficultyChoice("new_distinct")}/>This is a genuinely different difficulty: create a separate ID under the SAME topic, preserving the historical link.</label>
+            <p className="text-amber-100/80">Semantic similarity is provisional. Review the original learner evidence; neither option is selected automatically.</p>
+          </fieldset> : trace.topicMemory.action==="associate_existing" && <p className="mt-3 text-sky-100/80">Record a new distinct difficulty observation under this existing subject; do not overwrite previous history.</p>}
         <label className="mt-3 flex gap-2"><input type="checkbox" checked={approveOnce} disabled={proposalBusy} onChange={e=>setApproveOnce(e.target.checked)}/> I approve this one sandbox topic-memory change.</label>
-        <div className="mt-2 flex gap-2"><button type="button" onClick={()=>void approveTopic()} disabled={!approveOnce||proposalBusy||running} className="rounded bg-sky-600 px-3 py-2 font-semibold disabled:opacity-40">{proposalBusy?"Saving...":"Approve once"}</button>
+        <div className="mt-2 flex gap-2"><button type="button" onClick={()=>void approveTopic()} disabled={!approveOnce||proposalBusy||running||(trace.topicMemory.action==="associate_existing"&&["repeated_difficulty","review_candidate"].includes(trace.topicMemory.difficultyContinuity?.relation??"")&&!difficultyChoice)} className="rounded bg-sky-600 px-3 py-2 font-semibold disabled:opacity-40">{proposalBusy?"Saving...":"Approve once"}</button>
           <button type="button" onClick={()=>{if(!trace)return;const next={...trace,topicMemory:trace.topicMemory?{...trace.topicMemory,approvalToken:null}:null};setTrace(next);try{sessionStorage.setItem(TRACE_KEY,JSON.stringify(next));}catch{}setApproveOnce(false);}} disabled={proposalBusy} className="rounded border border-slate-600 px-3 py-2">Not now</button></div>
       </section>}
     {trace?.status==="complete"&&trace.io &&<div className="pointer-events-none absolute right-4 top-4 z-40 rounded border border-indigo-300/20 bg-slate-950/80 px-3 py-1 text-[11px] text-sky-100">

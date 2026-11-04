@@ -1,5 +1,6 @@
 /** V3.7D.1. Read-only, deterministic topic-memory comparison. No persistence. */
 import type { TopicStateRow } from "@/lib/persistence/read";
+import type { DifficultyContinuity } from "./difficulty-identity";
 
 export type MemoryRetrievalStatus = "semantic_pgvector" | "lexical_fallback" | "unavailable";
 export type TopicMemoryAction = "associate_existing" | "propose_new" | "hold";
@@ -29,6 +30,7 @@ export type TopicMemoryPreview = {
   approvalToken?: string | null;
   reviewToken?: string | null;
   autoEligible?: boolean; // Local-only, high-bar same-topic association, never creation.
+  difficultyContinuity?: DifficultyContinuity; // Read-only hypothesis; no history mutation.
   scoreObservation?: {confusion:number;insight:number;rubric:"model_0_10_v1"}; // Server-issued, short-lived, one-time capability; not a write itself.
 };
 
@@ -58,23 +60,28 @@ function storedProblemEvidence(json: unknown): string[] {
   if (!isRecord(json)) return [];
   const result: string[] = [];
   const collect = (obj: Record<string, unknown>) => {
-    // Read only explicitly named diagnosis/root-problem fields, never raw chat/event histories.
+    // Legacy summaries remain supported, but never infer history from raw chat.
     for (const key of ["root_problem", "root_problem_explanation", "last_root_problem", "diagnosed_root_problem"]) {
-      const item = obj[key];
-      if (typeof item === "string" && item.trim().length >= 15 && item.trim().length <= 500 &&
-          !result.includes(item.trim())) result.push(item.trim());
+      const value = obj[key];
+      if (typeof value === "string" && value.trim().length >= 15 && value.trim().length <= 500 &&
+          !result.includes(value.trim())) result.push(value.trim());
     }
   };
   collect(json);
   for (const key of ["diagnosis_state", "last_assessment", "last_diagnosis", "assessment"]) {
-    const nested = json[key];
-    if (isRecord(nested)) collect(nested);
+    if (isRecord(json[key])) collect(json[key]);
   }
-  // Include evidence previously approved and stored by V3.7D.2A.
-  for(const item of Array.isArray(json.myway_learning_evidence)?json.myway_learning_evidence:[]){
-    if(!isRecord(item))continue;
-    const phrase=item.root_problem;
-    if(typeof phrase==="string"&&phrase.trim().length>=15&&phrase.length<=500&& !result.includes(phrase.trim()))result.push(phrase.trim());
+  // Align event eligibility with the owner-scoped 7A projection: source UUID,
+  // approved origin, and (for older D2A events) matching parent-topic provenance.
+  const validId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  for (const event of Array.isArray(json.myway_learning_evidence) ? json.myway_learning_evidence : []) {
+    if (!isRecord(event) || typeof event.event_id !== "string" || !validId.test(event.event_id)) continue;
+    if (event.origin !== "v37d2c_validated_assessment" &&
+        !(event.origin === "v37d2a_explicit_user_approval" &&
+          json.myway_memory_origin === "v37d2a_explicit_user_approval")) continue;
+    const text = event.root_problem;
+    if (typeof text === "string" && text.trim().length >= 15 && text.trim().length <= 500 &&
+        !result.includes(text.trim())) result.push(text.trim());
   }
   return result.slice(-12);
 }
@@ -142,6 +149,7 @@ export function compareTopicMemory(args: {
     const result=base(status,candidates,"associate_existing","semantic_root_problem_match",
       `Historical difficulty for "${semanticBest.topicLabel}" closely matches the current difficulty. The same topic can receive a separate scored observation rather than another sphere.`,
       semanticBest.topicId,limitations);
+
     result.autoEligible = args.rootConfidence>=0.80 && (semanticBest.rootProblemSemanticSimilarity??0)>=0.90 &&
       (semanticBest.similarity??0)>=0.20 &&
       typeof args.confusion==="number" && Number.isInteger(args.confusion) && args.confusion>=0 && args.confusion<=10 &&
@@ -153,8 +161,10 @@ export function compareTopicMemory(args: {
   const best=ranked[0];
   if (best && (best.rootProblemOverlap??0)>=0.82 &&
       (status === "semantic_pgvector" ? (best.similarity??0)>=0.60 : best.rootProblemOverlap === 1)) {
-    return base(status,candidates,"associate_existing","historical_root_problem_match",
+    const result=base(status,candidates,"associate_existing","historical_root_problem_match",
       `Stored root-problem evidence for "${best.topicLabel}" closely matches the assessed difficulty. Preview association only; review before any future write.`,best.topicId,limitations);
+
+    return result;
   }
   // A legacy topic may have no diagnosed root problems. A HIGH semantic topic match,
   // strong label evidence grounded in the original learner statement, and a confident
@@ -166,8 +176,28 @@ export function compareTopicMemory(args: {
     .sort((a,b)=>(b.similarity??0)-(a.similarity??0));
   if(status==="semantic_pgvector" && args.rootConfidence>=0.78 && topicCandidates.length===1){
     const candidate=topicCandidates[0];
-    return base(status,candidates,"associate_existing","strong_topic_level_match",
+    const result=base(status,candidates,"associate_existing","strong_topic_level_match",
       `The existing topic "${candidate.topicLabel}" strongly matches the SUBJECT of the learner's question. Store the assessed difficulty as a NEW evidence event under this topic; do not assume the difficulty matches any prior root problem.`,candidate.topicId,limitations);
+
+    return result;
+  }
+  // 7A.3: missing difficulty history is not missing topic identity. Manual-only,
+  // evidence-grounded same-subject route; never authorizes automatic association.
+  // A broad thematic neighbor with no matching topic-label tokens cannot pass.
+  if(status==="semantic_pgvector" && args.rootConfidence>=0.70){
+    const eligible=candidates.filter(c=>c.similarity!==null && c.similarity>=0.60 &&
+      c.topicLabelFit===1 && c.topicLabel.trim().length>=3);
+    const sorted=[...eligible].sort((a,b)=>(b.similarity??-1)-(a.similarity??-1));
+    if(sorted.length===1||(sorted.length>1&&(sorted[0].similarity??0)-(sorted[1].similarity??0)>=0.12)){
+      const chosen=sorted[0];
+      if(chosen){
+        const result=base(status,candidates,"associate_existing","reviewed_topic_new_difficulty",
+          `"${chosen.topicLabel}" is a grounded existing SUBJECT match. A human may approve recording a new difficulty observation here without claiming any matching historical difficulty.`,chosen.topicId,limitations);
+        result.autoEligible=false;
+
+        return result;
+      }
+    }
   }
   // D.2C.6D: An empty search result is not evidence of novelty. In particular,
   // an unhealthy or incomplete pgvector index could otherwise create a sphere
@@ -176,12 +206,21 @@ export function compareTopicMemory(args: {
     return base(status,candidates,"hold","semantic_candidates_empty",
       "Semantic retrieval returned no topic candidates. Check index coverage before creating a topic; absence of results is not evidence of novelty.",null,limitations);
   }
-  // Exact existing subject labels must never be automatically duplicated even
-  // when embeddings are unexpectedly poor. A different learning difficulty
-  // belongs under the existing subject only after a supported association.
-  if (status === "semantic_pgvector" && candidates.some(c=>normalized(c.topicLabel)===normalized(args.topicName))) {
+  // Guard against a duplicate topic label even if that existing topic did
+  // NOT appear among the top-five retrieved candidates. The full, server-held
+  // topic state is available here; a nearest-neighbor miss is not permission
+  // to create another sphere with the same canonical subject label.
+  // This cannot authorize association: a same-label topic with a different
+  // difficulty still requires explicit comparison and review.
+  const labelAlreadyExists = Boolean(normalized(args.topicName)) && rows.some(row => {
+    const stored = isRecord(row.topic_json) && typeof row.topic_json.topic_label === "string" &&
+      row.topic_json.topic_label.trim() ? row.topic_json.topic_label : row.topic_label;
+    return typeof stored === "string" && normalized(stored) === normalized(args.topicName);
+  });
+  if (status === "semantic_pgvector" &&
+      (labelAlreadyExists || candidates.some(c=>normalized(c.topicLabel)===normalized(args.topicName)))) {
     return base(status,candidates,"hold","existing_label_needs_review",
-      "A retrieved topic already has this subject label. Review its difficulty evidence instead of creating a duplicate sphere.",null,limitations);
+      "A topic with this subject label already exists, possibly outside the top search results. Review topic scope and difficulty evidence rather than creating a duplicate sphere.",null,limitations);
   }
   if (status === "semantic_pgvector" && args.rootConfidence >= 0.78 && args.topicName.trim() &&
       candidates.every(c => (c.similarity??0) < 0.55) &&
