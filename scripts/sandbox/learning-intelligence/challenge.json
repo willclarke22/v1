@@ -1,0 +1,1543 @@
+{
+  "schema": "myway-s11-challenge-v1",
+  "source": "Human-authored semantic relationships for evaluation. Not independently reviewed by subject experts, and not calibrated clinical/educational ground truth.",
+  "topics": 16,
+  "cases": [
+    {
+      "domain": "Photosynthesis",
+      "topicId": "eval-synthetic-topic-01",
+      "topicLabel": "Photosynthesis",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "root_problem": "Why chlorophyll absorbs incoming photons",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q01-same",
+      "message": "How chlorophyll absorbs photons before energy transfer",
+      "root": "How chlorophyll absorbs photons before energy transfer",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Photosynthesis",
+      "topicId": "eval-synthetic-topic-01",
+      "topicLabel": "Photosynthesis",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "root_problem": "Why chlorophyll absorbs incoming photons",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q01-distinct",
+      "message": "How ATP and NADPH deliver chemical energy to the carbon-fixation reactions",
+      "root": "How ATP and NADPH deliver chemical energy to the carbon-fixation reactions",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Photosynthesis",
+      "topicId": "eval-synthetic-topic-01",
+      "topicLabel": "Photosynthesis",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "root_problem": "Why chlorophyll absorbs incoming photons",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q01-refinement",
+      "message": "I know chlorophyll absorbs light, but do not know which electron-transfer steps generate ATP and NADPH",
+      "root": "I know chlorophyll absorbs light, but do not know which electron-transfer steps generate ATP and NADPH",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Fractions",
+      "topicId": "eval-synthetic-topic-02",
+      "topicLabel": "Fractions",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "root_problem": "Why adding fractions requires like denominators",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q02-same",
+      "message": "Why I have to rewrite fractions using equivalent denominators before addition",
+      "root": "Why I have to rewrite fractions using equivalent denominators before addition",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Fractions",
+      "topicId": "eval-synthetic-topic-02",
+      "topicLabel": "Fractions",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "root_problem": "Why adding fractions requires like denominators",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q02-distinct",
+      "message": "Why fraction multiplication multiplies numerators and denominators directly",
+      "root": "Why fraction multiplication multiplies numerators and denominators directly",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Fractions",
+      "topicId": "eval-synthetic-topic-02",
+      "topicLabel": "Fractions",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "root_problem": "Why adding fractions requires like denominators",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q02-refinement",
+      "message": "I can find common denominators but do not understand why equivalent fractions preserve value",
+      "root": "I can find common denominators but do not understand why equivalent fractions preserve value",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Cardiac physiology",
+      "topicId": "eval-synthetic-topic-03",
+      "topicLabel": "Cardiac physiology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "root_problem": "How the sinoatrial node initiates electrical activation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q03-same",
+      "message": "How pacemaker cells in the sinoatrial node generate impulses",
+      "root": "How pacemaker cells in the sinoatrial node generate impulses",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Cardiac physiology",
+      "topicId": "eval-synthetic-topic-03",
+      "topicLabel": "Cardiac physiology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "root_problem": "How the sinoatrial node initiates electrical activation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q03-distinct",
+      "message": "How coronary arteries supply oxygen to the myocardium",
+      "root": "How coronary arteries supply oxygen to the myocardium",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Cardiac physiology",
+      "topicId": "eval-synthetic-topic-03",
+      "topicLabel": "Cardiac physiology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "root_problem": "How the sinoatrial node initiates electrical activation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q03-refinement",
+      "message": "I know where the SA node is, but not how its ion currents generate depolarization",
+      "root": "I know where the SA node is, but not how its ion currents generate depolarization",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "ba539ce0-4842-5cae-a294-76be596cf419",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Quantum physics",
+      "topicId": "eval-synthetic-topic-04",
+      "topicLabel": "Quantum physics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "root_problem": "Why entangled measurement outcomes are correlated",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q04-same",
+      "message": "Why two entangled particle measurements show correlations",
+      "root": "Why two entangled particle measurements show correlations",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Quantum physics",
+      "topicId": "eval-synthetic-topic-04",
+      "topicLabel": "Quantum physics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "root_problem": "Why entangled measurement outcomes are correlated",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q04-distinct",
+      "message": "Why entanglement does not permit faster-than-light signaling",
+      "root": "Why entanglement does not permit faster-than-light signaling",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Quantum physics",
+      "topicId": "eval-synthetic-topic-04",
+      "topicLabel": "Quantum physics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "root_problem": "Why entangled measurement outcomes are correlated",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q04-refinement",
+      "message": "I can describe the observed correlations but do not understand how a joint quantum state represents them",
+      "root": "I can describe the observed correlations but do not understand how a joint quantum state represents them",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "005339cb-c76a-5412-a98e-b041dfc5f066",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Language development",
+      "topicId": "eval-synthetic-topic-05",
+      "topicLabel": "Language development",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "root_problem": "How children use grammatical morphemes in sentences",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q05-same",
+      "message": "How preschoolers learn to use grammatical endings",
+      "root": "How preschoolers learn to use grammatical endings",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Language development",
+      "topicId": "eval-synthetic-topic-05",
+      "topicLabel": "Language development",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "root_problem": "How children use grammatical morphemes in sentences",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q05-distinct",
+      "message": "How children produce the speech sounds at the ends of words",
+      "root": "How children produce the speech sounds at the ends of words",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Language development",
+      "topicId": "eval-synthetic-topic-05",
+      "topicLabel": "Language development",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "root_problem": "How children use grammatical morphemes in sentences",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q05-refinement",
+      "message": "I can identify plural and tense endings but cannot explain the difference between learning a morpheme and producing it",
+      "root": "I can identify plural and tense endings but cannot explain the difference between learning a morpheme and producing it",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Electrical circuits",
+      "topicId": "eval-synthetic-topic-06",
+      "topicLabel": "Electrical circuits",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "root_problem": "How Kirchhoff current law conserves current at a junction",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q06-same",
+      "message": "How electric current is conserved at a branching circuit node",
+      "root": "How electric current is conserved at a branching circuit node",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Electrical circuits",
+      "topicId": "eval-synthetic-topic-06",
+      "topicLabel": "Electrical circuits",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "root_problem": "How Kirchhoff current law conserves current at a junction",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q06-distinct",
+      "message": "How electric potential drops across series resistors",
+      "root": "How electric potential drops across series resistors",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Electrical circuits",
+      "topicId": "eval-synthetic-topic-06",
+      "topicLabel": "Electrical circuits",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "root_problem": "How Kirchhoff current law conserves current at a junction",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q06-refinement",
+      "message": "I know the current sums at a node but do not understand how this applies to a bridge circuit",
+      "root": "I know the current sums at a node but do not understand how this applies to a bridge circuit",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "3d7d44d0-a63f-50f1-a33d-8b5a07f22273",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Geometry",
+      "topicId": "eval-synthetic-topic-07",
+      "topicLabel": "Geometry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "root_problem": "Why triangle interior angles sum to 180 degrees in Euclidean geometry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q07-same",
+      "message": "Why triangle angle sums equal a straight angle in plane geometry",
+      "root": "Why triangle angle sums equal a straight angle in plane geometry",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Geometry",
+      "topicId": "eval-synthetic-topic-07",
+      "topicLabel": "Geometry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "root_problem": "Why triangle interior angles sum to 180 degrees in Euclidean geometry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q07-distinct",
+      "message": "How to compute the surface area of a three-dimensional prism",
+      "root": "How to compute the surface area of a three-dimensional prism",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Geometry",
+      "topicId": "eval-synthetic-topic-07",
+      "topicLabel": "Geometry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "root_problem": "Why triangle interior angles sum to 180 degrees in Euclidean geometry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q07-refinement",
+      "message": "I know triangle angles sum to 180 but do not understand the parallel-line proof",
+      "root": "I know triangle angles sum to 180 but do not understand the parallel-line proof",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "55bcdd05-efba-5e10-a749-a0b62e37db50",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Statistics",
+      "topicId": "eval-synthetic-topic-08",
+      "topicLabel": "Statistics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "root_problem": "How p-values relate to a null hypothesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q08-same",
+      "message": "Why a p-value measures compatibility with the null model",
+      "root": "Why a p-value measures compatibility with the null model",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Statistics",
+      "topicId": "eval-synthetic-topic-08",
+      "topicLabel": "Statistics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "root_problem": "How p-values relate to a null hypothesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q08-distinct",
+      "message": "What a confidence interval means for repeated-sampling coverage",
+      "root": "What a confidence interval means for repeated-sampling coverage",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Statistics",
+      "topicId": "eval-synthetic-topic-08",
+      "topicLabel": "Statistics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "root_problem": "How p-values relate to a null hypothesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q08-refinement",
+      "message": "I know a p-value is calculated under the null but do not understand the tail probability",
+      "root": "I know a p-value is calculated under the null but do not understand the tail probability",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "09afaddc-92a8-58b4-bffd-a681d3b9053e",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Evolution",
+      "topicId": "eval-synthetic-topic-09",
+      "topicLabel": "Evolution",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "root_problem": "How natural selection changes allele frequencies",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q09-same",
+      "message": "How selection shifts allele frequencies through differential reproduction",
+      "root": "How selection shifts allele frequencies through differential reproduction",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Evolution",
+      "topicId": "eval-synthetic-topic-09",
+      "topicLabel": "Evolution",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "root_problem": "How natural selection changes allele frequencies",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q09-distinct",
+      "message": "How random genetic drift changes allele frequencies in small populations",
+      "root": "How random genetic drift changes allele frequencies in small populations",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Evolution",
+      "topicId": "eval-synthetic-topic-09",
+      "topicLabel": "Evolution",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "root_problem": "How natural selection changes allele frequencies",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q09-refinement",
+      "message": "I understand differential survival but not how heritable variation leads to frequency change",
+      "root": "I understand differential survival but not how heritable variation leads to frequency change",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "791ad0c8-d366-51eb-a02e-20f6abe01e35",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Computer science",
+      "topicId": "eval-synthetic-topic-10",
+      "topicLabel": "Computer science",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "root_problem": "How hash tables map keys to array buckets",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q10-same",
+      "message": "How a hash value helps locate a key-value pair quickly",
+      "root": "How a hash value helps locate a key-value pair quickly",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Computer science",
+      "topicId": "eval-synthetic-topic-10",
+      "topicLabel": "Computer science",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "root_problem": "How hash tables map keys to array buckets",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q10-distinct",
+      "message": "How binary search narrows a sorted array by comparisons",
+      "root": "How binary search narrows a sorted array by comparisons",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Computer science",
+      "topicId": "eval-synthetic-topic-10",
+      "topicLabel": "Computer science",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "root_problem": "How hash tables map keys to array buckets",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q10-refinement",
+      "message": "I understand indexing by a hash value but not how collisions are resolved",
+      "root": "I understand indexing by a hash value but not how collisions are resolved",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Acoustics",
+      "topicId": "eval-synthetic-topic-11",
+      "topicLabel": "Acoustics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "root_problem": "How sound frequency affects perceived pitch",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q11-same",
+      "message": "How vibration frequency influences the pitch we hear",
+      "root": "How vibration frequency influences the pitch we hear",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Acoustics",
+      "topicId": "eval-synthetic-topic-11",
+      "topicLabel": "Acoustics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "root_problem": "How sound frequency affects perceived pitch",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q11-distinct",
+      "message": "How amplitude changes perceived loudness",
+      "root": "How amplitude changes perceived loudness",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Acoustics",
+      "topicId": "eval-synthetic-topic-11",
+      "topicLabel": "Acoustics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "root_problem": "How sound frequency affects perceived pitch",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q11-refinement",
+      "message": "I can identify a sine-wave frequency but not how harmonics affect pitch perception",
+      "root": "I can identify a sine-wave frequency but not how harmonics affect pitch perception",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "f8ca7c86-bc04-56f1-ba2a-33b282d67ac6",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Cell biology",
+      "topicId": "eval-synthetic-topic-12",
+      "topicLabel": "Cell biology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "root_problem": "How osmosis moves water across semipermeable membranes",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q12-same",
+      "message": "How differences in solute concentration drive net water movement",
+      "root": "How differences in solute concentration drive net water movement",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Cell biology",
+      "topicId": "eval-synthetic-topic-12",
+      "topicLabel": "Cell biology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "root_problem": "How osmosis moves water across semipermeable membranes",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q12-distinct",
+      "message": "How ATP-powered pumps move ions against gradients",
+      "root": "How ATP-powered pumps move ions against gradients",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Cell biology",
+      "topicId": "eval-synthetic-topic-12",
+      "topicLabel": "Cell biology",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "root_problem": "How osmosis moves water across semipermeable membranes",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q12-refinement",
+      "message": "I know water follows a gradient but do not understand water potential or osmotic pressure",
+      "root": "I know water follows a gradient but do not understand water potential or osmotic pressure",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "1a030c7e-a779-5ae4-bf3c-cc0a81c1324f",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Economics",
+      "topicId": "eval-synthetic-topic-13",
+      "topicLabel": "Economics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "root_problem": "How supply and demand jointly determine a market equilibrium",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q13-same",
+      "message": "How the supply-demand intersection sets equilibrium price",
+      "root": "How the supply-demand intersection sets equilibrium price",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Economics",
+      "topicId": "eval-synthetic-topic-13",
+      "topicLabel": "Economics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "root_problem": "How supply and demand jointly determine a market equilibrium",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q13-distinct",
+      "message": "How an interest rate change affects bond prices",
+      "root": "How an interest rate change affects bond prices",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Economics",
+      "topicId": "eval-synthetic-topic-13",
+      "topicLabel": "Economics",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "root_problem": "How supply and demand jointly determine a market equilibrium",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q13-refinement",
+      "message": "I know what an equilibrium is but cannot trace the effect of a supply curve shift",
+      "root": "I know what an equilibrium is but cannot trace the effect of a supply curve shift",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "e4b3b01c-243d-52ce-969e-99b3bce22260",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Chemistry",
+      "topicId": "eval-synthetic-topic-14",
+      "topicLabel": "Chemistry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "root_problem": "Why reaction rate depends on activation energy",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q14-same",
+      "message": "Why a higher activation barrier reduces reaction speed",
+      "root": "Why a higher activation barrier reduces reaction speed",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Chemistry",
+      "topicId": "eval-synthetic-topic-14",
+      "topicLabel": "Chemistry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "root_problem": "Why reaction rate depends on activation energy",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q14-distinct",
+      "message": "How reaction equilibrium position responds to concentration changes",
+      "root": "How reaction equilibrium position responds to concentration changes",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Chemistry",
+      "topicId": "eval-synthetic-topic-14",
+      "topicLabel": "Chemistry",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "root_problem": "Why reaction rate depends on activation energy",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q14-refinement",
+      "message": "I know a barrier is involved but cannot explain what a catalyst does to the transition state",
+      "root": "I know a barrier is involved but cannot explain what a catalyst does to the transition state",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "79e6531b-7644-590f-b74c-24c9ca62a163",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Neuroscience",
+      "topicId": "eval-synthetic-topic-15",
+      "topicLabel": "Neuroscience",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "root_problem": "How synaptic neurotransmitter release depends on calcium entry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q15-same",
+      "message": "How presynaptic calcium channels control vesicle release",
+      "root": "How presynaptic calcium channels control vesicle release",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Neuroscience",
+      "topicId": "eval-synthetic-topic-15",
+      "topicLabel": "Neuroscience",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "root_problem": "How synaptic neurotransmitter release depends on calcium entry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q15-distinct",
+      "message": "How action potentials propagate along myelinated axons",
+      "root": "How action potentials propagate along myelinated axons",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Neuroscience",
+      "topicId": "eval-synthetic-topic-15",
+      "topicLabel": "Neuroscience",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "root_problem": "How synaptic neurotransmitter release depends on calcium entry",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q15-refinement",
+      "message": "I know calcium enters the terminal but not how synaptotagmin causes vesicle fusion",
+      "root": "I know calcium enters the terminal but not how synaptotagmin causes vesicle fusion",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "c07156b0-05a5-53b8-b846-7554ac91b2c5",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "domain": "Programming",
+      "topicId": "eval-synthetic-topic-16",
+      "topicLabel": "Programming",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "root_problem": "How promises propagate fulfillment and rejection in JavaScript",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q16-same",
+      "message": "Why promise chaining passes values or errors through callbacks",
+      "root": "Why promise chaining passes values or errors through callbacks",
+      "semanticLabel": "same",
+      "goldRationale": "Explicit paraphrase of the same knowledge gap",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "similarity": 0.86
+        }
+      ]
+    },
+    {
+      "domain": "Programming",
+      "topicId": "eval-synthetic-topic-16",
+      "topicLabel": "Programming",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "root_problem": "How promises propagate fulfillment and rejection in JavaScript",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q16-distinct",
+      "message": "How lexical scope controls access to local variables",
+      "root": "How lexical scope controls access to local variables",
+      "semanticLabel": "distinct",
+      "goldRationale": "Different causal, procedural, or conceptual obstacle in the same subject",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "similarity": 0.41
+        }
+      ]
+    },
+    {
+      "domain": "Programming",
+      "topicId": "eval-synthetic-topic-16",
+      "topicLabel": "Programming",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1.0,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "root_problem": "How promises propagate fulfillment and rejection in JavaScript",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "id": "Q16-refinement",
+      "message": "I know a promise can settle but cannot explain how rejection propagates through chained then calls",
+      "root": "I know a promise can settle but cannot explain how rejection propagates through chained then calls",
+      "semanticLabel": "refinement",
+      "goldRationale": "Adds a narrower unresolved mechanism; identity may require further evidence",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "fixtureScores": [
+        {
+          "eventId": "bb88311d-2d44-51b2-997d-9d3ea52d0372",
+          "similarity": 0.73
+        }
+      ]
+    },
+    {
+      "id": "F01-missing_event_scores",
+      "domain": "Photosynthesis",
+      "topicId": "eval-synthetic-topic-01",
+      "topicLabel": "Photosynthesis",
+      "message": "I know chlorophyll absorbs light, but do not know which electron-transfer steps generate ATP and NADPH",
+      "root": "I know chlorophyll absorbs light, but do not know which electron-transfer steps generate ATP and NADPH",
+      "semanticLabel": "fault_missing_scores",
+      "goldRationale": "Approved history exists but approved-event embeddings are unavailable; final action must hold",
+      "referenceStatus": "injected_failure_contract",
+      "fault": "event_embedding_unavailable",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0924a593-12b1-5a07-9ff0-4e163c79afee",
+          "root_problem": "Why chlorophyll absorbs incoming photons",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": []
+    },
+    {
+      "id": "F05-missing_event_scores",
+      "domain": "Language development",
+      "topicId": "eval-synthetic-topic-05",
+      "topicLabel": "Language development",
+      "message": "I can identify plural and tense endings but cannot explain the difference between learning a morpheme and producing it",
+      "root": "I can identify plural and tense endings but cannot explain the difference between learning a morpheme and producing it",
+      "semanticLabel": "fault_missing_scores",
+      "goldRationale": "Approved history exists but approved-event embeddings are unavailable; final action must hold",
+      "referenceStatus": "injected_failure_contract",
+      "fault": "event_embedding_unavailable",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d54e69bb-921d-5de2-9ecb-3cfedea19526",
+          "root_problem": "How children use grammatical morphemes in sentences",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": []
+    },
+    {
+      "id": "F00-no_approved_history",
+      "domain": "Astronomy",
+      "topicId": "eval-synthetic-topic-new",
+      "topicLabel": "Astronomy",
+      "message": "I cannot explain why the apparent position of stars shifts during Earth rotation",
+      "root": "How Earth rotation changes the apparent position of the stars",
+      "semanticLabel": "no_history",
+      "referenceStatus": "contract",
+      "goldRationale": "No approved identity can be reused",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "fixtureScores": []
+    },
+    {
+      "id": "A02-competing",
+      "domain": "Fractions",
+      "topicId": "eval-synthetic-topic-02",
+      "topicLabel": "Fractions",
+      "message": "I can find common denominators but do not understand why equivalent fractions preserve value",
+      "root": "I can find common denominators but do not understand why equivalent fractions preserve value",
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "goldRationale": "Two plausible but different root identities, abstention preferred",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "root_problem": "Why adding fractions requires like denominators",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "df52fb16-c072-520c-866a-9d2ced950b46",
+          "root_problem": "Why I have to rewrite fractions using equivalent denominators before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "7052e9bc-dc2c-55be-91ec-55f8798fe00a",
+          "similarity": 0.83
+        },
+        {
+          "eventId": "df52fb16-c072-520c-866a-9d2ced950b46",
+          "similarity": 0.82
+        }
+      ]
+    },
+    {
+      "id": "A10-competing",
+      "domain": "Computer science",
+      "topicId": "eval-synthetic-topic-10",
+      "topicLabel": "Computer science",
+      "message": "I understand indexing by a hash value but not how collisions are resolved",
+      "root": "I understand indexing by a hash value but not how collisions are resolved",
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "author_label_not_expert_adjudicated",
+      "goldRationale": "Two plausible but different root identities, abstention preferred",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "root_problem": "How hash tables map keys to array buckets",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "b9289f34-7d1a-514c-b266-07038e1b3f9a",
+          "root_problem": "How a hash value helps locate a key-value pair quickly",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "54daf1c9-26ab-556f-b3c7-d21396b9e9c5",
+          "similarity": 0.83
+        },
+        {
+          "eventId": "b9289f34-7d1a-514c-b266-07038e1b3f9a",
+          "similarity": 0.82
+        }
+      ]
+    }
+  ]
+}

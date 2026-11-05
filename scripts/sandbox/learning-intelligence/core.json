@@ -1,0 +1,4294 @@
+{
+  "schema": "myway-learning-intelligence-fixtures-v1",
+  "source": "human-authored hypothetical scenarios and score buckets; not measured model accuracy",
+  "cases": [
+    {
+      "id": "D01-first",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "How light energy is converted into stored chemical energy during photosynthesis",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D01-exact",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "How light energy is converted into stored chemical energy during photosynthesis",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D01-strong_semantic",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D01-borderline",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D01-possible_refine",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "How light energy is converted into stored chemical energy during photosynthesis. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D01-distinct",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "How chlorophyll absorbs different light wavelengths",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D01-competing",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "ed5c8334-af8a-43de-8d90-52ab56bb4200",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "ed5c8334-af8a-43de-8d90-52ab56bb4200",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D01-weak_topic",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D01-low_assessment_confidence",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D01-missing_semantic_scores",
+      "domain": "Photosynthesis",
+      "topicId": "synthetic-topic-00",
+      "topicLabel": "Photosynthesis",
+      "message": "I do not understand how photosynthesis converts sunlight into stored energy",
+      "root": "I do not understand how photosynthesis converts sunlight into stored energy. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6ca596d7-9fa1-4221-80ee-7454d62bd4b2",
+          "root_problem": "How light energy is converted into stored chemical energy during photosynthesis",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D02-first",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why fraction denominators must be aligned before addition",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D02-exact",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why fraction denominators must be aligned before addition",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D02-strong_semantic",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D02-borderline",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D02-possible_refine",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why fraction denominators must be aligned before addition. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D02-distinct",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "How to divide one fraction by another",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D02-competing",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "a2c663d6-8647-41d6-8291-72645260a858",
+          "root_problem": "Why fraction denominators must be aligned before addition from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "a2c663d6-8647-41d6-8291-72645260a858",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D02-weak_topic",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D02-low_assessment_confidence",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D02-missing_semantic_scores",
+      "domain": "Fractions",
+      "topicId": "synthetic-topic-01",
+      "topicLabel": "Fractions",
+      "message": "Why do denominators matter when adding fractions?",
+      "root": "Why do denominators matter when adding fractions?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b61c1a4f-bf0e-4e61-8b3c-8ae846a65678",
+          "root_problem": "Why fraction denominators must be aligned before addition",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D03-first",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why voltage can exist without current in an open circuit",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D03-exact",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why voltage can exist without current in an open circuit",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D03-strong_semantic",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D03-borderline",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D03-possible_refine",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why voltage can exist without current in an open circuit. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D03-distinct",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why resistors in parallel change the total resistance",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D03-competing",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "dcb139ec-f7cb-4d50-86ad-540f37cde781",
+          "root_problem": "Why voltage can exist without current in an open circuit from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "dcb139ec-f7cb-4d50-86ad-540f37cde781",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D03-weak_topic",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D03-low_assessment_confidence",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D03-missing_semantic_scores",
+      "domain": "Electric circuits",
+      "topicId": "synthetic-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "Why is there voltage but no current in an open circuit?",
+      "root": "Why is there voltage but no current in an open circuit?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "b0386d63-aefc-4aaf-8d1f-fd25374b6911",
+          "root_problem": "Why voltage can exist without current in an open circuit",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D04-first",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "How auxiliary verbs change tense in English questions",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D04-exact",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "How auxiliary verbs change tense in English questions",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D04-strong_semantic",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D04-borderline",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D04-possible_refine",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "How auxiliary verbs change tense in English questions. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D04-distinct",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "How to distinguish plural nouns from possessives",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D04-competing",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "fa245fbb-092b-4f2b-8578-990675dceb88",
+          "root_problem": "How auxiliary verbs change tense in English questions from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "fa245fbb-092b-4f2b-8578-990675dceb88",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D04-weak_topic",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D04-low_assessment_confidence",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D04-missing_semantic_scores",
+      "domain": "Grammar",
+      "topicId": "synthetic-topic-03",
+      "topicLabel": "Grammar",
+      "message": "Why does the verb order change in questions?",
+      "root": "Why does the verb order change in questions?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "794dfe57-140a-4c4a-886d-4b4e283821c6",
+          "root_problem": "How auxiliary verbs change tense in English questions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D05-first",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "How stroke volume changes when ventricular preload rises",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D05-exact",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "How stroke volume changes when ventricular preload rises",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D05-strong_semantic",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D05-borderline",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D05-possible_refine",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "How stroke volume changes when ventricular preload rises. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D05-distinct",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "How pacemaker cells initiate action potentials",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D05-competing",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "2665ed95-32c6-4c11-8eff-32e87d15ea4b",
+          "root_problem": "How stroke volume changes when ventricular preload rises from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "2665ed95-32c6-4c11-8eff-32e87d15ea4b",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D05-weak_topic",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D05-low_assessment_confidence",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D05-missing_semantic_scores",
+      "domain": "Cardiovascular physiology",
+      "topicId": "synthetic-topic-04",
+      "topicLabel": "Cardiovascular physiology",
+      "message": "Why does more ventricular filling change stroke volume?",
+      "root": "Why does more ventricular filling change stroke volume?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7aca21e9-7be0-4c47-8c04-82b0cf0056db",
+          "root_problem": "How stroke volume changes when ventricular preload rises",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D06-first",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "How entangled outcomes can correlate without sending a message",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D06-exact",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "How entangled outcomes can correlate without sending a message",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D06-strong_semantic",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D06-borderline",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D06-possible_refine",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "How entangled outcomes can correlate without sending a message. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D06-distinct",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why wavefunctions interfere in the double slit experiment",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D06-competing",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "97b47969-8ad7-48e0-8243-13e0954962df",
+          "root_problem": "How entangled outcomes can correlate without sending a message from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "97b47969-8ad7-48e0-8243-13e0954962df",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D06-weak_topic",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D06-low_assessment_confidence",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D06-missing_semantic_scores",
+      "domain": "Quantum mechanics",
+      "topicId": "synthetic-topic-05",
+      "topicLabel": "Quantum mechanics",
+      "message": "Why do entangled particles correlate if no information is transmitted?",
+      "root": "Why do entangled particles correlate if no information is transmitted?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f8463a34-2f51-4e42-8518-8fa0b60c858e",
+          "root_problem": "How entangled outcomes can correlate without sending a message",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D07-first",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "Why TCP acknowledgments help reliable delivery over lossy links",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D07-exact",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "Why TCP acknowledgments help reliable delivery over lossy links",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D07-strong_semantic",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D07-borderline",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D07-possible_refine",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "Why TCP acknowledgments help reliable delivery over lossy links. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D07-distinct",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How DNS resolves a domain name to an IP address",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D07-competing",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "3eb7965c-1511-42f9-817f-417739fd313e",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "3eb7965c-1511-42f9-817f-417739fd313e",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D07-weak_topic",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D07-low_assessment_confidence",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D07-missing_semantic_scores",
+      "domain": "Computer networks",
+      "topicId": "synthetic-topic-06",
+      "topicLabel": "Computer networks",
+      "message": "How do acknowledgments prevent lost messages in TCP?",
+      "root": "How do acknowledgments prevent lost messages in TCP?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "72837dad-4543-4189-853d-6a7201ded2aa",
+          "root_problem": "Why TCP acknowledgments help reliable delivery over lossy links",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D08-first",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Why a p value does not give the probability a hypothesis is true",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D08-exact",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Why a p value does not give the probability a hypothesis is true",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D08-strong_semantic",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D08-borderline",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D08-possible_refine",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Why a p value does not give the probability a hypothesis is true. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D08-distinct",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Why confidence intervals change with sample size",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D08-competing",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "1e969349-3d88-44e4-8454-f43f1a410558",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "1e969349-3d88-44e4-8454-f43f1a410558",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D08-weak_topic",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D08-low_assessment_confidence",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D08-missing_semantic_scores",
+      "domain": "Statistics",
+      "topicId": "synthetic-topic-07",
+      "topicLabel": "Statistics",
+      "message": "Does the p value tell me how likely my hypothesis is true?",
+      "root": "Does the p value tell me how likely my hypothesis is true?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "73df1f68-ba23-4268-8078-8e74d3063089",
+          "root_problem": "Why a p value does not give the probability a hypothesis is true",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D09-first",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Why code switching does not itself show language disorder",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D09-exact",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Why code switching does not itself show language disorder",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D09-strong_semantic",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D09-borderline",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D09-possible_refine",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Why code switching does not itself show language disorder. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D09-distinct",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "How phonological awareness develops before literacy",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D09-competing",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "655e76a4-723c-4548-8c76-b109e4d14ec4",
+          "root_problem": "Why code switching does not itself show language disorder from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "655e76a4-723c-4548-8c76-b109e4d14ec4",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D09-weak_topic",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D09-low_assessment_confidence",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D09-missing_semantic_scores",
+      "domain": "Language development",
+      "topicId": "synthetic-topic-08",
+      "topicLabel": "Language development",
+      "message": "Does switching languages indicate a child has a language disorder?",
+      "root": "Does switching languages indicate a child has a language disorder?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "4866cbdf-ac87-4880-8ba4-0bf21b5f8d7b",
+          "root_problem": "Why code switching does not itself show language disorder",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D10-first",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "How electron transfer changes oxidation states in redox reactions",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D10-exact",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "How electron transfer changes oxidation states in redox reactions",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D10-strong_semantic",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D10-borderline",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D10-possible_refine",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "How electron transfer changes oxidation states in redox reactions. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D10-distinct",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why equilibrium constants change with temperature",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D10-competing",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "eec80974-85ec-4a96-8c5c-0188bd2e36ed",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "eec80974-85ec-4a96-8c5c-0188bd2e36ed",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D10-weak_topic",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D10-low_assessment_confidence",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D10-missing_semantic_scores",
+      "domain": "Chemistry",
+      "topicId": "synthetic-topic-09",
+      "topicLabel": "Chemistry",
+      "message": "Why do oxidation numbers change during redox reactions?",
+      "root": "Why do oxidation numbers change during redox reactions?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "d463d87d-6275-4d35-8b07-3df737e66845",
+          "root_problem": "How electron transfer changes oxidation states in redox reactions",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D11-first",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why planetary seasons arise from axial tilt rather than distance",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D11-exact",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why planetary seasons arise from axial tilt rather than distance",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D11-strong_semantic",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D11-borderline",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D11-possible_refine",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why planetary seasons arise from axial tilt rather than distance. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D11-distinct",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "How gravitational lensing bends light from distant stars",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D11-competing",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "6edcfa38-a287-4230-8617-b9d69c7dc206",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "6edcfa38-a287-4230-8617-b9d69c7dc206",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D11-weak_topic",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D11-low_assessment_confidence",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D11-missing_semantic_scores",
+      "domain": "Astronomy",
+      "topicId": "synthetic-topic-10",
+      "topicLabel": "Astronomy",
+      "message": "Why is summer warmer if Earth is not much closer to the Sun?",
+      "root": "Why is summer warmer if Earth is not much closer to the Sun?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "f1f0abda-7570-4b6d-8233-b8d4cbd0ce4e",
+          "root_problem": "Why planetary seasons arise from axial tilt rather than distance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D12-first",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "Why eigenvectors keep their direction under a matrix transformation",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D12-exact",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "Why eigenvectors keep their direction under a matrix transformation",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D12-strong_semantic",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D12-borderline",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D12-possible_refine",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "Why eigenvectors keep their direction under a matrix transformation. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D12-distinct",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "Why matrix multiplication is not commutative",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D12-competing",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "3a9bce07-3c4a-4220-87f7-33942a98175b",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "3a9bce07-3c4a-4220-87f7-33942a98175b",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D12-weak_topic",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D12-low_assessment_confidence",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D12-missing_semantic_scores",
+      "domain": "Linear algebra",
+      "topicId": "synthetic-topic-11",
+      "topicLabel": "Linear algebra",
+      "message": "How can a vector keep its direction after a matrix transformation?",
+      "root": "How can a vector keep its direction after a matrix transformation?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "0e17bf2c-bf24-41f5-84ad-045768d73ec3",
+          "root_problem": "Why eigenvectors keep their direction under a matrix transformation",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D13-first",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "How memory B cells enable faster secondary immune responses",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D13-exact",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "How memory B cells enable faster secondary immune responses",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D13-strong_semantic",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D13-borderline",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D13-possible_refine",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "How memory B cells enable faster secondary immune responses. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D13-distinct",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "How neutrophils migrate through endothelial tissue",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D13-competing",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "5d51aabc-c67c-4d8b-8fe3-289ed13a6ac6",
+          "root_problem": "How memory B cells enable faster secondary immune responses from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "5d51aabc-c67c-4d8b-8fe3-289ed13a6ac6",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D13-weak_topic",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D13-low_assessment_confidence",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D13-missing_semantic_scores",
+      "domain": "Immunology",
+      "topicId": "synthetic-topic-12",
+      "topicLabel": "Immunology",
+      "message": "Why does the immune system respond faster after a second exposure?",
+      "root": "Why does the immune system respond faster after a second exposure?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a8328fc1-e754-4109-8476-a06edc41c7be",
+          "root_problem": "How memory B cells enable faster secondary immune responses",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D14-first",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "How voicing differs from aspiration in stop consonants",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D14-exact",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "How voicing differs from aspiration in stop consonants",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D14-strong_semantic",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D14-borderline",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D14-possible_refine",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "How voicing differs from aspiration in stop consonants. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D14-distinct",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "How vowel formants distinguish vowel categories",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D14-competing",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "54f0d60a-dcc3-4876-8c7c-81a704a5a5d1",
+          "root_problem": "How voicing differs from aspiration in stop consonants from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "54f0d60a-dcc3-4876-8c7c-81a704a5a5d1",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D14-weak_topic",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D14-low_assessment_confidence",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D14-missing_semantic_scores",
+      "domain": "Phonetics",
+      "topicId": "synthetic-topic-13",
+      "topicLabel": "Phonetics",
+      "message": "Why are voiced and aspirated consonants not the same?",
+      "root": "Why are voiced and aspirated consonants not the same?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "a390b8ef-e464-4c6a-818a-833281e50ab8",
+          "root_problem": "How voicing differs from aspiration in stop consonants",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D15-first",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why opportunity cost includes forgone alternatives",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D15-exact",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why opportunity cost includes forgone alternatives",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D15-strong_semantic",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D15-borderline",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D15-possible_refine",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why opportunity cost includes forgone alternatives. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D15-distinct",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "How inflation shifts nominal and real wages",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D15-competing",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "5ffff7e7-dfdc-4c0e-88cf-ea4ae13e9669",
+          "root_problem": "Why opportunity cost includes forgone alternatives from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "5ffff7e7-dfdc-4c0e-88cf-ea4ae13e9669",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D15-weak_topic",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D15-low_assessment_confidence",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D15-missing_semantic_scores",
+      "domain": "Economics",
+      "topicId": "synthetic-topic-14",
+      "topicLabel": "Economics",
+      "message": "Why is the opportunity cost not always money?",
+      "root": "Why is the opportunity cost not always money?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "805b48d1-73bf-4a9b-8a7c-2a60a7a2bfed",
+          "root_problem": "Why opportunity cost includes forgone alternatives",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    },
+    {
+      "id": "D16-first",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why subduction creates volcanic arcs along convergent boundaries",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [],
+      "scores": [],
+      "goldNote": "first"
+    },
+    {
+      "id": "D16-exact",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why subduction creates volcanic arcs along convergent boundaries",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "exact"
+    },
+    {
+      "id": "D16-strong_semantic",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. I am uncertain about the underlying mechanism.",
+      "expected": "repeated_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.86
+        }
+      ],
+      "goldNote": "strong semantic"
+    },
+    {
+      "id": "D16-borderline",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. Please explain the causal steps.",
+      "expected": "review_candidate",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.75
+        }
+      ],
+      "goldNote": "borderline"
+    },
+    {
+      "id": "D16-possible_refine",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why subduction creates volcanic arcs along convergent boundaries. I need to understand the specific intermediate step.",
+      "expected": "possible_refinement",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.665
+        }
+      ],
+      "goldNote": "possible refine"
+    },
+    {
+      "id": "D16-distinct",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why sedimentary rocks preserve fossils",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.36
+        }
+      ],
+      "goldNote": "distinct"
+    },
+    {
+      "id": "D16-competing",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. Several explanations seem plausible.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "da007b76-9a2b-4797-86aa-6f7d76a9385b",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries from another conceptual angle",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.86
+        },
+        {
+          "eventId": "da007b76-9a2b-4797-86aa-6f7d76a9385b",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "competing"
+    },
+    {
+      "id": "D16-weak_topic",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. I need help understanding the connection.",
+      "expected": "uncertain",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.11,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "weak topic"
+    },
+    {
+      "id": "D16-low_assessment_confidence",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. The learner is unclear about their meaning.",
+      "expected": "uncertain",
+      "rootConfidence": 0.44,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [
+        {
+          "eventId": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "similarity": 0.84
+        }
+      ],
+      "goldNote": "low assessment confidence"
+    },
+    {
+      "id": "D16-missing_semantic_scores",
+      "domain": "Geology",
+      "topicId": "synthetic-topic-15",
+      "topicLabel": "Geology",
+      "message": "Why do volcanoes form above subduction zones?",
+      "root": "Why do volcanoes form above subduction zones?. Another attempt with unavailable embeddings.",
+      "expected": "new_difficulty",
+      "rootConfidence": 0.86,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "7fd75bea-1c5b-428d-826d-ccae7f864bba",
+          "root_problem": "Why subduction creates volcanic arcs along convergent boundaries",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "scores": [],
+      "goldNote": "missing semantic scores"
+    }
+  ]
+}

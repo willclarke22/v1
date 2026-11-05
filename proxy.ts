@@ -41,6 +41,39 @@ export function proxy(request: NextRequest) {
   if (path === "/api/sandbox/probe-lab/local-assessment/glm") {
     return ["POST", "GET"].includes(request.method) ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
   }
+  // V3.7D.2C.7A.3S1.2.1: ONLY the sandbox's local, read-only Model C evaluator.
+  // It has independent Origin, runtime, JSON, model, and no-database guards.
+  // The Vercel cloud gate above still blocks every POST before reaching here.
+  if (path === "/api/sandbox/probe-lab/local-assessment/memory-adjudicator") {
+    if (process.env.NODE_ENV !== "development" ||
+        process.env.MYWAY_EXPERIMENTAL_RUNTIME !== "v37b") {
+      return new NextResponse("Local adjudicator requires pinned experimental development mode", {status:403});
+    }
+    return request.method === "POST"
+      ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
+  }
+  // V3.7D.2C.7A.3S1.3: narrow, read-only, two-stage Model C research endpoint.
+  // Remains behind independent Origin, host, development, and runtime-pin guards.
+  if (path === "/api/sandbox/probe-lab/local-assessment/memory-adjudicator-s13") {
+    if (process.env.NODE_ENV !== "development" ||
+        process.env.MYWAY_EXPERIMENTAL_RUNTIME !== "v37b") {
+      return new NextResponse("S1.3 model test requires pinned local development", {status:403});
+    }
+    return request.method === "POST"
+      ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
+  }
+  // S1.4: read-only approved-event evidence SELECT for pinned local research ONLY.
+  if (path === "/api/sandbox/probe-lab/local-assessment/memory-history-s14") {
+    return request.method === "POST" ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
+  }
+  // S1.5: research-only MyWay Model B/Model C prompt experiment; no memory writes.
+  if (path === "/api/sandbox/probe-lab/local-assessment/myway-shadow-s15") {
+    if (process.env.NODE_ENV !== "development" ||
+        process.env.MYWAY_EXPERIMENTAL_RUNTIME !== "v37b") {
+      return new NextResponse("S1.5 requires pinned local development mode", {status:403});
+    }
+    return request.method === "POST" ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
+  }
   // Fail closed: original message/probe/semantic-enrichment routes, all other assets,
   // all old sandbox APIs and all POST/PUT/PATCH/DELETE endpoints are inaccessible.
   return new NextResponse("Route blocked in V3.7C.1 read-only sandbox", {status:403});

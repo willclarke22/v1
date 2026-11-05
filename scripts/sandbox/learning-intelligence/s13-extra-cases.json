@@ -1,0 +1,228 @@
+{
+  "schema": "myway-s13-extra-cases-v1",
+  "source": "New human-authored challenge hypotheses; not expert annotated; scores invented for rule-contract tests.",
+  "cases": [
+    {
+      "id": "U01-ambiguous",
+      "domain": "Mathematics",
+      "topicId": "eval-s13-topic-01",
+      "topicLabel": "Mathematics",
+      "message": "I still do not understand why that graph shifted after the change",
+      "root": "I still do not understand why that graph shifted after the change",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "e2e2fe93-a04d-56ad-b122-c6ec2890d043",
+          "root_problem": "Why the graph shifts horizontally when its input is modified",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "ea720b7e-9d7f-5fc1-9a8f-1d3e17ba3ee7",
+          "root_problem": "Why the graph shifts vertically when a constant is added",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "e2e2fe93-a04d-56ad-b122-c6ec2890d043",
+          "similarity": 0.78
+        },
+        {
+          "eventId": "ea720b7e-9d7f-5fc1-9a8f-1d3e17ba3ee7",
+          "similarity": 0.77
+        }
+      ],
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    },
+    {
+      "id": "U02-ambiguous",
+      "domain": "Electric circuits",
+      "topicId": "eval-s13-topic-02",
+      "topicLabel": "Electric circuits",
+      "message": "I am confused why the voltage dropped there in the circuit",
+      "root": "I am confused why the voltage dropped there in the circuit",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "31df9e8c-5ace-517d-90a2-54bf6b2f4ef6",
+          "root_problem": "Why voltage drops across a resistor when current passes",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "321c197e-58e4-5ea7-9244-33161a89e989",
+          "root_problem": "Why battery terminal voltage falls due to internal resistance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "31df9e8c-5ace-517d-90a2-54bf6b2f4ef6",
+          "similarity": 0.81
+        },
+        {
+          "eventId": "321c197e-58e4-5ea7-9244-33161a89e989",
+          "similarity": 0.79
+        }
+      ],
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    },
+    {
+      "id": "U03-ambiguous",
+      "domain": "Language development",
+      "topicId": "eval-s13-topic-03",
+      "topicLabel": "Language development",
+      "message": "I cannot tell why the child did not respond when spoken to",
+      "root": "I cannot tell why the child did not respond when spoken to",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "cd673251-2682-5b6c-ad14-21bb179af0a5",
+          "root_problem": "Why a child does not comprehend spoken questions",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "68c71168-4eff-5a3b-9769-2edd4d563192",
+          "root_problem": "Why a child fails to take conversational turns despite hearing speech",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "cd673251-2682-5b6c-ad14-21bb179af0a5",
+          "similarity": 0.76
+        },
+        {
+          "eventId": "68c71168-4eff-5a3b-9769-2edd4d563192",
+          "similarity": 0.75
+        }
+      ],
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    },
+    {
+      "id": "U04-ambiguous",
+      "domain": "Computer science",
+      "topicId": "eval-s13-topic-04",
+      "topicLabel": "Computer science",
+      "message": "I still do not understand why that variable changed right there",
+      "root": "I still do not understand why that variable changed right there",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "1311d499-960b-57d7-be58-39b8092aa793",
+          "root_problem": "Why a loop counter changes as an iteration runs",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "15b9d94e-aaf5-5379-9984-313b4ce61e87",
+          "root_problem": "Why a variable changes when a function assigns a value",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "1311d499-960b-57d7-be58-39b8092aa793",
+          "similarity": 0.83
+        },
+        {
+          "eventId": "15b9d94e-aaf5-5379-9984-313b4ce61e87",
+          "similarity": 0.81
+        }
+      ],
+      "semanticLabel": "ambiguous",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    },
+    {
+      "id": "U05-same",
+      "domain": "Computer science",
+      "topicId": "eval-s13-topic-05",
+      "topicLabel": "Computer science",
+      "message": "Why the counter named i changes when the loop moves to the next iteration",
+      "root": "Why the counter named i changes when the loop moves to the next iteration",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "80697d4e-759d-5bc0-b03d-6f3c012672fb",
+          "root_problem": "Why a loop counter changes as an iteration runs",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "d07c5b6d-9d9d-5d7c-9657-622f7591b72f",
+          "root_problem": "Why a variable changes when a function assigns a value",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "80697d4e-759d-5bc0-b03d-6f3c012672fb",
+          "similarity": 0.84
+        },
+        {
+          "eventId": "d07c5b6d-9d9d-5d7c-9657-622f7591b72f",
+          "similarity": 0.62
+        }
+      ],
+      "semanticLabel": "same",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    },
+    {
+      "id": "U06-distinct",
+      "domain": "Electric circuits",
+      "topicId": "eval-s13-topic-06",
+      "topicLabel": "Electric circuits",
+      "message": "I understand resistor voltage drops but do not know how a capacitor stores charge",
+      "root": "I understand resistor voltage drops but do not know how a capacitor stores charge",
+      "rootConfidence": 0.83,
+      "topicSimilarity": 0.74,
+      "topicLabelFit": 1,
+      "retrievalStatus": "semantic_pgvector",
+      "competingTopicSimilarity": -1,
+      "approved": [
+        {
+          "event_id": "6cafc706-149e-55cb-8126-880cd8dd8f2b",
+          "root_problem": "Why voltage drops across a resistor when current passes",
+          "origin": "v37d2c_validated_assessment"
+        },
+        {
+          "event_id": "8b9a3837-2b44-5974-b05f-29ba0534b4ba",
+          "root_problem": "Why battery terminal voltage falls due to internal resistance",
+          "origin": "v37d2c_validated_assessment"
+        }
+      ],
+      "fixtureScores": [
+        {
+          "eventId": "6cafc706-149e-55cb-8126-880cd8dd8f2b",
+          "similarity": 0.48
+        },
+        {
+          "eventId": "8b9a3837-2b44-5974-b05f-29ba0534b4ba",
+          "similarity": 0.34
+        }
+      ],
+      "semanticLabel": "distinct",
+      "referenceStatus": "analyst_hypothesis_not_expert_adjudicated"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+/** S1.3 additive overlay verification; read-only source checks only. */
+import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import {execFileSync} from 'node:child_process';
+const root=path.resolve(process.argv[2]||process.cwd()),original=path.resolve(root,'../v1');
+const at=p=>path.join(root,...p.split('/'));
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(at(p))).digest('hex');
+const json=p=>JSON.parse(fs.readFileSync(at(p),'utf8'));
+const git=(cwd,...args)=>execFileSync(process.platform==='win32'?'git.exe':'git',['-C',cwd,...args],{encoding:'utf8',timeout:20000}).trim();
+assert.equal(path.basename(root),'v1-learning-experiment');
+assert.equal(git(root,'branch','--show-current'),'myway/learning-sandbox-v3_7a');
+assert.equal(git(original,'branch','--show-current'),'main');
+assert.equal(git(original,'rev-parse','--short=7','HEAD'),'462a7a4');
+const common=cwd=>fs.realpathSync(path.resolve(cwd,git(cwd,'rev-parse','--git-common-dir')));
+assert.equal(common(root),common(original));
+assert.equal(json('scripts/sandbox/current-local-release.json').release,'v37d2c7a3s12','S1.3 is a compatibility overlay preserving S1.2 pointer');
+const s12=json('scripts/sandbox/v37d2c7a3s12/installation.json');
+const s121=json('scripts/sandbox/v37d2c7a3s121/installation.json');
+const s13=json('scripts/sandbox/v37d2c7a3s13/installation.json');
+assert.equal(s12.schema,'myway-v37d2c7a3s12-local-install-v1');
+assert.equal(s121.schema,'myway-v37d2c7a3s121-local-overlay-v1');
+assert.equal(s13.schema,'myway-v37d2c7a3s13-local-overlay-v1');
+assert.equal(s13.previous_overlay,'v37d2c7a3s121');
+for(const [rel,hash] of Object.entries(s12.hashes))assert.equal(sha(rel),hash,'S1.2 source drift: '+rel);
+for(const [rel,hash] of Object.entries(s121.hashes))if(rel!=='proxy.ts')assert.equal(sha(rel),hash,'S1.2.1 source drift: '+rel);
+for(const [rel,hash] of Object.entries(s13.hashes))assert.equal(sha(rel),hash,'S1.3 source drift: '+rel);
+for(const rel of ['scripts/sandbox/v37d2c7a3s13/installation.json','app/api/sandbox/probe-lab/local-assessment/memory-adjudicator-s13/route.ts'])assert.ok(fs.existsSync(at(rel)));
+const proxy=fs.readFileSync(at('proxy.ts'),'utf8');
+assert.ok(proxy.indexOf('if (process.env.VERCEL === "1")')<proxy.indexOf('memory-adjudicator-s13'));
+assert.ok(proxy.includes('Route blocked in V3.7C.1 read-only sandbox'));
+const originalClassifier='sandbox/probe-lab/learning-space/difficulty-identity.ts';
+assert.equal(sha(originalClassifier),s12.hashes[originalClassifier]??json('scripts/sandbox/v37d2c7a3r2/installation.json').hashes[originalClassifier],'Unchanged difficulty classifier drift');
+console.log('V3.7D.2C.7A.3S1.3 VERIFY PASS: S1.2 and S1.2.1 inherited source intact, exact S1.3 overlay hashes, original main isolated.');
