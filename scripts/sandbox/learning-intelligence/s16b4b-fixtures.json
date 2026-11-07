@@ -1,0 +1,10 @@
+{
+  "schema": "myway_s16b4b_context_test_cases_v1",
+  "purpose": "Offline technical context retrieval adversarial controls, not an educational benchmark or model win claim",
+  "cases": [
+    {"id":"photosynthesis_correction","intent":"correction","topic":"Photosynthesis","root":"Uncertain whether carbon fixation and light reactions were mixed up","message":"I was not confused about ATP formation; I meant how CO2 becomes part of sugar in the Calvin cycle.","targetTurnIds":["T01"],"expectedSelected":"T01-statement","expectedExcluded":"UNRELATED-RECENT"},
+    {"id":"law_followup","intent":"follow_up","topic":"Contract law","root":"How offer and acceptance together form a valid agreement","message":"How is accepting an offer different from beginning to negotiate terms?","expectedSelected":"LAW-TEACHER","expectedExcluded":"UNRELATED-RECENT"},
+    {"id":"medicine_misconception","intent":"new_difficulty","topic":"Cardiac physiology","root":"How cardiac preload differs from afterload","message":"I keep treating preload and afterload as the same thing.","expectedSelected":"MED-HISTORY","expectedExcluded":"UNRELATED-RECENT"},
+    {"id":"coding_followup","intent":"follow_up","topic":"Programming functions","root":"Why recursive functions need a base case","message":"I understand the base case but why does the call stack keep growing?","expectedSelected":"CODE-TEACHER","expectedExcluded":"UNRELATED-RECENT"}
+  ]
+}

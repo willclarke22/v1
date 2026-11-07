@@ -1,0 +1,13 @@
+# S1.6B.5 paired voice evaluation protocol
+
+**Design:** one instruction variable: original 4D canonical voice (current) vs new adaptive_v5 voice (adaptive); both use the exact same `contract` variant, current learner message, selected evidence, planned action, and assessment. Third `adaptive_personalized` arm (optional) changes the interest decision and is NOT a clean voice-only comparison.
+
+**Frozen synthetic history:** 4D's exact-hash-pinned 12 scenarios. Focused six in order: PHOTO_T10 correction, PHOTO_T10A resolved clarification, PROGRESS01 reported progress, BIO01 follow-up, LANG01 new confusion, MED01 clinical mechanism. For seven-action coverage use `--set actions --limit 7`; this adds two clearly synthetic scripted Medicine snapshots (`MED_REPAIR`, `MED_VERIFY`) that are NOT part of the original 12-scenario frozen corpus. See 4D fixtures and S16B5 action probes for complete data. These are not true longitudinal outcomes.
+
+**Free preflight:** `node scripts/sandbox/learning-intelligence/s16b5-selftest.mjs`; `node scripts/sandbox/learning-intelligence/s16b5-eval.mjs --mode offline --limit 3`. Verify `current` and `adaptive` each carry same evidence IDs, same action, same input context. Check original S1.5 and current 4D behavior remain reachable.
+
+**Paid opt-in:** Run only with `--mode model --allow-spend --budget-usd 0.05` (for three A/B cases). The $0.05 threshold only gates conservative admission, not actual billed USD. Read-only provider requests, model `gpt-4.1-mini`, max_tokens 370, 620-character local field validation, up to two formatting retries per run, strict stop on unknown usage or transport failures. No provider inference during installer or offline tests.
+
+**Review:** Score blindly where practical, 1–5 per dimension. Judge accuracy first (unsafe or misleading = fail), then naturalness, fidelity to historical evidence, action selection fit, unnecessary reteaching, question timing, next step helpfulness, and concision. For closure, shorter is good if it directly resolves the point; for correction, acknowledge the exact issue without claiming history changed. For progress, distinguish a learner's reported insight from verified mastery. Compare cost per accepted reply and report individual rejected attempts. Do not select winners using keyword flags alone.
+
+**Next milestone gate:** Do not integrate live production Model B or write memory until user-reviewed outputs across all seven actions and multi-turn stateful scenarios demonstrate adequate quality. Current examples cannot prove learning gains or personality consistency across longer conversations.

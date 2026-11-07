@@ -1,0 +1,110 @@
+{
+  "schema": "myway_s16b5_scripted_action_probes_v1",
+  "notes": "Two synthetic single-turn snapshots (misconception repair and understanding check) to cover actions missing from the frozen 4D set. Not observed longitudinal learner state.",
+  "scenarios": [
+    {
+      "id": "MED_REPAIR",
+      "domain": "Medicine",
+      "topic": "Clinical physiology",
+      "root": "Difference between oxygen saturation and oxygen delivery",
+      "learner": {
+        "message": "I assumed 98% oxygen saturation guarantees tissues get enough oxygen. Where does that reasoning fail?",
+        "intent": "new_difficulty",
+        "turn_id": "MED_REPAIR"
+      },
+      "assessment": {
+        "topic": "Clinical physiology",
+        "root_problem": "Difference between oxygen saturation and oxygen delivery",
+        "evidence_quote": "I assumed 98% oxygen saturation guarantees tissues get enough oxygen. Where does that reasoning fail?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-MED01",
+          "root_problem": "Difference between oxygen saturation and oxygen delivery"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-MED_REPAIR",
+          "source": "historical_learner_statement",
+          "turn_id": "H-MED_REPAIR",
+          "difficulty_id": "d-MED01",
+          "text": "Difference between oxygen saturation and oxygen delivery",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {
+        "focus": "misconception"
+      },
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": []
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only",
+      "expected_action": "repair_misconception"
+    },
+    {
+      "id": "MED_VERIFY",
+      "domain": "Medicine",
+      "topic": "Clinical physiology",
+      "root": "Difference between oxygen saturation and oxygen delivery",
+      "learner": {
+        "message": "I think I get it now: if someone has fewer red blood cells, 98% saturation could still mean less oxygen reaches their tissues.",
+        "intent": "reported_progress",
+        "turn_id": "MED_VERIFY"
+      },
+      "assessment": {
+        "topic": "Clinical physiology",
+        "root_problem": "Difference between oxygen saturation and oxygen delivery",
+        "evidence_quote": "I think I get it now: if someone has fewer red blood cells, 98% saturation could still mean less oxygen reaches their tissues."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-MED01",
+          "root_problem": "Difference between oxygen saturation and oxygen delivery"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-MED_VERIFY",
+          "source": "historical_learner_statement",
+          "turn_id": "H-MED_VERIFY",
+          "difficulty_id": "d-MED01",
+          "text": "Difference between oxygen saturation and oxygen delivery",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {
+        "focus": "check"
+      },
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": []
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only",
+      "expected_action": "verify_understanding"
+    }
+  ]
+}

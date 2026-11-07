@@ -1,0 +1,644 @@
+{
+  "schema": "myway-s16-synthetic-space-v1",
+  "notice": "Entirely synthetic educational data; scripted assessments and reference expectations are NOT model outputs. Never transmit reference expectations to models.",
+  "topics": [
+    {
+      "topic_id": "sim-photosynthesis",
+      "topic_label": "Photosynthesis",
+      "domain": "biology",
+      "aliases": [
+        "chloroplast",
+        "light reactions",
+        "Calvin cycle",
+        "photosynthesis",
+        "calvin cycle"
+      ],
+      "events": [
+        {
+          "event_id": "857ae738-e3f5-43ce-88d7-d54091b26057",
+          "root_problem": "How light reactions convert absorbed photons into chemical energy stored in ATP and NADPH",
+          "difficulty_id": "73629da8-f007-403c-81dd-e5da62ad1fe9",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "41885b47-b28d-49ea-828a-89653ec3c09e",
+          "root_problem": "How the Calvin cycle fixes carbon dioxide into organic carbon molecules",
+          "difficulty_id": "376910a8-5015-4fa6-8ce5-a3fd66a7262b",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "71ffba08-e800-4b8d-891f-3991ee920a4e",
+          "root_problem": "What the chlorophyll pigments actually do when they absorb light",
+          "difficulty_id": "211f743f-1950-4229-8191-fcab4ab864bf",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-cardiac",
+      "topic_label": "Cardiac physiology",
+      "domain": "biology",
+      "aliases": [
+        "SA node",
+        "heart",
+        "pacemaker cells",
+        "cardiac",
+        "pacemaker"
+      ],
+      "events": [
+        {
+          "event_id": "818b489b-9478-4039-8ba3-c6f14dc62bda",
+          "root_problem": "How ion-channel currents generate spontaneous depolarization in sinoatrial pacemaker cells",
+          "difficulty_id": "e43f09cd-512b-424e-8db9-7cff6d661096",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "abde948e-aaa5-4f06-8f07-a1108a15e300",
+          "root_problem": "How electrical conduction spreads from the atria through the AV node to the ventricles",
+          "difficulty_id": "f38b244c-4353-4325-8fb9-a487d66c1bb1",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "3e44d9bf-3dc3-4bab-8d62-8b3969ce1e17",
+          "root_problem": "Why cardiac output changes when heart rate or stroke volume changes",
+          "difficulty_id": "0b8fcb51-61cf-492b-8a96-46a624de095d",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-circuits",
+      "topic_label": "Electric circuits",
+      "domain": "physics",
+      "aliases": [
+        "voltage",
+        "battery",
+        "resistor",
+        "circuits",
+        "circuit"
+      ],
+      "events": [
+        {
+          "event_id": "4ab1f9a2-7f64-4465-85fb-1f4a114330df",
+          "root_problem": "Why terminal voltage falls when a real battery supplies current because of its internal resistance",
+          "difficulty_id": "903ea2ae-172e-47ae-8d36-25a67606ff2f",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "3a8f5318-29ba-4151-8342-bafacae2bc82",
+          "root_problem": "How voltage and current behave differently in series and parallel resistor networks",
+          "difficulty_id": "7ade1d65-3fab-4e3b-84da-b2ec491fabe3",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "9131db8d-a4bb-403f-822e-769079e88b54",
+          "root_problem": "Why Kirchhoff current law follows from conservation of charge at a junction",
+          "difficulty_id": "5f093a2d-5356-413c-8fbb-a6c2aebca09d",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-quantum",
+      "topic_label": "Quantum mechanics",
+      "domain": "physics",
+      "aliases": [
+        "entanglement",
+        "double slit",
+        "wavefunction",
+        "quantum",
+        "particle"
+      ],
+      "events": [
+        {
+          "event_id": "e777d7d9-f98f-4de7-8c2a-700e84004775",
+          "root_problem": "Why an interference pattern appears when no which-path measurement is made",
+          "difficulty_id": "0acd7dab-64c1-4ae5-8cd2-bdcaf9cf7638",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "0f13f915-0ed4-483a-8db8-05e1517b5179",
+          "root_problem": "How entangled quantum states produce correlated measurement outcomes without transmitting usable information instantaneously",
+          "difficulty_id": "52e2878e-db78-49e4-8372-463c975847e6",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "38904d3e-6fda-46d8-81c0-469e0c54eb76",
+          "root_problem": "How measurement outcomes relate to the probabilities represented by a wavefunction",
+          "difficulty_id": "e5f33332-e5f3-4550-8a70-8254812c510f",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-algebra",
+      "topic_label": "Algebraic functions",
+      "domain": "mathematics",
+      "aliases": [
+        "function graph",
+        "slope",
+        "derivative",
+        "algebra",
+        "function in algebra"
+      ],
+      "events": [
+        {
+          "event_id": "4d73a77a-55f4-42c4-8a94-90b8fccf520f",
+          "root_problem": "Why the slope of a function can change across its graph",
+          "difficulty_id": "71e8f3a7-f27b-4198-85f8-fb8acc188c8c",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "c0464a90-7b63-4273-893b-c34d19f73877",
+          "root_problem": "How composition of functions differs from multiplication",
+          "difficulty_id": "188d1a5a-8d8f-4c21-888e-7a4bda0c867d",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "20f58418-b789-49cf-83d1-44f5d2ea8238",
+          "root_problem": "Why a quadratic function can have two x-intercepts",
+          "difficulty_id": "da80138c-8547-4536-8c12-8c931b3fda60",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-programming",
+      "topic_label": "Programming functions",
+      "domain": "computer science",
+      "aliases": [
+        "code",
+        "function arguments",
+        "return value",
+        "programming",
+        "code function",
+        "function in programming"
+      ],
+      "events": [
+        {
+          "event_id": "ffe10595-7dca-4dc2-8a19-4a0f60d84bb7",
+          "root_problem": "Why a function return value is different from printing a value",
+          "difficulty_id": "ff7278b2-bcf4-4a40-8ad5-332e0b27165b",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "e63ab6e9-16c5-42cb-82fc-55e003ff5986",
+          "root_problem": "How parameters and arguments affect the behavior of a program function",
+          "difficulty_id": "263aaa33-e04f-4f6d-8e6e-e9bf10b26beb",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "b9034fb6-b4a7-45b8-8fd9-1a87f3d41915",
+          "root_problem": "Why a recursive function needs a base case",
+          "difficulty_id": "cf5a6447-f943-4f94-8769-a0aad6e299f6",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-language",
+      "topic_label": "Language development",
+      "domain": "speech-language pathology",
+      "aliases": [
+        "receptive language",
+        "expressive language",
+        "morphology"
+      ],
+      "events": [
+        {
+          "event_id": "86b4c6e3-c4c6-410d-81cb-db27d655a3a8",
+          "root_problem": "How receptive vocabulary and expressive vocabulary can develop at different rates",
+          "difficulty_id": "b817d6d7-59f5-4737-8199-93973f5380fc",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "699b4782-83c8-49a9-85ef-253f5187d0e8",
+          "root_problem": "How morphological markers contribute to grammatical sentence development",
+          "difficulty_id": "ce0c4463-a871-47e0-8f32-e99aa56d19ba",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "18582a2a-df2c-475e-8fea-6430bb507ea2",
+          "root_problem": "Why pragmatic language abilities differ from structural language abilities",
+          "difficulty_id": "12949031-38ca-4430-89d3-ea9a300b767c",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-neuro",
+      "topic_label": "Neural signalling",
+      "domain": "neuroscience",
+      "aliases": [
+        "action potential",
+        "synapse",
+        "membrane potential",
+        "neuron"
+      ],
+      "events": [
+        {
+          "event_id": "d7fd2d43-6a06-4585-877e-4cc5bb277b8b",
+          "root_problem": "How a neuronal action potential is initiated by voltage-gated sodium channels",
+          "difficulty_id": "ce472ded-e2d6-4b19-897e-b7dae8030a3f",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "20ea4407-9571-4a01-8910-3edf39868f12",
+          "root_problem": "Why synaptic neurotransmitter release depends on calcium entry",
+          "difficulty_id": "55859070-8143-48a1-8337-f5c7927e5720",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "9604a1fe-9fd1-45e5-8982-987e59585ed8",
+          "root_problem": "How inhibitory and excitatory inputs influence whether a neuron fires",
+          "difficulty_id": "ef46225d-280c-49bb-8339-c9ac055eee66",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-statistics",
+      "topic_label": "Statistical inference",
+      "domain": "mathematics",
+      "aliases": [
+        "p value",
+        "confidence interval",
+        "sampling",
+        "statistics"
+      ],
+      "events": [
+        {
+          "event_id": "7bc89c50-c267-4938-8901-2ba494a0fd75",
+          "root_problem": "Why a confidence interval does not assign a probability to a fixed population parameter",
+          "difficulty_id": "3750fe75-df4f-42c5-88c5-37a191ca18ed",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "2ce8d689-b269-40a3-883e-bbf26cd22760",
+          "root_problem": "How p values relate to the null hypothesis and observed data",
+          "difficulty_id": "32b0e6b7-a44d-4157-8cc3-92e96cdedbd9",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "f39163a3-c1a1-4482-83ea-95fd77759cdc",
+          "root_problem": "Why a small sample can increase estimate uncertainty",
+          "difficulty_id": "c999ddd0-2360-426f-8662-279e1532778f",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-geology",
+      "topic_label": "Plate tectonics",
+      "domain": "earth science",
+      "aliases": [
+        "subduction",
+        "plates",
+        "mantle",
+        "tectonic"
+      ],
+      "events": [
+        {
+          "event_id": "258998f8-a90c-412e-8759-b4724a158de2",
+          "root_problem": "Why oceanic lithosphere may subduct beneath continental lithosphere",
+          "difficulty_id": "10aee7d2-7b4d-4050-88aa-318ec971eaca",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "ac93ab34-9d72-4cea-8486-35c1a25cea37",
+          "root_problem": "How convection and plate forces contribute to tectonic motion",
+          "difficulty_id": "994d2fa2-7ad3-4a11-87d6-1c2627337fab",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "4e8cff0c-f3d6-4311-8b90-78b45f704b0a",
+          "root_problem": "Why earthquakes occur along plate boundaries",
+          "difficulty_id": "902e8e26-6486-46ae-855d-6e59d1e24e44",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-metabolism",
+      "topic_label": "Cellular respiration",
+      "domain": "biology",
+      "aliases": [
+        "ATP",
+        "mitochondria",
+        "electron transport",
+        "mitochondrial"
+      ],
+      "events": [
+        {
+          "event_id": "682a5caa-9e14-4677-8ce8-1c442d5bd2d5",
+          "root_problem": "How the mitochondrial electron transport chain builds a proton gradient",
+          "difficulty_id": "e84a74cd-8e9b-4bc8-8b96-553abdb60acd",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "c8fed010-8b6f-448b-8e8a-f80cb0f328d3",
+          "root_problem": "How ATP synthase uses a proton gradient to generate ATP",
+          "difficulty_id": "1fab9af6-b808-45fc-8ca4-4c4552d96d4a",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "d2cfe193-37f8-4724-8fca-784343b83272",
+          "root_problem": "Why oxygen is required as the final electron acceptor in aerobic respiration",
+          "difficulty_id": "e846abbe-c197-4ced-806d-4ea93f70c329",
+          "origin": "synthetic_seed"
+        }
+      ]
+    },
+    {
+      "topic_id": "sim-mechanics",
+      "topic_label": "Classical mechanics",
+      "domain": "physics",
+      "aliases": [
+        "force",
+        "energy",
+        "momentum",
+        "mechanics"
+      ],
+      "events": [
+        {
+          "event_id": "c7fcb4c8-43bd-46ad-8142-6d0b3be05a72",
+          "root_problem": "How momentum conservation differs from conservation of kinetic energy in a collision",
+          "difficulty_id": "3210e793-38ac-4906-8092-6d8533b3ee9d",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "21883bd4-662d-42db-87ac-ea2d113a923b",
+          "root_problem": "Why acceleration depends on net force rather than on velocity alone",
+          "difficulty_id": "02de5e69-221a-4c24-8ba5-ae96f588eb2f",
+          "origin": "synthetic_seed"
+        },
+        {
+          "event_id": "243c4674-9471-45fe-84f5-74393312cc8f",
+          "root_problem": "How gravitational potential energy is converted into kinetic energy",
+          "difficulty_id": "f0070990-c0c9-4683-809d-fd6437130bef",
+          "origin": "synthetic_seed"
+        }
+      ]
+    }
+  ],
+  "turns": [
+    {
+      "turn_id": "T01",
+      "message": "I know chlorophyll absorbs light but I cannot see how photon energy ends up stored in ATP and NADPH.",
+      "scripted_assessment": {
+        "topic_id": "sim-photosynthesis",
+        "topic_name": "Photosynthesis",
+        "root_problem": "How light reactions convert absorbed photons into ATP and NADPH"
+      },
+      "expected": {
+        "topic_id": "sim-photosynthesis",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T02",
+      "message": "I understand what the SA node is, but why do specific ion currents make its membrane potential slowly rise on its own?",
+      "scripted_assessment": {
+        "topic_id": "sim-cardiac",
+        "topic_name": "Cardiac physiology",
+        "root_problem": "Mechanism of ion-current-driven spontaneous depolarization of SA node cells"
+      },
+      "expected": {
+        "topic_id": "sim-cardiac",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T03",
+      "message": "At the battery terminals the voltage seems lower while current is flowing. Why does the battery behave that way?",
+      "scripted_assessment": {
+        "topic_id": "sim-circuits",
+        "topic_name": "Electric circuits",
+        "root_problem": "Why terminal voltage decreases under load due to battery internal resistance"
+      },
+      "expected": {
+        "topic_id": "sim-circuits",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T04",
+      "message": "When a particle goes through the double-slit apparatus, why do the detected particles form fringes when we do not observe which slit?",
+      "scripted_assessment": {
+        "topic_id": "sim-quantum",
+        "topic_name": "Quantum mechanics",
+        "root_problem": "The mechanism of the double-slit interference pattern without which-path detection"
+      },
+      "expected": {
+        "topic_id": "sim-quantum",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T05",
+      "message": "I get recursion in general, but I do not understand why forgetting the base case makes the calls continue forever.",
+      "scripted_assessment": {
+        "topic_id": "sim-programming",
+        "topic_name": "Programming functions",
+        "root_problem": "Why recursive functions require base cases to stop repeated calls"
+      },
+      "expected": {
+        "topic_id": "sim-programming",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T06",
+      "message": "It seems like an action potential and a heart pacemaker both involve sodium channels. Are they exactly the same mechanism?",
+      "scripted_assessment": {
+        "topic_id": "sim-cardiac",
+        "topic_name": "Cardiac physiology",
+        "root_problem": "How SA node pacemaker depolarization differs from neuronal action potential initiation"
+      },
+      "expected": {
+        "topic_id": "sim-cardiac",
+        "identity": "distinct"
+      },
+      "scripted_simulation_transition": {
+        "identity": "distinct",
+        "interpretation": "not_applicable"
+      }
+    },
+    {
+      "turn_id": "T07",
+      "message": "I understand ATP formation now, but I still do not get how carbon dioxide is fixed into sugars in the Calvin cycle.",
+      "scripted_assessment": {
+        "topic_id": "sim-photosynthesis",
+        "topic_name": "Photosynthesis",
+        "root_problem": "How carbon dioxide is fixed into organic molecules during the Calvin cycle"
+      },
+      "expected": {
+        "topic_id": "sim-photosynthesis",
+        "identity": "same"
+      },
+      "scripted_simulation_transition": {
+        "identity": "same",
+        "interpretation": "refine"
+      }
+    },
+    {
+      "turn_id": "T08",
+      "message": "In circuits there is current, and in cardiac pacemaker cells there is ionic current. I see an analogy but I cannot tell where the comparison breaks down.",
+      "scripted_assessment": {
+        "topic_id": "sim-cardiac",
+        "topic_name": "Cardiac physiology",
+        "root_problem": "Which aspects of electrical current in a circuit transfer to ionic membrane currents in pacemaker cells"
+      },
+      "expected": {
+        "topic_id": "sim-cardiac",
+        "identity": "distinct"
+      },
+      "scripted_simulation_transition": {
+        "identity": "distinct",
+        "interpretation": "not_applicable"
+      }
+    },
+    {
+      "turn_id": "T09",
+      "message": "I thought a p value is the probability the null hypothesis is true. Why is that interpretation wrong?",
+      "scripted_assessment": {
+        "topic_id": "sim-statistics",
+        "topic_name": "Statistical inference",
+        "root_problem": "What a p value says about data under a null hypothesis rather than null probability"
+      },
+      "expected": {
+        "topic_id": "sim-statistics",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T10",
+      "message": "I was not confused about ATP formation; my photosynthesis question was specifically why the Calvin cycle incorporates CO2 into sugars.",
+      "scripted_assessment": {
+        "topic_id": "sim-photosynthesis",
+        "topic_name": "Photosynthesis",
+        "root_problem": "Carbon fixation into sugars, not the light-reaction production of ATP"
+      },
+      "expected": {
+        "topic_id": "sim-photosynthesis",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T11",
+      "message": "A function in algebra and a function in programming share a name, but how are an input-output mapping and a callable code block related?",
+      "scripted_assessment": {
+        "topic_id": "sim-programming",
+        "topic_name": "Programming functions",
+        "root_problem": "How mathematical functions and callable programming functions are related and different"
+      },
+      "expected": {
+        "topic_id": "sim-programming",
+        "identity": "distinct"
+      },
+      "scripted_simulation_transition": {
+        "identity": "distinct",
+        "interpretation": "not_applicable"
+      }
+    },
+    {
+      "turn_id": "T12",
+      "message": "In a synapse why does calcium entry make neurotransmitter-filled vesicles release their contents?",
+      "scripted_assessment": {
+        "topic_id": "sim-neuro",
+        "topic_name": "Neural signalling",
+        "root_problem": "Why calcium entry triggers synaptic vesicle fusion and neurotransmitter release"
+      },
+      "expected": {
+        "topic_id": "sim-neuro",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T13",
+      "message": "I know a child may understand a word without saying it. Why can expressive and receptive vocabulary sizes differ?",
+      "scripted_assessment": {
+        "topic_id": "sim-language",
+        "topic_name": "Language development",
+        "root_problem": "Why receptive language vocabulary can grow differently from expressive vocabulary"
+      },
+      "expected": {
+        "topic_id": "sim-language",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T14",
+      "message": "Why is oxygen the final acceptor in the mitochondrial electron transport chain instead of ATP itself?",
+      "scripted_assessment": {
+        "topic_id": "sim-metabolism",
+        "topic_name": "Cellular respiration",
+        "root_problem": "Why molecular oxygen accepts electrons at the end of aerobic electron transport"
+      },
+      "expected": {
+        "topic_id": "sim-metabolism",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T15",
+      "message": "Does this mean the proton gradient in mitochondria is like the voltage across a resistor or battery? Which parts of that analogy really work?",
+      "scripted_assessment": {
+        "topic_id": "sim-metabolism",
+        "topic_name": "Cellular respiration",
+        "root_problem": "Whether an electrochemical proton gradient can be usefully compared with voltage in an electrical circuit"
+      },
+      "expected": {
+        "topic_id": "sim-metabolism",
+        "identity": "distinct"
+      },
+      "scripted_simulation_transition": {
+        "identity": "distinct",
+        "interpretation": "not_applicable"
+      }
+    },
+    {
+      "turn_id": "T16",
+      "message": "I understand a confidence interval is built from sample data, but why does a wider interval indicate less precision?",
+      "scripted_assessment": {
+        "topic_id": "sim-statistics",
+        "topic_name": "Statistical inference",
+        "root_problem": "Why confidence interval width reflects sampling uncertainty and estimate precision"
+      },
+      "expected": {
+        "topic_id": "sim-statistics",
+        "identity": "distinct"
+      },
+      "scripted_simulation_transition": {
+        "identity": "distinct",
+        "interpretation": "not_applicable"
+      }
+    },
+    {
+      "turn_id": "T17",
+      "message": "I learned that some collisions conserve momentum but lose kinetic energy. Why can momentum remain conserved in an inelastic collision?",
+      "scripted_assessment": {
+        "topic_id": "sim-mechanics",
+        "topic_name": "Classical mechanics",
+        "root_problem": "Why momentum is conserved but kinetic energy may not be in inelastic collisions"
+      },
+      "expected": {
+        "topic_id": "sim-mechanics",
+        "identity": "same"
+      }
+    },
+    {
+      "turn_id": "T18",
+      "message": "What determines whether one tectonic plate subducts beneath another, rather than both plates colliding equally?",
+      "scripted_assessment": {
+        "topic_id": "sim-geology",
+        "topic_name": "Plate tectonics",
+        "root_problem": "Why buoyancy and lithosphere density influence the direction of subduction"
+      },
+      "expected": {
+        "topic_id": "sim-geology",
+        "identity": "same"
+      }
+    }
+  ]
+}

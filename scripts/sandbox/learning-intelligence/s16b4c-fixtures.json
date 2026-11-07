@@ -1,0 +1,15 @@
+{
+  "schema":"myway_s16b4c_action_cases_v1",
+  "description":"Independent authored structural fixtures; no model-generated gold completions or training examples",
+  "cases":[
+    {"id":"photosynthesis_initial","intent":"new_difficulty","topic":"Photosynthesis","root":"How light-reaction electrons form ATP and NADPH","message":"Why do photons absorbed by chlorophyll eventually lead to ATP and NADPH?","focus":"mechanism","expectedAction":"explain_missing_mechanism"},
+    {"id":"photosynthesis_followup","intent":"follow_up","topic":"Photosynthesis","root":"How carbon dioxide becomes incorporated into G3P","message":"I understand ATP formation, but how does CO2 become part of G3P?","focus":"auto","expectedAction":"extend_follow_up"},
+    {"id":"photosynthesis_correction","intent":"correction","topic":"Photosynthesis","root":"Distinguish light reactions and carbon fixation","message":"I meant carbon fixation, not ATP formation; was my earlier question misread?","targetTurnIds":["T01"],"expectedAction":"acknowledge_correction"},
+    {"id":"photosynthesis_closure","intent":"clarification_answer","topic":"Photosynthesis","root":"Resolve the historical light-reaction correction","message":"Yes, I was confused about light reactions at the time. Keep that earlier note; now I mean carbon fixation.","targetTurnIds":["T01"],"clarificationStatus":"RESOLVED_NO_CHANGE","expectedAction":"close_clarification"},
+    {"id":"law_misconception","intent":"new_difficulty","topic":"Contract law","root":"Difference between offer and counteroffer","message":"I thought a counteroffer was the same as acceptance.","focus":"misconception","expectedAction":"repair_misconception"},
+    {"id":"medicine_followup","intent":"follow_up","topic":"Cardiac physiology","root":"Why preload differs from afterload","message":"Why would an increase in ventricular filling not automatically mean greater afterload?","expectedAction":"extend_follow_up"},
+    {"id":"coding_check","intent":"follow_up","topic":"Programming","root":"Base case and recursion termination","message":"I think I understand the base case; can I test this with a short trace?","focus":"check","expectedAction":"verify_understanding"},
+    {"id":"writing_progress","intent":"reported_progress","topic":"Argument writing","root":"Distinguishing a thesis from supporting evidence","message":"I can tell which sentence is my thesis now.","expectedAction":"advance_after_progress"},
+    {"id":"physics_mechanism","intent":"new_difficulty","topic":"Mechanics","root":"Why net force rather than velocity determines acceleration","message":"Why can something move fast without accelerating?","expectedAction":"explain_missing_mechanism"}
+  ]
+}

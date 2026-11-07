@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+/** S1.6B.4A additive / local-only contract verifier. Does not touch provider or DB. */
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import {MYWAY_TEACHING_CONTRACT} from '../learning-intelligence/s16b4a-teaching-contract.mjs';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../');
+const at=p=>path.join(root,...p.split('/'));
+const txt=p=>fs.readFileSync(at(p),'utf8');
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(at(p))).digest('hex');
+const release=JSON.parse(txt('scripts/sandbox/current-local-release.json'));
+assert.equal(release.release,'v37d2c7a3s12','Release pointer drift');
+const previous='scripts/sandbox/learning-intelligence/s16b3-intent.mjs';
+assert.equal(sha(previous),'45bfa3f9cf08203a4e034b2d35721873312e2a3d1485b66eb0f31b93ef2222a7','S1.6B.3 unexpected drift');
+const schema=txt('lib/engine/schemas/shared.ts');
+for(const token of ['PersonalizationProfileSnapshot','personalization_profile_snapshot_v1','PersonalizationSignal','ExampleDomainSignal','recent_use_count','PersonalizationProfileDelta'])assert.ok(schema.includes(token),'Existing engine schema missing: '+token);
+const visual=txt('sandbox/probe-lab/visual-experience/visual-learning-turn.ts');
+for(const token of ['VisualPersonalizationDecision','structural_bridge','light_tone','do_not_use'])assert.ok(visual.includes(token),'Visual full-turn contract missing: '+token);
+const shadow=txt('sandbox/probe-lab/learning-space/myway-shadow-voice-s15.ts');
+for(const token of ['teaching_strategy','next_step','visual_intent'])assert.ok(shadow.includes(token),'Original Model B schema missing: '+token);
+for(const name of ['s16b4a-teaching-contract.mjs','s16b4a-types.ts','s16b4a-interfaces.mjs','s16b4a-selftest.mjs'])assert.ok(fs.statSync(at('scripts/sandbox/learning-intelligence/'+name)).size>500,name);
+assert.equal(MYWAY_TEACHING_CONTRACT.outputCompatibility.fields.join('|'),'teaching_strategy|next_step|visual_intent');
+assert.equal(MYWAY_TEACHING_CONTRACT.evaluationStatus,'UNTESTED_VOICE_SPECIFICATION_NOT_MODEL_OUTPUT');
+const interfaces=txt('scripts/sandbox/learning-intelligence/s16b4a-interfaces.mjs');
+for(const forbidden of ['fetch(', 'supabase.from(', 'createClient(', 'OpenAI(', 'process.env.OPENAI_API_KEY','execFileSync('])assert.ok(!interfaces.includes(forbidden),'Unexpected I/O in foundation: '+forbidden);
+const types=txt('scripts/sandbox/learning-intelligence/s16b4a-types.ts');
+assert.ok(types.includes("from '../../../lib/engine/schemas/shared'"),'Must reuse original profile type');
+assert.ok(types.includes('MyWayLegacyModelBResponseV1'),'Transport compatibility type missing');
+console.log('S1.6B.4A VERIFY PASS: exact S1.6B.3 dependency, existing shared profile and full-turn interfaces, unchanged legacy teacher transport, no provider writer or production integration.');

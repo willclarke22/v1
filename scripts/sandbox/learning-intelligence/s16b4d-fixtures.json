@@ -1,0 +1,752 @@
+{
+  "schema": "myway_s16b4d_frozen_scenarios_v1",
+  "version": "v37d2c7a3s16b4d",
+  "scenarios": [
+    {
+      "id": "LANG01",
+      "domain": "Language",
+      "topic": "Spanish ser and estar",
+      "root": "Why ser and estar cannot be reduced to permanent versus temporary",
+      "learner": {
+        "message": "I used ser for an illness because it lasted a long time. Why was that wrong?",
+        "intent": "new_difficulty",
+        "turn_id": "LANG01"
+      },
+      "assessment": {
+        "topic": "Spanish ser and estar",
+        "root_problem": "Why ser and estar cannot be reduced to permanent versus temporary",
+        "evidence_quote": "I used ser for an illness because it lasted a long time. Why was that wrong?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-LANG01",
+          "root_problem": "Why ser and estar cannot be reduced to permanent versus temporary"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-LANG01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-LANG01",
+          "difficulty_id": "d-LANG01",
+          "text": "Why ser and estar cannot be reduced to permanent versus temporary",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "RPG games",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "RPG games",
+          "topic": "Spanish ser and estar",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-lang01",
+          "structural_mapping": "A character class is stable while a temporary status affects the current state. Even long status effects remain states, not identity.",
+          "anti_distortion_guard": "RPG labels are illustrative, not a complete grammar rule.",
+          "mechanism_match": "Why ser and estar cannot be reduced to permanent versus temporary",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "LAW01",
+      "domain": "Law",
+      "topic": "Contract law",
+      "root": "How consideration differs from merely promising to do something",
+      "learner": {
+        "message": "Why does a promise sometimes fail without consideration?",
+        "intent": "new_difficulty",
+        "turn_id": "LAW01"
+      },
+      "assessment": {
+        "topic": "Contract law",
+        "root_problem": "How consideration differs from merely promising to do something",
+        "evidence_quote": "Why does a promise sometimes fail without consideration?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-LAW01",
+          "root_problem": "How consideration differs from merely promising to do something"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-LAW01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-LAW01",
+          "difficulty_id": "d-LAW01",
+          "text": "How consideration differs from merely promising to do something",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "soccer",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "MED01",
+      "domain": "Medicine",
+      "topic": "Clinical physiology",
+      "root": "Difference between oxygen saturation and oxygen delivery",
+      "learner": {
+        "message": "If the saturation is normal, how can tissue oxygen delivery still be low?",
+        "intent": "new_difficulty",
+        "turn_id": "MED01"
+      },
+      "assessment": {
+        "topic": "Clinical physiology",
+        "root_problem": "Difference between oxygen saturation and oxygen delivery",
+        "evidence_quote": "If the saturation is normal, how can tissue oxygen delivery still be low?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-MED01",
+          "root_problem": "Difference between oxygen saturation and oxygen delivery"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-MED01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-MED01",
+          "difficulty_id": "d-MED01",
+          "text": "Difference between oxygen saturation and oxygen delivery",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "basketball",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "PHY01",
+      "domain": "Physics",
+      "topic": "Momentum in collisions",
+      "root": "Why momentum may be conserved while kinetic energy decreases",
+      "learner": {
+        "message": "I thought that if momentum stays the same, the kinetic energy must stay the same too.",
+        "intent": "new_difficulty",
+        "turn_id": "PHY01"
+      },
+      "assessment": {
+        "topic": "Momentum in collisions",
+        "root_problem": "Why momentum may be conserved while kinetic energy decreases",
+        "evidence_quote": "I thought that if momentum stays the same, the kinetic energy must stay the same too."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-PHY01",
+          "root_problem": "Why momentum may be conserved while kinetic energy decreases"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-PHY01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-PHY01",
+          "difficulty_id": "d-PHY01",
+          "text": "Why momentum may be conserved while kinetic energy decreases",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "soccer",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "soccer",
+          "topic": "Momentum in collisions",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-phy01",
+          "structural_mapping": "A soccer ball striking a softer surface can transfer momentum while some kinetic energy becomes deformation, heat and sound.",
+          "anti_distortion_guard": "The analogy is about a specified system and external forces, not guaranteed momentum conservation in every soccer event.",
+          "mechanism_match": "Why momentum may be conserved while kinetic energy decreases",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "CHEM01",
+      "domain": "Chemistry",
+      "topic": "Stoichiometry",
+      "root": "How coefficients constrain reactant amounts and product formation",
+      "learner": {
+        "message": "Why does doubling one reactant not always double the product?",
+        "intent": "new_difficulty",
+        "turn_id": "CHEM01"
+      },
+      "assessment": {
+        "topic": "Stoichiometry",
+        "root_problem": "How coefficients constrain reactant amounts and product formation",
+        "evidence_quote": "Why does doubling one reactant not always double the product?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-CHEM01",
+          "root_problem": "How coefficients constrain reactant amounts and product formation"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-CHEM01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-CHEM01",
+          "difficulty_id": "d-CHEM01",
+          "text": "How coefficients constrain reactant amounts and product formation",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "cooking",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "cooking",
+          "topic": "Stoichiometry",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-chem01",
+          "structural_mapping": "A recipe ratio illustrates that the limited ingredient determines how much product you can make.",
+          "anti_distortion_guard": "Atoms are conserved and chemical coefficients are fixed, unlike adjustable recipes; identify limiting reactant precisely.",
+          "mechanism_match": "How coefficients constrain reactant amounts and product formation",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "BIO01",
+      "domain": "Biology",
+      "topic": "Calvin cycle carbon fixation",
+      "root": "How carbon dioxide becomes incorporated in organic molecules in the Calvin cycle",
+      "learner": {
+        "message": "I understand ATP, but I do not get how carbon from CO2 becomes part of sugar.",
+        "intent": "follow_up",
+        "turn_id": "BIO01"
+      },
+      "assessment": {
+        "topic": "Calvin cycle carbon fixation",
+        "root_problem": "How carbon dioxide becomes incorporated in organic molecules in the Calvin cycle",
+        "evidence_quote": "I understand ATP, but I do not get how carbon from CO2 becomes part of sugar."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-BIO01",
+          "root_problem": "How carbon dioxide becomes incorporated in organic molecules in the Calvin cycle"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-BIO01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-BIO01",
+          "difficulty_id": "d-BIO01",
+          "text": "How carbon dioxide becomes incorporated in organic molecules in the Calvin cycle",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "soccer",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "CODE01",
+      "domain": "Coding",
+      "topic": "Recursive functions",
+      "root": "Why recursion requires a terminating base case",
+      "learner": {
+        "message": "Why does my recursive function keep calling itself forever without a base case?",
+        "intent": "new_difficulty",
+        "turn_id": "CODE01"
+      },
+      "assessment": {
+        "topic": "Recursive functions",
+        "root_problem": "Why recursion requires a terminating base case",
+        "evidence_quote": "Why does my recursive function keep calling itself forever without a base case?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-CODE01",
+          "root_problem": "Why recursion requires a terminating base case"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-CODE01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-CODE01",
+          "difficulty_id": "d-CODE01",
+          "text": "Why recursion requires a terminating base case",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "video games",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "video games",
+          "topic": "Recursive functions",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-code01",
+          "structural_mapping": "A recurring quest needs a clear stopping condition; recursive calls also need a condition that stops further calls.",
+          "anti_distortion_guard": "Game quests are not literal stack frames; explain call stack and return unwinding as the real mechanism.",
+          "mechanism_match": "Why recursion requires a terminating base case",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "WRITE01",
+      "domain": "Writing",
+      "topic": "Argument structure",
+      "root": "How a supporting example differs from a central claim",
+      "learner": {
+        "message": "My essay has a good story, but I cannot see why the story is not my thesis.",
+        "intent": "new_difficulty",
+        "turn_id": "WRITE01"
+      },
+      "assessment": {
+        "topic": "Argument structure",
+        "root_problem": "How a supporting example differs from a central claim",
+        "evidence_quote": "My essay has a good story, but I cannot see why the story is not my thesis."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-WRITE01",
+          "root_problem": "How a supporting example differs from a central claim"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-WRITE01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-WRITE01",
+          "difficulty_id": "d-WRITE01",
+          "text": "How a supporting example differs from a central claim",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "movies",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "movies",
+          "topic": "Argument structure",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-write01",
+          "structural_mapping": "A movie scene is one supporting moment; an argument thesis is the governing claim connecting the evidence.",
+          "anti_distortion_guard": "A thesis is not a movie plot and film aesthetics are not evidence of a sound argument.",
+          "mechanism_match": "How a supporting example differs from a central claim",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "AUTO01",
+      "domain": "Trades",
+      "topic": "Hydraulic braking",
+      "root": "How pedal pressure produces friction at the brake pads",
+      "learner": {
+        "message": "I press the brake pedal, but what actually makes the brake pads squeeze the rotor?",
+        "intent": "new_difficulty",
+        "turn_id": "AUTO01"
+      },
+      "assessment": {
+        "topic": "Hydraulic braking",
+        "root_problem": "How pedal pressure produces friction at the brake pads",
+        "evidence_quote": "I press the brake pedal, but what actually makes the brake pads squeeze the rotor?"
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-AUTO01",
+          "root_problem": "How pedal pressure produces friction at the brake pads"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-AUTO01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-AUTO01",
+          "difficulty_id": "d-AUTO01",
+          "text": "How pedal pressure produces friction at the brake pads",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "cycling",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [
+        {
+          "interest": "cycling",
+          "topic": "Hydraulic braking",
+          "mode": "structural_bridge",
+          "evidence_tag": "curated-example-auto01",
+          "structural_mapping": "Bicycle braking traces applied force through a mechanism to friction; hydraulic car brakes transmit pressure through fluid.",
+          "anti_distortion_guard": "Cable bicycle brakes are not hydraulic car brakes; identify fluid pressure and caliper force explicitly.",
+          "mechanism_match": "How pedal pressure produces friction at the brake pads",
+          "review_status": "curated_illustrative"
+        }
+      ],
+      "previousTeaching": "",
+      "expected_interest_mode": "structural_bridge",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "PHOTO_T10",
+      "domain": "Biology",
+      "topic": "Calvin cycle carbon fixation",
+      "root": "How the Calvin cycle incorporates CO2 into organic carbon",
+      "learner": {
+        "message": "I was not confused about ATP formation; my question was specifically how the Calvin cycle incorporates CO2 into sugars.",
+        "intent": "correction",
+        "turn_id": "PHOTO_T10"
+      },
+      "assessment": {
+        "topic": "Calvin cycle carbon fixation",
+        "root_problem": "How the Calvin cycle incorporates CO2 into organic carbon",
+        "evidence_quote": "I was not confused about ATP formation; my question was specifically how the Calvin cycle incorporates CO2 into sugars."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-PHOTO_T10",
+          "root_problem": "How the Calvin cycle incorporates CO2 into organic carbon"
+        },
+        "pending_correction_id": "T01"
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-T01",
+          "source": "historical_learner_statement",
+          "turn_id": "T01",
+          "difficulty_id": "d-light",
+          "text": "I know chlorophyll absorbs light but I cannot see how photon energy ends up stored in ATP and NADPH.",
+          "reason_for_consideration": "historical question being corrected",
+          "verified_as_learner_evidence": true
+        },
+        {
+          "evidence_id": "E-T07",
+          "source": "historical_learner_statement",
+          "turn_id": "T07",
+          "difficulty_id": "d-carbon",
+          "text": "I understand ATP formation now, but I still do not get how carbon dioxide is fixed into sugars in the Calvin cycle.",
+          "reason_for_consideration": "current carbon-fixation question",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {
+        "targetEvidenceIds": [
+          "E-T01"
+        ]
+      },
+      "plannerOptions": {
+        "clarificationStatus": "UNRESOLVED"
+      },
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "soccer",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "I explained light reactions and the Calvin cycle earlier.",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "PHOTO_T10A",
+      "domain": "Biology",
+      "topic": "Calvin cycle carbon fixation",
+      "root": "How the Calvin cycle incorporates CO2 into organic carbon",
+      "learner": {
+        "message": "My earlier question about photon energy was real then, but I understand it now. My current difficulty is carbon fixation.",
+        "intent": "clarification_answer",
+        "turn_id": "PHOTO_T10A"
+      },
+      "assessment": {
+        "topic": "Calvin cycle carbon fixation",
+        "root_problem": "How the Calvin cycle incorporates CO2 into organic carbon",
+        "evidence_quote": "My earlier question about photon energy was real then, but I understand it now. My current difficulty is carbon fixation."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-PHOTO_T10A",
+          "root_problem": "How the Calvin cycle incorporates CO2 into organic carbon"
+        },
+        "pending_correction_id": "T01"
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-T01",
+          "source": "historical_learner_statement",
+          "turn_id": "T01",
+          "difficulty_id": "d-light",
+          "text": "I know chlorophyll absorbs light but I cannot see how photon energy ends up stored in ATP and NADPH.",
+          "reason_for_consideration": "historical question being corrected",
+          "verified_as_learner_evidence": true
+        },
+        {
+          "evidence_id": "E-T07",
+          "source": "historical_learner_statement",
+          "turn_id": "T07",
+          "difficulty_id": "d-carbon",
+          "text": "I understand ATP formation now, but I still do not get how carbon dioxide is fixed into sugars in the Calvin cycle.",
+          "reason_for_consideration": "current carbon-fixation question",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {
+        "targetEvidenceIds": [
+          "E-T01"
+        ]
+      },
+      "plannerOptions": {
+        "clarificationStatus": "RESOLVED_NO_CHANGE"
+      },
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "soccer",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "I explained light reactions and the Calvin cycle earlier.",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "PROGRESS01",
+      "domain": "Learning progress",
+      "topic": "Mitochondrial ATP synthase",
+      "root": "How an electrochemical proton gradient drives ATP synthase",
+      "learner": {
+        "message": "I think I understand the gradient now; I can explain proton movement, but I want to check if I can apply it.",
+        "intent": "reported_progress",
+        "turn_id": "PROGRESS01"
+      },
+      "assessment": {
+        "topic": "Mitochondrial ATP synthase",
+        "root_problem": "How an electrochemical proton gradient drives ATP synthase",
+        "evidence_quote": "I think I understand the gradient now; I can explain proton movement, but I want to check if I can apply it."
+      },
+      "state": {
+        "canonical_difficulty": {
+          "difficulty_id": "d-PROGRESS01",
+          "root_problem": "How an electrochemical proton gradient drives ATP synthase"
+        }
+      },
+      "context_candidates": [
+        {
+          "evidence_id": "E-PROGRESS01",
+          "source": "historical_learner_statement",
+          "turn_id": "H-PROGRESS01",
+          "difficulty_id": "d-PROGRESS01",
+          "text": "How an electrochemical proton gradient drives ATP synthase",
+          "reason_for_consideration": "sample learning history",
+          "verified_as_learner_evidence": true
+        }
+      ],
+      "selectorOptions": {},
+      "plannerOptions": {},
+      "profileInput": {
+        "profile_snapshot": {
+          "schema_version": "personalization_profile_snapshot_v1",
+          "summary": "Synthetic profile for a research comparison, never a real learner.",
+          "teaching_signals": [],
+          "example_domains": []
+        },
+        "user_interests": [
+          {
+            "interest": "cooking",
+            "user_interest_confidence": 0.93
+          }
+        ]
+      },
+      "bridgeCandidates": [],
+      "previousTeaching": "",
+      "expected_interest_mode": "do_not_use",
+      "human_review_status": "NOT_EXPERT_VERIFIED",
+      "privacy_class": "synthetic_example_only"
+    }
+  ]
+}

@@ -74,6 +74,17 @@ export function proxy(request: NextRequest) {
     }
     return request.method === "POST" ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
   }
+  // S1.6B.4D FIX1: opt-in, read-only teacher inference on the pinned local dev server.
+  // The cloud gate above still denies this POST; the route independently verifies
+  // loopback Host, matching Origin, development mode, runtime pin and JSON schema.
+  if (path === "/api/sandbox/probe-lab/local-assessment/s16b4d-teaching") {
+    if (process.env.NODE_ENV !== "development" ||
+        process.env.MYWAY_EXPERIMENTAL_RUNTIME !== "v37b") {
+      return new NextResponse("S1.6B.4D teacher requires pinned local development mode", {status:403});
+    }
+    return request.method === "POST"
+      ? NextResponse.next() : new NextResponse("Method blocked", {status:405});
+  }
   // Fail closed: original message/probe/semantic-enrichment routes, all other assets,
   // all old sandbox APIs and all POST/PUT/PATCH/DELETE endpoints are inaccessible.
   return new NextResponse("Route blocked in V3.7C.1 read-only sandbox", {status:403});
