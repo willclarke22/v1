@@ -1,0 +1,2825 @@
+{
+  "schema": "myway_s16b52_realism_corpus_v1",
+  "version": "v37d2c7a3s16b52",
+  "privacy_class": "synthetic_example_only",
+  "disclosure": "All learner and tutor turns were authored as synthetic research scripts; no observed learner data, expert outcome grades, or validated learning gains. Scripted tutor replies are context, NOT generated outputs or assessed pedagogy.",
+  "no_personalization_inference": true,
+  "disjoint_split_key": "case_id",
+  "development_scenarios": 36,
+  "holdout_scenarios": 12,
+  "threads": [
+    {
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "turns": [
+        {
+          "turn_id": "PHOTO-U1",
+          "role": "learner",
+          "text": "i get the sunlight stuff but where does the sugar actually come from"
+        },
+        {
+          "turn_id": "PHOTO-A1",
+          "role": "tutor",
+          "text": "I can walk through the light reactions first: ATP and NADPH carry energy."
+        },
+        {
+          "turn_id": "PHOTO-U2",
+          "role": "learner",
+          "text": "wait, so where does the carbon go first?"
+        },
+        {
+          "turn_id": "PHOTO-A2",
+          "role": "tutor",
+          "text": "Carbon eventually enters the Calvin cycle. Let me explain ATP again."
+        },
+        {
+          "turn_id": "PHOTO-U3",
+          "role": "learner",
+          "text": "no i wasnt asking how ATP is made, you keep going back to that"
+        },
+        {
+          "turn_id": "PHOTO-A3",
+          "role": "tutor",
+          "text": "I thought you meant ATP production, sorry. Did you mean carbon fixation instead?"
+        },
+        {
+          "turn_id": "PHOTO-U4",
+          "role": "learner",
+          "text": "yeah thats what i meant. the light part made sense yesterday, its the CO2 part now"
+        },
+        {
+          "turn_id": "PHOTO-A4",
+          "role": "tutor",
+          "text": "Okay, carbon incorporation is the current question."
+        },
+        {
+          "turn_id": "PHOTO-U5",
+          "role": "learner",
+          "text": "ohhh so its attached to something else before its sugar? think i got that piece"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "turns": [
+        {
+          "turn_id": "OXY-U1",
+          "role": "learner",
+          "text": "my monitor says 98%. does that mean tissues always get enough oxygen?"
+        },
+        {
+          "turn_id": "OXY-A1",
+          "role": "tutor",
+          "text": "Saturation reflects the proportion of hemoglobin carrying oxygen."
+        },
+        {
+          "turn_id": "OXY-U2",
+          "role": "learner",
+          "text": "but if its 98 whats missing then"
+        },
+        {
+          "turn_id": "OXY-A2",
+          "role": "tutor",
+          "text": "The number of carriers and circulation also matter."
+        },
+        {
+          "turn_id": "OXY-U3",
+          "role": "learner",
+          "text": "okay so if theres hardly any hemoglobin it still shows 98?"
+        },
+        {
+          "turn_id": "OXY-A3",
+          "role": "tutor",
+          "text": "Yes, percentage saturation can stay high with less hemoglobin."
+        },
+        {
+          "turn_id": "OXY-U4",
+          "role": "learner",
+          "text": "i get it now i think. can you check me with one example"
+        },
+        {
+          "turn_id": "OXY-A4",
+          "role": "tutor",
+          "text": "Try comparing anemia with low cardiac output."
+        },
+        {
+          "turn_id": "OXY-U5",
+          "role": "learner",
+          "text": "actually no i was talking about low blood FLOW, not oxygen level"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "turns": [
+        {
+          "turn_id": "SER-U1",
+          "role": "learner",
+          "text": "i keep messing up ser and estar. is one just permanent?"
+        },
+        {
+          "turn_id": "SER-A1",
+          "role": "tutor",
+          "text": "A first approximation is ser for identity and estar for states."
+        },
+        {
+          "turn_id": "SER-U2",
+          "role": "learner",
+          "text": "so if im sick for like 10 years would it turn into ser"
+        },
+        {
+          "turn_id": "SER-A2",
+          "role": "tutor",
+          "text": "Duration alone does not decide which verb is used."
+        },
+        {
+          "turn_id": "SER-U3",
+          "role": "learner",
+          "text": "hold on u said permanent. then why is it estar for chronic illness"
+        },
+        {
+          "turn_id": "SER-A3",
+          "role": "tutor",
+          "text": "I oversimplified by making duration sound decisive."
+        },
+        {
+          "turn_id": "SER-U4",
+          "role": "learner",
+          "text": "oh i meant the illness is long term, not that being ill is my identity"
+        },
+        {
+          "turn_id": "SER-A4",
+          "role": "tutor",
+          "text": "Yes, we are talking about meaning rather than elapsed time."
+        },
+        {
+          "turn_id": "SER-U5",
+          "role": "learner",
+          "text": "gotcha. so job is soy doctor but feeling ill is estoy enfermo?"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "turns": [
+        {
+          "turn_id": "LAW-U1",
+          "role": "learner",
+          "text": "my friend said hed give me a bike. is that a contract or nah"
+        },
+        {
+          "turn_id": "LAW-A1",
+          "role": "tutor",
+          "text": "A free gift promise can differ from a bargained-for contract."
+        },
+        {
+          "turn_id": "LAW-U2",
+          "role": "learner",
+          "text": "but he PROMISED. isnt that enough?"
+        },
+        {
+          "turn_id": "LAW-A2",
+          "role": "tutor",
+          "text": "A promise alone may not supply consideration."
+        },
+        {
+          "turn_id": "LAW-U3",
+          "role": "learner",
+          "text": "wait i wasnt asking if he was nice i mean can i sue if he backs out"
+        },
+        {
+          "turn_id": "LAW-A3",
+          "role": "tutor",
+          "text": "Sorry, enforceability was the question, not fairness."
+        },
+        {
+          "turn_id": "LAW-U4",
+          "role": "learner",
+          "text": "okay so its different if i agreed to pay him $10?"
+        },
+        {
+          "turn_id": "LAW-A4",
+          "role": "tutor",
+          "text": "An exchange of value can change the analysis, depending on the legal system."
+        },
+        {
+          "turn_id": "LAW-U5",
+          "role": "learner",
+          "text": "i think i see it now. can you give me a situation where that rule doesnt work"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "turns": [
+        {
+          "turn_id": "PHY-U1",
+          "role": "learner",
+          "text": "if momentum is conserved where did the motion energy go"
+        },
+        {
+          "turn_id": "PHY-A1",
+          "role": "tutor",
+          "text": "Momentum is a vector quantity; kinetic energy can change form."
+        },
+        {
+          "turn_id": "PHY-U2",
+          "role": "learner",
+          "text": "so they can stick together and still have the same momentum???"
+        },
+        {
+          "turn_id": "PHY-A2",
+          "role": "tutor",
+          "text": "In an inelastic collision objects can share final velocity."
+        },
+        {
+          "turn_id": "PHY-U3",
+          "role": "learner",
+          "text": "i thought the two energies were literally the same thing"
+        },
+        {
+          "turn_id": "PHY-A3",
+          "role": "tutor",
+          "text": "Momentum and kinetic energy have different mathematical definitions."
+        },
+        {
+          "turn_id": "PHY-U4",
+          "role": "learner",
+          "text": "ah so some goes into heat and deformation, that makes sense"
+        },
+        {
+          "turn_id": "PHY-A4",
+          "role": "tutor",
+          "text": "Yes, the energy may end up as sound, heat or deformation."
+        },
+        {
+          "turn_id": "PHY-U5",
+          "role": "learner",
+          "text": "but then why do we call it conserved if they slow down"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "turns": [
+        {
+          "turn_id": "CHEM-U1",
+          "role": "learner",
+          "text": "if i put in twice as much of A shouldnt i get twice as much product"
+        },
+        {
+          "turn_id": "CHEM-A1",
+          "role": "tutor",
+          "text": "The available amount of each reactant matters for product yield."
+        },
+        {
+          "turn_id": "CHEM-U2",
+          "role": "learner",
+          "text": "i just assumed A is the only thing that matters"
+        },
+        {
+          "turn_id": "CHEM-A2",
+          "role": "tutor",
+          "text": "A can be abundant while B limits reaction."
+        },
+        {
+          "turn_id": "CHEM-U3",
+          "role": "learner",
+          "text": "but theres still B left right? wait maybe not"
+        },
+        {
+          "turn_id": "CHEM-A3",
+          "role": "tutor",
+          "text": "Which reagent is left over depends on stoichiometry."
+        },
+        {
+          "turn_id": "CHEM-U4",
+          "role": "learner",
+          "text": "no i meant TWO moles of A not two grams, sorry"
+        },
+        {
+          "turn_id": "CHEM-A4",
+          "role": "tutor",
+          "text": "Moles and grams are not interchangeable without molar mass."
+        },
+        {
+          "turn_id": "CHEM-U5",
+          "role": "learner",
+          "text": "okay A runs out but B is extra. am i thinking about it correctly"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "turns": [
+        {
+          "turn_id": "CODE-U1",
+          "role": "learner",
+          "text": "why does my click handler keep printing the old number lol"
+        },
+        {
+          "turn_id": "CODE-A1",
+          "role": "tutor",
+          "text": "In React, callbacks can close over values from an earlier render."
+        },
+        {
+          "turn_id": "CODE-U2",
+          "role": "learner",
+          "text": "like i click twice and it still says 0. how"
+        },
+        {
+          "turn_id": "CODE-A2",
+          "role": "tutor",
+          "text": "For some callbacks, state values will reflect when the callback was created."
+        },
+        {
+          "turn_id": "CODE-U3",
+          "role": "learner",
+          "text": "not a network request btw its a setInterval thing"
+        },
+        {
+          "turn_id": "CODE-A3",
+          "role": "tutor",
+          "text": "Thanks, setInterval changes which solution makes sense."
+        },
+        {
+          "turn_id": "CODE-U4",
+          "role": "learner",
+          "text": "ahh closure captured it? i kinda get that"
+        },
+        {
+          "turn_id": "CODE-A4",
+          "role": "tutor",
+          "text": "Yes, a closure can retain the earlier render value."
+        },
+        {
+          "turn_id": "CODE-U5",
+          "role": "learner",
+          "text": "can you test me without giving away the answer first"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "turns": [
+        {
+          "turn_id": "AUTO-U1",
+          "role": "learner",
+          "text": "car overheats sitting at a red light but cools down moving. why"
+        },
+        {
+          "turn_id": "AUTO-A1",
+          "role": "tutor",
+          "text": "Possible causes include fan issues, airflow or coolant circulation problems."
+        },
+        {
+          "turn_id": "AUTO-U2",
+          "role": "learner",
+          "text": "so is that definitely the thermostat"
+        },
+        {
+          "turn_id": "AUTO-A2",
+          "role": "tutor",
+          "text": "A thermostat is one possibility but not confirmed from this description."
+        },
+        {
+          "turn_id": "AUTO-U3",
+          "role": "learner",
+          "text": "no no the FAN spins, i checked it. i meant it only happens in traffic"
+        },
+        {
+          "turn_id": "AUTO-A3",
+          "role": "tutor",
+          "text": "Got it, the fan does run; traffic is the pattern to explain."
+        },
+        {
+          "turn_id": "AUTO-U4",
+          "role": "learner",
+          "text": "right the fan thing isnt what i was asking. im trying to narrow it down"
+        },
+        {
+          "turn_id": "AUTO-A4",
+          "role": "tutor",
+          "text": "We can compare airflow and radiator cooling without asserting a diagnosis."
+        },
+        {
+          "turn_id": "AUTO-U5",
+          "role": "learner",
+          "text": "okay so airflow matters even if the coolant is circulating?"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "WRITE",
+      "domain": "Writing",
+      "topic": "Argument and evidence",
+      "turns": [
+        {
+          "turn_id": "WRITE-U1",
+          "role": "learner",
+          "text": "teacher says my paragraph has no analysis but i literally put a quote"
+        },
+        {
+          "turn_id": "WRITE-A1",
+          "role": "tutor",
+          "text": "A quote is evidence, but an analysis sentence must connect it to the claim."
+        },
+        {
+          "turn_id": "WRITE-U2",
+          "role": "learner",
+          "text": "so do i have to explain every single word after the quote"
+        },
+        {
+          "turn_id": "WRITE-A2",
+          "role": "tutor",
+          "text": "Not each word; explain the relevant part of the quotation."
+        },
+        {
+          "turn_id": "WRITE-U3",
+          "role": "learner",
+          "text": "no i mean how it proves my claim not how to cite it"
+        },
+        {
+          "turn_id": "WRITE-A3",
+          "role": "tutor",
+          "text": "I misunderstood and focused on citation formatting."
+        },
+        {
+          "turn_id": "WRITE-U4",
+          "role": "learner",
+          "text": "okay i think i can connect the quote back to my point now"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "thread_id": "BIO",
+      "domain": "Biology",
+      "topic": "Enzyme activity",
+      "turns": [
+        {
+          "turn_id": "BIO-U1",
+          "role": "learner",
+          "text": "if heat speeds stuff up why do enzymes stop working when it gets too hot"
+        },
+        {
+          "turn_id": "BIO-A1",
+          "role": "tutor",
+          "text": "At first, warming can speed reactions; excessive heat changes the protein structure."
+        },
+        {
+          "turn_id": "BIO-U2",
+          "role": "learner",
+          "text": "so the enzyme actually changes shape?"
+        },
+        {
+          "turn_id": "BIO-A2",
+          "role": "tutor",
+          "text": "A change in protein shape can reduce effective substrate binding."
+        },
+        {
+          "turn_id": "BIO-U3",
+          "role": "learner",
+          "text": "wait i didnt mean it disappears i meant it stops binding the substrate"
+        },
+        {
+          "turn_id": "BIO-A3",
+          "role": "tutor",
+          "text": "Yes, the protein need not disappear for activity to drop."
+        },
+        {
+          "turn_id": "BIO-U4",
+          "role": "learner",
+          "text": "oh so the active site can change even though the protein is still there"
+        }
+      ],
+      "scripted_tutor_replies_not_model_outputs": true,
+      "privacy_class": "synthetic_example_only"
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "R52-PHOTO-01",
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "author_assessment_root": "How inorganic CO2 becomes part of organic carbon in the Calvin cycle",
+      "raw_learner_message": "i get the sunlight stuff but where does the sugar actually come from",
+      "learner_turn_id": "PHOTO-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "vague_gap"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHOTO-02",
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "author_assessment_root": "How inorganic CO2 becomes part of organic carbon in the Calvin cycle",
+      "raw_learner_message": "wait, so where does the carbon go first?",
+      "learner_turn_id": "PHOTO-U2",
+      "prior_turns": [
+        {
+          "turn_id": "PHOTO-U1",
+          "role": "learner",
+          "text": "i get the sunlight stuff but where does the sugar actually come from"
+        },
+        {
+          "turn_id": "PHOTO-A1",
+          "role": "tutor",
+          "text": "I can walk through the light reactions first: ATP and NADPH carry energy."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "deictic",
+        "informal"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHOTO-03",
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "author_assessment_root": "How inorganic CO2 becomes part of organic carbon in the Calvin cycle",
+      "raw_learner_message": "no i wasnt asking how ATP is made, you keep going back to that",
+      "learner_turn_id": "PHOTO-U3",
+      "prior_turns": [
+        {
+          "turn_id": "PHOTO-U1",
+          "role": "learner",
+          "text": "i get the sunlight stuff but where does the sugar actually come from"
+        },
+        {
+          "turn_id": "PHOTO-A1",
+          "role": "tutor",
+          "text": "I can walk through the light reactions first: ATP and NADPH carry energy."
+        },
+        {
+          "turn_id": "PHOTO-U2",
+          "role": "learner",
+          "text": "wait, so where does the carbon go first?"
+        },
+        {
+          "turn_id": "PHOTO-A2",
+          "role": "tutor",
+          "text": "Carbon eventually enters the Calvin cycle. Let me explain ATP again."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction",
+        "frustration"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHOTO-04",
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "author_assessment_root": "How inorganic CO2 becomes part of organic carbon in the Calvin cycle",
+      "raw_learner_message": "yeah thats what i meant. the light part made sense yesterday, its the CO2 part now",
+      "learner_turn_id": "PHOTO-U4",
+      "prior_turns": [
+        {
+          "turn_id": "PHOTO-U1",
+          "role": "learner",
+          "text": "i get the sunlight stuff but where does the sugar actually come from"
+        },
+        {
+          "turn_id": "PHOTO-A1",
+          "role": "tutor",
+          "text": "I can walk through the light reactions first: ATP and NADPH carry energy."
+        },
+        {
+          "turn_id": "PHOTO-U2",
+          "role": "learner",
+          "text": "wait, so where does the carbon go first?"
+        },
+        {
+          "turn_id": "PHOTO-A2",
+          "role": "tutor",
+          "text": "Carbon eventually enters the Calvin cycle. Let me explain ATP again."
+        },
+        {
+          "turn_id": "PHOTO-U3",
+          "role": "learner",
+          "text": "no i wasnt asking how ATP is made, you keep going back to that"
+        },
+        {
+          "turn_id": "PHOTO-A3",
+          "role": "tutor",
+          "text": "I thought you meant ATP production, sorry. Did you mean carbon fixation instead?"
+        }
+      ],
+      "oracle": {
+        "intent": "clarification_answer",
+        "action": "close_clarification",
+        "focus": "auto",
+        "clarification_status": "RESOLVED_NO_CHANGE",
+        "acceptable_actions": [
+          "close_clarification"
+        ]
+      },
+      "realism_tags": [
+        "temporal_change",
+        "informal"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHOTO-05",
+      "thread_id": "PHOTO",
+      "domain": "Biology",
+      "topic": "Photosynthesis carbon fixation",
+      "author_assessment_root": "How inorganic CO2 becomes part of organic carbon in the Calvin cycle",
+      "raw_learner_message": "ohhh so its attached to something else before its sugar? think i got that piece",
+      "learner_turn_id": "PHOTO-U5",
+      "prior_turns": [
+        {
+          "turn_id": "PHOTO-U1",
+          "role": "learner",
+          "text": "i get the sunlight stuff but where does the sugar actually come from"
+        },
+        {
+          "turn_id": "PHOTO-A1",
+          "role": "tutor",
+          "text": "I can walk through the light reactions first: ATP and NADPH carry energy."
+        },
+        {
+          "turn_id": "PHOTO-U2",
+          "role": "learner",
+          "text": "wait, so where does the carbon go first?"
+        },
+        {
+          "turn_id": "PHOTO-A2",
+          "role": "tutor",
+          "text": "Carbon eventually enters the Calvin cycle. Let me explain ATP again."
+        },
+        {
+          "turn_id": "PHOTO-U3",
+          "role": "learner",
+          "text": "no i wasnt asking how ATP is made, you keep going back to that"
+        },
+        {
+          "turn_id": "PHOTO-A3",
+          "role": "tutor",
+          "text": "I thought you meant ATP production, sorry. Did you mean carbon fixation instead?"
+        },
+        {
+          "turn_id": "PHOTO-U4",
+          "role": "learner",
+          "text": "yeah thats what i meant. the light part made sense yesterday, its the CO2 part now"
+        },
+        {
+          "turn_id": "PHOTO-A4",
+          "role": "tutor",
+          "text": "Okay, carbon incorporation is the current question."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning",
+        "reported_progress"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-OXY-01",
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "author_assessment_root": "Saturation is not the same as total oxygen delivered to tissues",
+      "raw_learner_message": "my monitor says 98%. does that mean tissues always get enough oxygen?",
+      "learner_turn_id": "OXY-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "everyday_context",
+        "overconfident"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-OXY-02",
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "author_assessment_root": "Saturation is not the same as total oxygen delivered to tissues",
+      "raw_learner_message": "but if its 98 whats missing then",
+      "learner_turn_id": "OXY-U2",
+      "prior_turns": [
+        {
+          "turn_id": "OXY-U1",
+          "role": "learner",
+          "text": "my monitor says 98%. does that mean tissues always get enough oxygen?"
+        },
+        {
+          "turn_id": "OXY-A1",
+          "role": "tutor",
+          "text": "Saturation reflects the proportion of hemoglobin carrying oxygen."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "deictic",
+        "informal"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-OXY-03",
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "author_assessment_root": "Saturation is not the same as total oxygen delivered to tissues",
+      "raw_learner_message": "okay so if theres hardly any hemoglobin it still shows 98?",
+      "learner_turn_id": "OXY-U3",
+      "prior_turns": [
+        {
+          "turn_id": "OXY-U1",
+          "role": "learner",
+          "text": "my monitor says 98%. does that mean tissues always get enough oxygen?"
+        },
+        {
+          "turn_id": "OXY-A1",
+          "role": "tutor",
+          "text": "Saturation reflects the proportion of hemoglobin carrying oxygen."
+        },
+        {
+          "turn_id": "OXY-U2",
+          "role": "learner",
+          "text": "but if its 98 whats missing then"
+        },
+        {
+          "turn_id": "OXY-A2",
+          "role": "tutor",
+          "text": "The number of carriers and circulation also matter."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-OXY-04",
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "author_assessment_root": "Saturation is not the same as total oxygen delivered to tissues",
+      "raw_learner_message": "i get it now i think. can you check me with one example",
+      "learner_turn_id": "OXY-U4",
+      "prior_turns": [
+        {
+          "turn_id": "OXY-U1",
+          "role": "learner",
+          "text": "my monitor says 98%. does that mean tissues always get enough oxygen?"
+        },
+        {
+          "turn_id": "OXY-A1",
+          "role": "tutor",
+          "text": "Saturation reflects the proportion of hemoglobin carrying oxygen."
+        },
+        {
+          "turn_id": "OXY-U2",
+          "role": "learner",
+          "text": "but if its 98 whats missing then"
+        },
+        {
+          "turn_id": "OXY-A2",
+          "role": "tutor",
+          "text": "The number of carriers and circulation also matter."
+        },
+        {
+          "turn_id": "OXY-U3",
+          "role": "learner",
+          "text": "okay so if theres hardly any hemoglobin it still shows 98?"
+        },
+        {
+          "turn_id": "OXY-A3",
+          "role": "tutor",
+          "text": "Yes, percentage saturation can stay high with less hemoglobin."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "verify_understanding",
+        "focus": "check",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "reported_progress",
+        "explicit_check"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-OXY-05",
+      "thread_id": "OXY",
+      "domain": "Medicine",
+      "topic": "Oxygen saturation versus delivery",
+      "author_assessment_root": "Saturation is not the same as total oxygen delivered to tissues",
+      "raw_learner_message": "actually no i was talking about low blood FLOW, not oxygen level",
+      "learner_turn_id": "OXY-U5",
+      "prior_turns": [
+        {
+          "turn_id": "OXY-U1",
+          "role": "learner",
+          "text": "my monitor says 98%. does that mean tissues always get enough oxygen?"
+        },
+        {
+          "turn_id": "OXY-A1",
+          "role": "tutor",
+          "text": "Saturation reflects the proportion of hemoglobin carrying oxygen."
+        },
+        {
+          "turn_id": "OXY-U2",
+          "role": "learner",
+          "text": "but if its 98 whats missing then"
+        },
+        {
+          "turn_id": "OXY-A2",
+          "role": "tutor",
+          "text": "The number of carriers and circulation also matter."
+        },
+        {
+          "turn_id": "OXY-U3",
+          "role": "learner",
+          "text": "okay so if theres hardly any hemoglobin it still shows 98?"
+        },
+        {
+          "turn_id": "OXY-A3",
+          "role": "tutor",
+          "text": "Yes, percentage saturation can stay high with less hemoglobin."
+        },
+        {
+          "turn_id": "OXY-U4",
+          "role": "learner",
+          "text": "i get it now i think. can you check me with one example"
+        },
+        {
+          "turn_id": "OXY-A4",
+          "role": "tutor",
+          "text": "Try comparing anemia with low cardiac output."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction",
+        "mixed_focus"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-SER-01",
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "author_assessment_root": "How Spanish ser and estar contrast identity and state without a simple permanence rule",
+      "raw_learner_message": "i keep messing up ser and estar. is one just permanent?",
+      "learner_turn_id": "SER-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "vague_rule"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-SER-02",
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "author_assessment_root": "How Spanish ser and estar contrast identity and state without a simple permanence rule",
+      "raw_learner_message": "so if im sick for like 10 years would it turn into ser",
+      "learner_turn_id": "SER-U2",
+      "prior_turns": [
+        {
+          "turn_id": "SER-U1",
+          "role": "learner",
+          "text": "i keep messing up ser and estar. is one just permanent?"
+        },
+        {
+          "turn_id": "SER-A1",
+          "role": "tutor",
+          "text": "A first approximation is ser for identity and estar for states."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "counterfactual",
+        "informal"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-SER-03",
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "author_assessment_root": "How Spanish ser and estar contrast identity and state without a simple permanence rule",
+      "raw_learner_message": "hold on u said permanent. then why is it estar for chronic illness",
+      "learner_turn_id": "SER-U3",
+      "prior_turns": [
+        {
+          "turn_id": "SER-U1",
+          "role": "learner",
+          "text": "i keep messing up ser and estar. is one just permanent?"
+        },
+        {
+          "turn_id": "SER-A1",
+          "role": "tutor",
+          "text": "A first approximation is ser for identity and estar for states."
+        },
+        {
+          "turn_id": "SER-U2",
+          "role": "learner",
+          "text": "so if im sick for like 10 years would it turn into ser"
+        },
+        {
+          "turn_id": "SER-A2",
+          "role": "tutor",
+          "text": "Duration alone does not decide which verb is used."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction",
+        "historical_challenge"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-SER-04",
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "author_assessment_root": "How Spanish ser and estar contrast identity and state without a simple permanence rule",
+      "raw_learner_message": "oh i meant the illness is long term, not that being ill is my identity",
+      "learner_turn_id": "SER-U4",
+      "prior_turns": [
+        {
+          "turn_id": "SER-U1",
+          "role": "learner",
+          "text": "i keep messing up ser and estar. is one just permanent?"
+        },
+        {
+          "turn_id": "SER-A1",
+          "role": "tutor",
+          "text": "A first approximation is ser for identity and estar for states."
+        },
+        {
+          "turn_id": "SER-U2",
+          "role": "learner",
+          "text": "so if im sick for like 10 years would it turn into ser"
+        },
+        {
+          "turn_id": "SER-A2",
+          "role": "tutor",
+          "text": "Duration alone does not decide which verb is used."
+        },
+        {
+          "turn_id": "SER-U3",
+          "role": "learner",
+          "text": "hold on u said permanent. then why is it estar for chronic illness"
+        },
+        {
+          "turn_id": "SER-A3",
+          "role": "tutor",
+          "text": "I oversimplified by making duration sound decisive."
+        }
+      ],
+      "oracle": {
+        "intent": "clarification_answer",
+        "action": "close_clarification",
+        "focus": "auto",
+        "clarification_status": "RESOLVED_NO_CHANGE",
+        "acceptable_actions": [
+          "close_clarification"
+        ]
+      },
+      "realism_tags": [
+        "self_correction",
+        "clarification"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-SER-05",
+      "thread_id": "SER",
+      "domain": "Language",
+      "topic": "Spanish ser/estar",
+      "author_assessment_root": "How Spanish ser and estar contrast identity and state without a simple permanence rule",
+      "raw_learner_message": "gotcha. so job is soy doctor but feeling ill is estoy enfermo?",
+      "learner_turn_id": "SER-U5",
+      "prior_turns": [
+        {
+          "turn_id": "SER-U1",
+          "role": "learner",
+          "text": "i keep messing up ser and estar. is one just permanent?"
+        },
+        {
+          "turn_id": "SER-A1",
+          "role": "tutor",
+          "text": "A first approximation is ser for identity and estar for states."
+        },
+        {
+          "turn_id": "SER-U2",
+          "role": "learner",
+          "text": "so if im sick for like 10 years would it turn into ser"
+        },
+        {
+          "turn_id": "SER-A2",
+          "role": "tutor",
+          "text": "Duration alone does not decide which verb is used."
+        },
+        {
+          "turn_id": "SER-U3",
+          "role": "learner",
+          "text": "hold on u said permanent. then why is it estar for chronic illness"
+        },
+        {
+          "turn_id": "SER-A3",
+          "role": "tutor",
+          "text": "I oversimplified by making duration sound decisive."
+        },
+        {
+          "turn_id": "SER-U4",
+          "role": "learner",
+          "text": "oh i meant the illness is long term, not that being ill is my identity"
+        },
+        {
+          "turn_id": "SER-A4",
+          "role": "tutor",
+          "text": "Yes, we are talking about meaning rather than elapsed time."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "expressed_reasoning",
+        "mixed_language"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-LAW-01",
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "author_assessment_root": "Why an exchange of legal value matters in ordinary contract consideration",
+      "raw_learner_message": "my friend said hed give me a bike. is that a contract or nah",
+      "learner_turn_id": "LAW-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "colloquial",
+        "everyday_context"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-LAW-02",
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "author_assessment_root": "Why an exchange of legal value matters in ordinary contract consideration",
+      "raw_learner_message": "but he PROMISED. isnt that enough?",
+      "learner_turn_id": "LAW-U2",
+      "prior_turns": [
+        {
+          "turn_id": "LAW-U1",
+          "role": "learner",
+          "text": "my friend said hed give me a bike. is that a contract or nah"
+        },
+        {
+          "turn_id": "LAW-A1",
+          "role": "tutor",
+          "text": "A free gift promise can differ from a bargained-for contract."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "emphasis",
+        "misconception"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-LAW-03",
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "author_assessment_root": "Why an exchange of legal value matters in ordinary contract consideration",
+      "raw_learner_message": "wait i wasnt asking if he was nice i mean can i sue if he backs out",
+      "learner_turn_id": "LAW-U3",
+      "prior_turns": [
+        {
+          "turn_id": "LAW-U1",
+          "role": "learner",
+          "text": "my friend said hed give me a bike. is that a contract or nah"
+        },
+        {
+          "turn_id": "LAW-A1",
+          "role": "tutor",
+          "text": "A free gift promise can differ from a bargained-for contract."
+        },
+        {
+          "turn_id": "LAW-U2",
+          "role": "learner",
+          "text": "but he PROMISED. isnt that enough?"
+        },
+        {
+          "turn_id": "LAW-A2",
+          "role": "tutor",
+          "text": "A promise alone may not supply consideration."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction",
+        "topic_refinement"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-LAW-04",
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "author_assessment_root": "Why an exchange of legal value matters in ordinary contract consideration",
+      "raw_learner_message": "okay so its different if i agreed to pay him $10?",
+      "learner_turn_id": "LAW-U4",
+      "prior_turns": [
+        {
+          "turn_id": "LAW-U1",
+          "role": "learner",
+          "text": "my friend said hed give me a bike. is that a contract or nah"
+        },
+        {
+          "turn_id": "LAW-A1",
+          "role": "tutor",
+          "text": "A free gift promise can differ from a bargained-for contract."
+        },
+        {
+          "turn_id": "LAW-U2",
+          "role": "learner",
+          "text": "but he PROMISED. isnt that enough?"
+        },
+        {
+          "turn_id": "LAW-A2",
+          "role": "tutor",
+          "text": "A promise alone may not supply consideration."
+        },
+        {
+          "turn_id": "LAW-U3",
+          "role": "learner",
+          "text": "wait i wasnt asking if he was nice i mean can i sue if he backs out"
+        },
+        {
+          "turn_id": "LAW-A3",
+          "role": "tutor",
+          "text": "Sorry, enforceability was the question, not fairness."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-LAW-05",
+      "thread_id": "LAW",
+      "domain": "Law",
+      "topic": "Contract consideration",
+      "author_assessment_root": "Why an exchange of legal value matters in ordinary contract consideration",
+      "raw_learner_message": "i think i see it now. can you give me a situation where that rule doesnt work",
+      "learner_turn_id": "LAW-U5",
+      "prior_turns": [
+        {
+          "turn_id": "LAW-U1",
+          "role": "learner",
+          "text": "my friend said hed give me a bike. is that a contract or nah"
+        },
+        {
+          "turn_id": "LAW-A1",
+          "role": "tutor",
+          "text": "A free gift promise can differ from a bargained-for contract."
+        },
+        {
+          "turn_id": "LAW-U2",
+          "role": "learner",
+          "text": "but he PROMISED. isnt that enough?"
+        },
+        {
+          "turn_id": "LAW-A2",
+          "role": "tutor",
+          "text": "A promise alone may not supply consideration."
+        },
+        {
+          "turn_id": "LAW-U3",
+          "role": "learner",
+          "text": "wait i wasnt asking if he was nice i mean can i sue if he backs out"
+        },
+        {
+          "turn_id": "LAW-A3",
+          "role": "tutor",
+          "text": "Sorry, enforceability was the question, not fairness."
+        },
+        {
+          "turn_id": "LAW-U4",
+          "role": "learner",
+          "text": "okay so its different if i agreed to pay him $10?"
+        },
+        {
+          "turn_id": "LAW-A4",
+          "role": "tutor",
+          "text": "An exchange of value can change the analysis, depending on the legal system."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "verify_understanding",
+        "focus": "check",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "explicit_check",
+        "limits"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHY-01",
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "author_assessment_root": "Why momentum conservation does not imply conservation of kinetic energy in an inelastic collision",
+      "raw_learner_message": "if momentum is conserved where did the motion energy go",
+      "learner_turn_id": "PHY-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "plain_speech"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHY-02",
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "author_assessment_root": "Why momentum conservation does not imply conservation of kinetic energy in an inelastic collision",
+      "raw_learner_message": "so they can stick together and still have the same momentum???",
+      "learner_turn_id": "PHY-U2",
+      "prior_turns": [
+        {
+          "turn_id": "PHY-U1",
+          "role": "learner",
+          "text": "if momentum is conserved where did the motion energy go"
+        },
+        {
+          "turn_id": "PHY-A1",
+          "role": "tutor",
+          "text": "Momentum is a vector quantity; kinetic energy can change form."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "surprise",
+        "followup"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHY-03",
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "author_assessment_root": "Why momentum conservation does not imply conservation of kinetic energy in an inelastic collision",
+      "raw_learner_message": "i thought the two energies were literally the same thing",
+      "learner_turn_id": "PHY-U3",
+      "prior_turns": [
+        {
+          "turn_id": "PHY-U1",
+          "role": "learner",
+          "text": "if momentum is conserved where did the motion energy go"
+        },
+        {
+          "turn_id": "PHY-A1",
+          "role": "tutor",
+          "text": "Momentum is a vector quantity; kinetic energy can change form."
+        },
+        {
+          "turn_id": "PHY-U2",
+          "role": "learner",
+          "text": "so they can stick together and still have the same momentum???"
+        },
+        {
+          "turn_id": "PHY-A2",
+          "role": "tutor",
+          "text": "In an inelastic collision objects can share final velocity."
+        }
+      ],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "repair_misconception",
+        "focus": "misconception",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "repair_misconception"
+        ]
+      },
+      "realism_tags": [
+        "explicit_misconception"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHY-04",
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "author_assessment_root": "Why momentum conservation does not imply conservation of kinetic energy in an inelastic collision",
+      "raw_learner_message": "ah so some goes into heat and deformation, that makes sense",
+      "learner_turn_id": "PHY-U4",
+      "prior_turns": [
+        {
+          "turn_id": "PHY-U1",
+          "role": "learner",
+          "text": "if momentum is conserved where did the motion energy go"
+        },
+        {
+          "turn_id": "PHY-A1",
+          "role": "tutor",
+          "text": "Momentum is a vector quantity; kinetic energy can change form."
+        },
+        {
+          "turn_id": "PHY-U2",
+          "role": "learner",
+          "text": "so they can stick together and still have the same momentum???"
+        },
+        {
+          "turn_id": "PHY-A2",
+          "role": "tutor",
+          "text": "In an inelastic collision objects can share final velocity."
+        },
+        {
+          "turn_id": "PHY-U3",
+          "role": "learner",
+          "text": "i thought the two energies were literally the same thing"
+        },
+        {
+          "turn_id": "PHY-A3",
+          "role": "tutor",
+          "text": "Momentum and kinetic energy have different mathematical definitions."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "expressed_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-PHY-05",
+      "thread_id": "PHY",
+      "domain": "Physics",
+      "topic": "Momentum and kinetic energy",
+      "author_assessment_root": "Why momentum conservation does not imply conservation of kinetic energy in an inelastic collision",
+      "raw_learner_message": "but then why do we call it conserved if they slow down",
+      "learner_turn_id": "PHY-U5",
+      "prior_turns": [
+        {
+          "turn_id": "PHY-U1",
+          "role": "learner",
+          "text": "if momentum is conserved where did the motion energy go"
+        },
+        {
+          "turn_id": "PHY-A1",
+          "role": "tutor",
+          "text": "Momentum is a vector quantity; kinetic energy can change form."
+        },
+        {
+          "turn_id": "PHY-U2",
+          "role": "learner",
+          "text": "so they can stick together and still have the same momentum???"
+        },
+        {
+          "turn_id": "PHY-A2",
+          "role": "tutor",
+          "text": "In an inelastic collision objects can share final velocity."
+        },
+        {
+          "turn_id": "PHY-U3",
+          "role": "learner",
+          "text": "i thought the two energies were literally the same thing"
+        },
+        {
+          "turn_id": "PHY-A3",
+          "role": "tutor",
+          "text": "Momentum and kinetic energy have different mathematical definitions."
+        },
+        {
+          "turn_id": "PHY-U4",
+          "role": "learner",
+          "text": "ah so some goes into heat and deformation, that makes sense"
+        },
+        {
+          "turn_id": "PHY-A4",
+          "role": "tutor",
+          "text": "Yes, the energy may end up as sound, heat or deformation."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "persistent_gap"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CHEM-01",
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "author_assessment_root": "Why adding one reactant does not always increase product yield",
+      "raw_learner_message": "if i put in twice as much of A shouldnt i get twice as much product",
+      "learner_turn_id": "CHEM-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "informal",
+        "overgeneralization"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CHEM-02",
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "author_assessment_root": "Why adding one reactant does not always increase product yield",
+      "raw_learner_message": "i just assumed A is the only thing that matters",
+      "learner_turn_id": "CHEM-U2",
+      "prior_turns": [
+        {
+          "turn_id": "CHEM-U1",
+          "role": "learner",
+          "text": "if i put in twice as much of A shouldnt i get twice as much product"
+        },
+        {
+          "turn_id": "CHEM-A1",
+          "role": "tutor",
+          "text": "The available amount of each reactant matters for product yield."
+        }
+      ],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "repair_misconception",
+        "focus": "misconception",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "repair_misconception"
+        ]
+      },
+      "realism_tags": [
+        "explicit_misconception"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CHEM-03",
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "author_assessment_root": "Why adding one reactant does not always increase product yield",
+      "raw_learner_message": "but theres still B left right? wait maybe not",
+      "learner_turn_id": "CHEM-U3",
+      "prior_turns": [
+        {
+          "turn_id": "CHEM-U1",
+          "role": "learner",
+          "text": "if i put in twice as much of A shouldnt i get twice as much product"
+        },
+        {
+          "turn_id": "CHEM-A1",
+          "role": "tutor",
+          "text": "The available amount of each reactant matters for product yield."
+        },
+        {
+          "turn_id": "CHEM-U2",
+          "role": "learner",
+          "text": "i just assumed A is the only thing that matters"
+        },
+        {
+          "turn_id": "CHEM-A2",
+          "role": "tutor",
+          "text": "A can be abundant while B limits reaction."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "self_revision"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CHEM-04",
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "author_assessment_root": "Why adding one reactant does not always increase product yield",
+      "raw_learner_message": "no i meant TWO moles of A not two grams, sorry",
+      "learner_turn_id": "CHEM-U4",
+      "prior_turns": [
+        {
+          "turn_id": "CHEM-U1",
+          "role": "learner",
+          "text": "if i put in twice as much of A shouldnt i get twice as much product"
+        },
+        {
+          "turn_id": "CHEM-A1",
+          "role": "tutor",
+          "text": "The available amount of each reactant matters for product yield."
+        },
+        {
+          "turn_id": "CHEM-U2",
+          "role": "learner",
+          "text": "i just assumed A is the only thing that matters"
+        },
+        {
+          "turn_id": "CHEM-A2",
+          "role": "tutor",
+          "text": "A can be abundant while B limits reaction."
+        },
+        {
+          "turn_id": "CHEM-U3",
+          "role": "learner",
+          "text": "but theres still B left right? wait maybe not"
+        },
+        {
+          "turn_id": "CHEM-A3",
+          "role": "tutor",
+          "text": "Which reagent is left over depends on stoichiometry."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "self_correction",
+        "units"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CHEM-05",
+      "thread_id": "CHEM",
+      "domain": "Chemistry",
+      "topic": "Limiting reactants",
+      "author_assessment_root": "Why adding one reactant does not always increase product yield",
+      "raw_learner_message": "okay A runs out but B is extra. am i thinking about it correctly",
+      "learner_turn_id": "CHEM-U5",
+      "prior_turns": [
+        {
+          "turn_id": "CHEM-U1",
+          "role": "learner",
+          "text": "if i put in twice as much of A shouldnt i get twice as much product"
+        },
+        {
+          "turn_id": "CHEM-A1",
+          "role": "tutor",
+          "text": "The available amount of each reactant matters for product yield."
+        },
+        {
+          "turn_id": "CHEM-U2",
+          "role": "learner",
+          "text": "i just assumed A is the only thing that matters"
+        },
+        {
+          "turn_id": "CHEM-A2",
+          "role": "tutor",
+          "text": "A can be abundant while B limits reaction."
+        },
+        {
+          "turn_id": "CHEM-U3",
+          "role": "learner",
+          "text": "but theres still B left right? wait maybe not"
+        },
+        {
+          "turn_id": "CHEM-A3",
+          "role": "tutor",
+          "text": "Which reagent is left over depends on stoichiometry."
+        },
+        {
+          "turn_id": "CHEM-U4",
+          "role": "learner",
+          "text": "no i meant TWO moles of A not two grams, sorry"
+        },
+        {
+          "turn_id": "CHEM-A4",
+          "role": "tutor",
+          "text": "Moles and grams are not interchangeable without molar mass."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "verify_understanding",
+        "focus": "check",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning",
+        "explicit_check"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CODE-01",
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "author_assessment_root": "Why a component can render stale state in a callback",
+      "raw_learner_message": "why does my click handler keep printing the old number lol",
+      "learner_turn_id": "CODE-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "informal",
+        "debugging"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CODE-02",
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "author_assessment_root": "Why a component can render stale state in a callback",
+      "raw_learner_message": "like i click twice and it still says 0. how",
+      "learner_turn_id": "CODE-U2",
+      "prior_turns": [
+        {
+          "turn_id": "CODE-U1",
+          "role": "learner",
+          "text": "why does my click handler keep printing the old number lol"
+        },
+        {
+          "turn_id": "CODE-A1",
+          "role": "tutor",
+          "text": "In React, callbacks can close over values from an earlier render."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "deictic",
+        "repeat"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CODE-03",
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "author_assessment_root": "Why a component can render stale state in a callback",
+      "raw_learner_message": "not a network request btw its a setInterval thing",
+      "learner_turn_id": "CODE-U3",
+      "prior_turns": [
+        {
+          "turn_id": "CODE-U1",
+          "role": "learner",
+          "text": "why does my click handler keep printing the old number lol"
+        },
+        {
+          "turn_id": "CODE-A1",
+          "role": "tutor",
+          "text": "In React, callbacks can close over values from an earlier render."
+        },
+        {
+          "turn_id": "CODE-U2",
+          "role": "learner",
+          "text": "like i click twice and it still says 0. how"
+        },
+        {
+          "turn_id": "CODE-A2",
+          "role": "tutor",
+          "text": "For some callbacks, state values will reflect when the callback was created."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "context_correction"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CODE-04",
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "author_assessment_root": "Why a component can render stale state in a callback",
+      "raw_learner_message": "ahh closure captured it? i kinda get that",
+      "learner_turn_id": "CODE-U4",
+      "prior_turns": [
+        {
+          "turn_id": "CODE-U1",
+          "role": "learner",
+          "text": "why does my click handler keep printing the old number lol"
+        },
+        {
+          "turn_id": "CODE-A1",
+          "role": "tutor",
+          "text": "In React, callbacks can close over values from an earlier render."
+        },
+        {
+          "turn_id": "CODE-U2",
+          "role": "learner",
+          "text": "like i click twice and it still says 0. how"
+        },
+        {
+          "turn_id": "CODE-A2",
+          "role": "tutor",
+          "text": "For some callbacks, state values will reflect when the callback was created."
+        },
+        {
+          "turn_id": "CODE-U3",
+          "role": "learner",
+          "text": "not a network request btw its a setInterval thing"
+        },
+        {
+          "turn_id": "CODE-A3",
+          "role": "tutor",
+          "text": "Thanks, setInterval changes which solution makes sense."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-CODE-05",
+      "thread_id": "CODE",
+      "domain": "Coding",
+      "topic": "React state closures",
+      "author_assessment_root": "Why a component can render stale state in a callback",
+      "raw_learner_message": "can you test me without giving away the answer first",
+      "learner_turn_id": "CODE-U5",
+      "prior_turns": [
+        {
+          "turn_id": "CODE-U1",
+          "role": "learner",
+          "text": "why does my click handler keep printing the old number lol"
+        },
+        {
+          "turn_id": "CODE-A1",
+          "role": "tutor",
+          "text": "In React, callbacks can close over values from an earlier render."
+        },
+        {
+          "turn_id": "CODE-U2",
+          "role": "learner",
+          "text": "like i click twice and it still says 0. how"
+        },
+        {
+          "turn_id": "CODE-A2",
+          "role": "tutor",
+          "text": "For some callbacks, state values will reflect when the callback was created."
+        },
+        {
+          "turn_id": "CODE-U3",
+          "role": "learner",
+          "text": "not a network request btw its a setInterval thing"
+        },
+        {
+          "turn_id": "CODE-A3",
+          "role": "tutor",
+          "text": "Thanks, setInterval changes which solution makes sense."
+        },
+        {
+          "turn_id": "CODE-U4",
+          "role": "learner",
+          "text": "ahh closure captured it? i kinda get that"
+        },
+        {
+          "turn_id": "CODE-A4",
+          "role": "tutor",
+          "text": "Yes, a closure can retain the earlier render value."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "verify_understanding",
+        "focus": "check",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "explicit_check",
+        "assessment_request"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-AUTO-01",
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "author_assessment_root": "How thermostat position influences coolant temperature and circulation",
+      "raw_learner_message": "car overheats sitting at a red light but cools down moving. why",
+      "learner_turn_id": "AUTO-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "practical_context"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-AUTO-02",
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "author_assessment_root": "How thermostat position influences coolant temperature and circulation",
+      "raw_learner_message": "so is that definitely the thermostat",
+      "learner_turn_id": "AUTO-U2",
+      "prior_turns": [
+        {
+          "turn_id": "AUTO-U1",
+          "role": "learner",
+          "text": "car overheats sitting at a red light but cools down moving. why"
+        },
+        {
+          "turn_id": "AUTO-A1",
+          "role": "tutor",
+          "text": "Possible causes include fan issues, airflow or coolant circulation problems."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "overconfidence_check"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-AUTO-03",
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "author_assessment_root": "How thermostat position influences coolant temperature and circulation",
+      "raw_learner_message": "no no the FAN spins, i checked it. i meant it only happens in traffic",
+      "learner_turn_id": "AUTO-U3",
+      "prior_turns": [
+        {
+          "turn_id": "AUTO-U1",
+          "role": "learner",
+          "text": "car overheats sitting at a red light but cools down moving. why"
+        },
+        {
+          "turn_id": "AUTO-A1",
+          "role": "tutor",
+          "text": "Possible causes include fan issues, airflow or coolant circulation problems."
+        },
+        {
+          "turn_id": "AUTO-U2",
+          "role": "learner",
+          "text": "so is that definitely the thermostat"
+        },
+        {
+          "turn_id": "AUTO-A2",
+          "role": "tutor",
+          "text": "A thermostat is one possibility but not confirmed from this description."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction",
+        "practical_detail"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-AUTO-04",
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "author_assessment_root": "How thermostat position influences coolant temperature and circulation",
+      "raw_learner_message": "right the fan thing isnt what i was asking. im trying to narrow it down",
+      "learner_turn_id": "AUTO-U4",
+      "prior_turns": [
+        {
+          "turn_id": "AUTO-U1",
+          "role": "learner",
+          "text": "car overheats sitting at a red light but cools down moving. why"
+        },
+        {
+          "turn_id": "AUTO-A1",
+          "role": "tutor",
+          "text": "Possible causes include fan issues, airflow or coolant circulation problems."
+        },
+        {
+          "turn_id": "AUTO-U2",
+          "role": "learner",
+          "text": "so is that definitely the thermostat"
+        },
+        {
+          "turn_id": "AUTO-A2",
+          "role": "tutor",
+          "text": "A thermostat is one possibility but not confirmed from this description."
+        },
+        {
+          "turn_id": "AUTO-U3",
+          "role": "learner",
+          "text": "no no the FAN spins, i checked it. i meant it only happens in traffic"
+        },
+        {
+          "turn_id": "AUTO-A3",
+          "role": "tutor",
+          "text": "Got it, the fan does run; traffic is the pattern to explain."
+        }
+      ],
+      "oracle": {
+        "intent": "clarification_answer",
+        "action": "close_clarification",
+        "focus": "auto",
+        "clarification_status": "RESOLVED_NO_CHANGE",
+        "acceptable_actions": [
+          "close_clarification"
+        ]
+      },
+      "realism_tags": [
+        "clarification",
+        "focused"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-AUTO-05",
+      "thread_id": "AUTO",
+      "domain": "Automotive",
+      "topic": "Engine coolant thermostat",
+      "author_assessment_root": "How thermostat position influences coolant temperature and circulation",
+      "raw_learner_message": "okay so airflow matters even if the coolant is circulating?",
+      "learner_turn_id": "AUTO-U5",
+      "prior_turns": [
+        {
+          "turn_id": "AUTO-U1",
+          "role": "learner",
+          "text": "car overheats sitting at a red light but cools down moving. why"
+        },
+        {
+          "turn_id": "AUTO-A1",
+          "role": "tutor",
+          "text": "Possible causes include fan issues, airflow or coolant circulation problems."
+        },
+        {
+          "turn_id": "AUTO-U2",
+          "role": "learner",
+          "text": "so is that definitely the thermostat"
+        },
+        {
+          "turn_id": "AUTO-A2",
+          "role": "tutor",
+          "text": "A thermostat is one possibility but not confirmed from this description."
+        },
+        {
+          "turn_id": "AUTO-U3",
+          "role": "learner",
+          "text": "no no the FAN spins, i checked it. i meant it only happens in traffic"
+        },
+        {
+          "turn_id": "AUTO-A3",
+          "role": "tutor",
+          "text": "Got it, the fan does run; traffic is the pattern to explain."
+        },
+        {
+          "turn_id": "AUTO-U4",
+          "role": "learner",
+          "text": "right the fan thing isnt what i was asking. im trying to narrow it down"
+        },
+        {
+          "turn_id": "AUTO-A4",
+          "role": "tutor",
+          "text": "We can compare airflow and radiator cooling without asserting a diagnosis."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-WRITE-01",
+      "thread_id": "WRITE",
+      "domain": "Writing",
+      "topic": "Argument and evidence",
+      "author_assessment_root": "How evidence supports a claim rather than simply restating it",
+      "raw_learner_message": "teacher says my paragraph has no analysis but i literally put a quote",
+      "learner_turn_id": "WRITE-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "frustration",
+        "school_context"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-WRITE-02",
+      "thread_id": "WRITE",
+      "domain": "Writing",
+      "topic": "Argument and evidence",
+      "author_assessment_root": "How evidence supports a claim rather than simply restating it",
+      "raw_learner_message": "so do i have to explain every single word after the quote",
+      "learner_turn_id": "WRITE-U2",
+      "prior_turns": [
+        {
+          "turn_id": "WRITE-U1",
+          "role": "learner",
+          "text": "teacher says my paragraph has no analysis but i literally put a quote"
+        },
+        {
+          "turn_id": "WRITE-A1",
+          "role": "tutor",
+          "text": "A quote is evidence, but an analysis sentence must connect it to the claim."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "overgeneralization"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-WRITE-03",
+      "thread_id": "WRITE",
+      "domain": "Writing",
+      "topic": "Argument and evidence",
+      "author_assessment_root": "How evidence supports a claim rather than simply restating it",
+      "raw_learner_message": "no i mean how it proves my claim not how to cite it",
+      "learner_turn_id": "WRITE-U3",
+      "prior_turns": [
+        {
+          "turn_id": "WRITE-U1",
+          "role": "learner",
+          "text": "teacher says my paragraph has no analysis but i literally put a quote"
+        },
+        {
+          "turn_id": "WRITE-A1",
+          "role": "tutor",
+          "text": "A quote is evidence, but an analysis sentence must connect it to the claim."
+        },
+        {
+          "turn_id": "WRITE-U2",
+          "role": "learner",
+          "text": "so do i have to explain every single word after the quote"
+        },
+        {
+          "turn_id": "WRITE-A2",
+          "role": "tutor",
+          "text": "Not each word; explain the relevant part of the quotation."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-WRITE-04",
+      "thread_id": "WRITE",
+      "domain": "Writing",
+      "topic": "Argument and evidence",
+      "author_assessment_root": "How evidence supports a claim rather than simply restating it",
+      "raw_learner_message": "okay i think i can connect the quote back to my point now",
+      "learner_turn_id": "WRITE-U4",
+      "prior_turns": [
+        {
+          "turn_id": "WRITE-U1",
+          "role": "learner",
+          "text": "teacher says my paragraph has no analysis but i literally put a quote"
+        },
+        {
+          "turn_id": "WRITE-A1",
+          "role": "tutor",
+          "text": "A quote is evidence, but an analysis sentence must connect it to the claim."
+        },
+        {
+          "turn_id": "WRITE-U2",
+          "role": "learner",
+          "text": "so do i have to explain every single word after the quote"
+        },
+        {
+          "turn_id": "WRITE-A2",
+          "role": "tutor",
+          "text": "Not each word; explain the relevant part of the quotation."
+        },
+        {
+          "turn_id": "WRITE-U3",
+          "role": "learner",
+          "text": "no i mean how it proves my claim not how to cite it"
+        },
+        {
+          "turn_id": "WRITE-A3",
+          "role": "tutor",
+          "text": "I misunderstood and focused on citation formatting."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "reported_progress"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-BIO-01",
+      "thread_id": "BIO",
+      "domain": "Biology",
+      "topic": "Enzyme activity",
+      "author_assessment_root": "Why higher temperature eventually reduces enzyme activity despite faster molecular motion",
+      "raw_learner_message": "if heat speeds stuff up why do enzymes stop working when it gets too hot",
+      "learner_turn_id": "BIO-U1",
+      "prior_turns": [],
+      "oracle": {
+        "intent": "new_difficulty",
+        "action": "explain_missing_mechanism",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "explain_missing_mechanism"
+        ]
+      },
+      "realism_tags": [
+        "everyday_intuition"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-BIO-02",
+      "thread_id": "BIO",
+      "domain": "Biology",
+      "topic": "Enzyme activity",
+      "author_assessment_root": "Why higher temperature eventually reduces enzyme activity despite faster molecular motion",
+      "raw_learner_message": "so the enzyme actually changes shape?",
+      "learner_turn_id": "BIO-U2",
+      "prior_turns": [
+        {
+          "turn_id": "BIO-U1",
+          "role": "learner",
+          "text": "if heat speeds stuff up why do enzymes stop working when it gets too hot"
+        },
+        {
+          "turn_id": "BIO-A1",
+          "role": "tutor",
+          "text": "At first, warming can speed reactions; excessive heat changes the protein structure."
+        }
+      ],
+      "oracle": {
+        "intent": "follow_up",
+        "action": "extend_follow_up",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "extend_follow_up"
+        ]
+      },
+      "realism_tags": [
+        "partial_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-BIO-03",
+      "thread_id": "BIO",
+      "domain": "Biology",
+      "topic": "Enzyme activity",
+      "author_assessment_root": "Why higher temperature eventually reduces enzyme activity despite faster molecular motion",
+      "raw_learner_message": "wait i didnt mean it disappears i meant it stops binding the substrate",
+      "learner_turn_id": "BIO-U3",
+      "prior_turns": [
+        {
+          "turn_id": "BIO-U1",
+          "role": "learner",
+          "text": "if heat speeds stuff up why do enzymes stop working when it gets too hot"
+        },
+        {
+          "turn_id": "BIO-A1",
+          "role": "tutor",
+          "text": "At first, warming can speed reactions; excessive heat changes the protein structure."
+        },
+        {
+          "turn_id": "BIO-U2",
+          "role": "learner",
+          "text": "so the enzyme actually changes shape?"
+        },
+        {
+          "turn_id": "BIO-A2",
+          "role": "tutor",
+          "text": "A change in protein shape can reduce effective substrate binding."
+        }
+      ],
+      "oracle": {
+        "intent": "correction",
+        "action": "acknowledge_correction",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "acknowledge_correction"
+        ]
+      },
+      "realism_tags": [
+        "explicit_correction"
+      ],
+      "scenario_ambiguity": "context_required",
+      "split": "development",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    },
+    {
+      "id": "R52-BIO-04",
+      "thread_id": "BIO",
+      "domain": "Biology",
+      "topic": "Enzyme activity",
+      "author_assessment_root": "Why higher temperature eventually reduces enzyme activity despite faster molecular motion",
+      "raw_learner_message": "oh so the active site can change even though the protein is still there",
+      "learner_turn_id": "BIO-U4",
+      "prior_turns": [
+        {
+          "turn_id": "BIO-U1",
+          "role": "learner",
+          "text": "if heat speeds stuff up why do enzymes stop working when it gets too hot"
+        },
+        {
+          "turn_id": "BIO-A1",
+          "role": "tutor",
+          "text": "At first, warming can speed reactions; excessive heat changes the protein structure."
+        },
+        {
+          "turn_id": "BIO-U2",
+          "role": "learner",
+          "text": "so the enzyme actually changes shape?"
+        },
+        {
+          "turn_id": "BIO-A2",
+          "role": "tutor",
+          "text": "A change in protein shape can reduce effective substrate binding."
+        },
+        {
+          "turn_id": "BIO-U3",
+          "role": "learner",
+          "text": "wait i didnt mean it disappears i meant it stops binding the substrate"
+        },
+        {
+          "turn_id": "BIO-A3",
+          "role": "tutor",
+          "text": "Yes, the protein need not disappear for activity to drop."
+        }
+      ],
+      "oracle": {
+        "intent": "reported_progress",
+        "action": "advance_after_progress",
+        "focus": "auto",
+        "clarification_status": "UNRESOLVED",
+        "acceptable_actions": [
+          "advance_after_progress",
+          "verify_understanding"
+        ]
+      },
+      "realism_tags": [
+        "expressed_reasoning"
+      ],
+      "scenario_ambiguity": "self_contained",
+      "split": "holdout",
+      "provenance": "synthetic_human_authored_script",
+      "learner_outcome": "not_observed",
+      "privacy_class": "synthetic_example_only"
+    }
+  ]
+}

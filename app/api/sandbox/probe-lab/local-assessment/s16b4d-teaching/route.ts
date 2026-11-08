@@ -6,6 +6,7 @@ import {readOpenAIUsage} from '@/sandbox/probe-lab/local-assessment/model-token-
 import {MYWAY_VOICE_SYSTEM_PROMPT} from '@/scripts/sandbox/learning-intelligence/s16b4c-voice.mjs';
 import {TEACHING_ACTIONS} from '@/scripts/sandbox/learning-intelligence/s16b4a-teaching-contract.mjs';
 import {buildAdaptiveDialoguePrompt,S16B5_VOICE_VERSION} from '@/scripts/sandbox/learning-intelligence/s16b5-dialogue.mjs';
+import {buildCalibratedDialoguePrompt,S16B51_VOICE_VERSION} from '@/scripts/sandbox/learning-intelligence/s16b51-fidelity.mjs';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const FORMAT='myway_s16b4d_teaching_v1';
@@ -38,7 +39,8 @@ export async function POST(request:Request){
  const bodyText=await request.text();if(Buffer.byteLength(bodyText,'utf8')>6500)return fail(413,'Payload too large.');
  let incoming:unknown;try{incoming=JSON.parse(bodyText);}catch{return fail(400,'Invalid JSON.');}
  const retry=!!(incoming&&obj(incoming)&&incoming.format_retry===true);
- const adaptive=!!(incoming&&obj(incoming)&&incoming.voice_version===S16B5_VOICE_VERSION);
+ const calibrated=!!(incoming&&obj(incoming)&&incoming.voice_version===S16B51_VOICE_VERSION);
+ const adaptive=!!(incoming&&obj(incoming)&&(incoming.voice_version===S16B5_VOICE_VERSION||calibrated));
  const allowedKeys=adaptive
   ? (retry?'action|context|format|format_retry|model|personalization|variant|voice_version':'action|context|format|model|personalization|variant|voice_version')
   : (retry?'action|context|format|format_retry|model|personalization|variant':'action|context|format|model|personalization|variant');
@@ -53,7 +55,8 @@ export async function POST(request:Request){
  // Keep the 4C contract canonical; replace ONLY its explicit 4C no-interest constraint.
  const legacySystem=MYWAY_VOICE_SYSTEM_PROMPT.replace('Use no interest in this 4C phase.',
   'Interest is optional. Use only the supplied decision: structural_bridge requires a faithful mapping and stated limitation; light_tone is a brief relevant reference; do_not_use means do not mention the interest. Do not infer learner interest, preference, understanding or successful analogy from the decision.')+'\n'+OUTPUT_LENGTH_RULE+(retry?'\n'+RETRY_LENGTH_RULE:'');
- const system=adaptive?buildAdaptiveDialoguePrompt(String(incoming.action),{formatRetry:retry}):legacySystem;
+ const system=calibrated?buildCalibratedDialoguePrompt(String(incoming.action),{formatRetry:retry}):
+  adaptive?buildAdaptiveDialoguePrompt(String(incoming.action),{formatRetry:retry}):legacySystem;
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),30000);
  try{
   const result=await fetch(endpoint.toString(),{method:'POST',redirect:'error',cache:'no-store',signal:abort.signal,
@@ -66,7 +69,7 @@ export async function POST(request:Request){
   const choice=Array.isArray(out.choices)?out.choices[0]:null;const message=obj(choice)?choice.message:null;const raw=obj(message)?message.content:null;
   if(typeof raw!=='string')return fail(502,'Provider returned no structured output.');
   return Response.json({raw,model:typeof out.model==='string'?out.model:incoming.model,usage:readOpenAIUsage(out)},
-   {headers:{'Cache-Control':'no-store','X-MyWay-Mode':adaptive?'s16b5-adaptive-teaching-shadow':'s16b4d-local-teaching-shadow'}});
+   {headers:{'Cache-Control':'no-store','X-MyWay-Mode':calibrated?'s16b51-calibrated-teaching-shadow':adaptive?'s16b5-adaptive-teaching-shadow':'s16b4d-local-teaching-shadow'}});
  }catch{return fail(502,abort.signal.aborted?'Model request timed out.':'Model request failed.');}
  finally{clearTimeout(timer);}
 }
