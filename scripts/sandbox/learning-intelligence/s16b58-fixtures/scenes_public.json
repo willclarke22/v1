@@ -1,0 +1,1698 @@
+[
+  {
+    "scene_id": "SCN01",
+    "title": "Matter and atom-origin tracker",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN01-O00",
+        "semantic_label": "CO₂ input",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN01-O01",
+        "semantic_label": "H₂O input",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN01-O02",
+        "semantic_label": "light source",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN01-O03",
+        "semantic_label": "carbon-containing product",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN01-O04",
+        "semantic_label": "O₂ output",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN01-C00",
+        "action_type": "select_atom_origin",
+        "target_object_ids": [
+          "SCN01-O00",
+          "SCN01-O01",
+          "SCN01-O02",
+          "SCN01-O03",
+          "SCN01-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN01-C01",
+        "action_type": "trace_atom",
+        "target_object_ids": [
+          "SCN01-O00",
+          "SCN01-O01",
+          "SCN01-O02",
+          "SCN01-O03",
+          "SCN01-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN01-C02",
+        "action_type": "toggle_input",
+        "target_object_ids": [
+          "SCN01-O00",
+          "SCN01-O01",
+          "SCN01-O02",
+          "SCN01-O03",
+          "SCN01-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "show separate matter and energy inputs without embedding correct tracing path",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN02",
+    "title": "Light reaction and redox pathway",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN02-O00",
+        "semantic_label": "photon input",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN02-O01",
+        "semantic_label": "photosystem",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN02-O02",
+        "semantic_label": "electron carrier",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN02-O03",
+        "semantic_label": "proton reservoir",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN02-O04",
+        "semantic_label": "ATP/NADPH outputs",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN02-C00",
+        "action_type": "sequence_steps",
+        "target_object_ids": [
+          "SCN02-O00",
+          "SCN02-O01",
+          "SCN02-O02",
+          "SCN02-O03",
+          "SCN02-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN02-C01",
+        "action_type": "select_carrier",
+        "target_object_ids": [
+          "SCN02-O00",
+          "SCN02-O01",
+          "SCN02-O02",
+          "SCN02-O03",
+          "SCN02-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN02-C02",
+        "action_type": "toggle_energy",
+        "target_object_ids": [
+          "SCN02-O00",
+          "SCN02-O01",
+          "SCN02-O02",
+          "SCN02-O03",
+          "SCN02-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "show carriers as distinct from photons and material carbon",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN03",
+    "title": "Calvin cycle carbon flow",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN03-O00",
+        "semantic_label": "CO₂ input",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN03-O01",
+        "semantic_label": "RuBP pool",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN03-O02",
+        "semantic_label": "carbon fixation step",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN03-O03",
+        "semantic_label": "G3P output",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN03-O04",
+        "semantic_label": "RuBP regeneration arc",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN03-C00",
+        "action_type": "select_process",
+        "target_object_ids": [
+          "SCN03-O00",
+          "SCN03-O01",
+          "SCN03-O02",
+          "SCN03-O03",
+          "SCN03-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN03-C01",
+        "action_type": "sequence_steps",
+        "target_object_ids": [
+          "SCN03-O00",
+          "SCN03-O01",
+          "SCN03-O02",
+          "SCN03-O03",
+          "SCN03-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN03-C02",
+        "action_type": "block_step",
+        "target_object_ids": [
+          "SCN03-O00",
+          "SCN03-O01",
+          "SCN03-O02",
+          "SCN03-O03",
+          "SCN03-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "not all output branches are linear",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN04",
+    "title": "Cellular energy-pathway switchboard",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN04-O00",
+        "semantic_label": "glucose",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN04-O01",
+        "semantic_label": "glycolysis",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN04-O02",
+        "semantic_label": "fermentation branch",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN04-O03",
+        "semantic_label": "mitochondrial respiration branch",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN04-O04",
+        "semantic_label": "ATP pool",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN04-C00",
+        "action_type": "toggle_oxygen",
+        "target_object_ids": [
+          "SCN04-O00",
+          "SCN04-O01",
+          "SCN04-O02",
+          "SCN04-O03",
+          "SCN04-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN04-C01",
+        "action_type": "select_branch",
+        "target_object_ids": [
+          "SCN04-O00",
+          "SCN04-O01",
+          "SCN04-O02",
+          "SCN04-O03",
+          "SCN04-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN04-C02",
+        "action_type": "predict_outcome",
+        "target_object_ids": [
+          "SCN04-O00",
+          "SCN04-O01",
+          "SCN04-O02",
+          "SCN04-O03",
+          "SCN04-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "simplified, not full biochemical flux model",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN05",
+    "title": "Dual organelle proton-gradient scene",
+    "recommended_modality": "3d_optional_2d_default",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN05-O00",
+        "semantic_label": "mitochondrion matrix",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O01",
+        "semantic_label": "intermembrane space",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O02",
+        "semantic_label": "inner membrane",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O03",
+        "semantic_label": "chloroplast stroma",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O04",
+        "semantic_label": "thylakoid lumen",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O05",
+        "semantic_label": "thylakoid membrane",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O06",
+        "semantic_label": "ATP synthase x2",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN05-O07",
+        "semantic_label": "proton tokens",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN05-C00",
+        "action_type": "place_protons",
+        "target_object_ids": [
+          "SCN05-O00",
+          "SCN05-O01",
+          "SCN05-O02",
+          "SCN05-O03",
+          "SCN05-O04",
+          "SCN05-O05",
+          "SCN05-O06",
+          "SCN05-O07"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN05-C01",
+        "action_type": "draw_flow_arrow",
+        "target_object_ids": [
+          "SCN05-O00",
+          "SCN05-O01",
+          "SCN05-O02",
+          "SCN05-O03",
+          "SCN05-O04",
+          "SCN05-O05",
+          "SCN05-O06",
+          "SCN05-O07"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN05-C02",
+        "action_type": "toggle_pump",
+        "target_object_ids": [
+          "SCN05-O00",
+          "SCN05-O01",
+          "SCN05-O02",
+          "SCN05-O03",
+          "SCN05-O04",
+          "SCN05-O05",
+          "SCN05-O06",
+          "SCN05-O07"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN05-C03",
+        "action_type": "predict_when_blocked",
+        "target_object_ids": [
+          "SCN05-O00",
+          "SCN05-O01",
+          "SCN05-O02",
+          "SCN05-O03",
+          "SCN05-O04",
+          "SCN05-O05",
+          "SCN05-O06",
+          "SCN05-O07"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "render separate compartments accurately; distinguish proton pump vs ATP synthase",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN06",
+    "title": "Electrochemical membrane simulator",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN06-O00",
+        "semantic_label": "left compartment",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN06-O01",
+        "semantic_label": "right compartment",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN06-O02",
+        "semantic_label": "membrane",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN06-O03",
+        "semantic_label": "ion tokens",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN06-O04",
+        "semantic_label": "charge indicator",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN06-O05",
+        "semantic_label": "ion channel",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN06-C00",
+        "action_type": "change_concentration",
+        "target_object_ids": [
+          "SCN06-O00",
+          "SCN06-O01",
+          "SCN06-O02",
+          "SCN06-O03",
+          "SCN06-O04",
+          "SCN06-O05"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN06-C01",
+        "action_type": "toggle_voltage",
+        "target_object_ids": [
+          "SCN06-O00",
+          "SCN06-O01",
+          "SCN06-O02",
+          "SCN06-O03",
+          "SCN06-O04",
+          "SCN06-O05"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN06-C02",
+        "action_type": "select_direction",
+        "target_object_ids": [
+          "SCN06-O00",
+          "SCN06-O01",
+          "SCN06-O02",
+          "SCN06-O03",
+          "SCN06-O04",
+          "SCN06-O05"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN06-C03",
+        "action_type": "toggle_channel",
+        "target_object_ids": [
+          "SCN06-O00",
+          "SCN06-O01",
+          "SCN06-O02",
+          "SCN06-O03",
+          "SCN06-O04",
+          "SCN06-O05"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "do not infer ion flow from concentration alone",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN07",
+    "title": "Osmosis cell-in-solution simulator",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN07-O00",
+        "semantic_label": "cell membrane",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN07-O01",
+        "semantic_label": "internal water",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN07-O02",
+        "semantic_label": "external water",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN07-O03",
+        "semantic_label": "solute particles",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN07-O04",
+        "semantic_label": "volume display",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN07-C00",
+        "action_type": "adjust_solute",
+        "target_object_ids": [
+          "SCN07-O00",
+          "SCN07-O01",
+          "SCN07-O02",
+          "SCN07-O03",
+          "SCN07-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN07-C01",
+        "action_type": "predict_water_flow",
+        "target_object_ids": [
+          "SCN07-O00",
+          "SCN07-O01",
+          "SCN07-O02",
+          "SCN07-O03",
+          "SCN07-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN07-C02",
+        "action_type": "toggle_permeability",
+        "target_object_ids": [
+          "SCN07-O00",
+          "SCN07-O01",
+          "SCN07-O02",
+          "SCN07-O03",
+          "SCN07-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "preserve water/solute distinction",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN08",
+    "title": "Neuron membrane event timeline",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN08-O00",
+        "semantic_label": "membrane",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN08-O01",
+        "semantic_label": "Na+ channel",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN08-O02",
+        "semantic_label": "K+ channel",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN08-O03",
+        "semantic_label": "voltage-time trace",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN08-O04",
+        "semantic_label": "synaptic terminal",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN08-C00",
+        "action_type": "sequence_channel_state",
+        "target_object_ids": [
+          "SCN08-O00",
+          "SCN08-O01",
+          "SCN08-O02",
+          "SCN08-O03",
+          "SCN08-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN08-C01",
+        "action_type": "mark_phase",
+        "target_object_ids": [
+          "SCN08-O00",
+          "SCN08-O01",
+          "SCN08-O02",
+          "SCN08-O03",
+          "SCN08-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN08-C02",
+        "action_type": "block_ion_entry",
+        "target_object_ids": [
+          "SCN08-O00",
+          "SCN08-O01",
+          "SCN08-O02",
+          "SCN08-O03",
+          "SCN08-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "do not confuse ion pump and channel",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN09",
+    "title": "Renal transporter membrane scene",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN09-O00",
+        "semantic_label": "lumen",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN09-O01",
+        "semantic_label": "tubule cell",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN09-O02",
+        "semantic_label": "blood side",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN09-O03",
+        "semantic_label": "Na+/K+ pump",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN09-O04",
+        "semantic_label": "glucose cotransporter",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN09-C00",
+        "action_type": "toggle_pump",
+        "target_object_ids": [
+          "SCN09-O00",
+          "SCN09-O01",
+          "SCN09-O02",
+          "SCN09-O03",
+          "SCN09-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN09-C01",
+        "action_type": "select_glucose_direction",
+        "target_object_ids": [
+          "SCN09-O00",
+          "SCN09-O01",
+          "SCN09-O02",
+          "SCN09-O03",
+          "SCN09-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN09-C02",
+        "action_type": "predict_change",
+        "target_object_ids": [
+          "SCN09-O00",
+          "SCN09-O01",
+          "SCN09-O02",
+          "SCN09-O03",
+          "SCN09-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "show apical versus basolateral membranes",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN10",
+    "title": "Graph and feedback laboratory",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN10-O00",
+        "semantic_label": "input slider",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN10-O01",
+        "semantic_label": "output chart",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN10-O02",
+        "semantic_label": "rate overlay",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN10-O03",
+        "semantic_label": "set point",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN10-O04",
+        "semantic_label": "feedback actuator",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN10-C00",
+        "action_type": "adjust_input",
+        "target_object_ids": [
+          "SCN10-O00",
+          "SCN10-O01",
+          "SCN10-O02",
+          "SCN10-O03",
+          "SCN10-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN10-C01",
+        "action_type": "select_slope",
+        "target_object_ids": [
+          "SCN10-O00",
+          "SCN10-O01",
+          "SCN10-O02",
+          "SCN10-O03",
+          "SCN10-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN10-C02",
+        "action_type": "toggle_feedback",
+        "target_object_ids": [
+          "SCN10-O00",
+          "SCN10-O01",
+          "SCN10-O02",
+          "SCN10-O03",
+          "SCN10-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "support counterfactual conditions and show units",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN11",
+    "title": "Oxygen transport and tissue perfusion",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN11-O00",
+        "semantic_label": "capillary",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN11-O01",
+        "semantic_label": "hemoglobin",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN11-O02",
+        "semantic_label": "tissue",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN11-O03",
+        "semantic_label": "mitochondrion",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN11-O04",
+        "semantic_label": "blood-flow control",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN11-C00",
+        "action_type": "adjust_flow",
+        "target_object_ids": [
+          "SCN11-O00",
+          "SCN11-O01",
+          "SCN11-O02",
+          "SCN11-O03",
+          "SCN11-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN11-C01",
+        "action_type": "adjust_saturation",
+        "target_object_ids": [
+          "SCN11-O00",
+          "SCN11-O01",
+          "SCN11-O02",
+          "SCN11-O03",
+          "SCN11-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN11-C02",
+        "action_type": "predict_delivery",
+        "target_object_ids": [
+          "SCN11-O00",
+          "SCN11-O01",
+          "SCN11-O02",
+          "SCN11-O03",
+          "SCN11-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "distinguish delivery from consumption",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  },
+  {
+    "scene_id": "SCN12",
+    "title": "Fair-test experimental design desk",
+    "recommended_modality": "2d",
+    "intent": "probe_scene_not_illustration_only",
+    "objects": [
+      {
+        "object_id": "SCN12-O00",
+        "semantic_label": "two learner groups",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN12-O01",
+        "semantic_label": "strategy cards",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.35,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN12-O02",
+        "semantic_label": "baseline probe",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.6,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN12-O03",
+        "semantic_label": "transfer probe",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.85,
+          "y": 0.2,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      },
+      {
+        "object_id": "SCN12-O04",
+        "semantic_label": "outcome table",
+        "geometry_hint": "labeled_schematic_proxy",
+        "position_normalized": {
+          "x": 0.1,
+          "y": 0.5,
+          "z": 0
+        },
+        "selectable": true,
+        "label_visible_to_learner": true
+      }
+    ],
+    "controls": [
+      {
+        "control_id": "SCN12-C00",
+        "action_type": "assign_strategy",
+        "target_object_ids": [
+          "SCN12-O00",
+          "SCN12-O01",
+          "SCN12-O02",
+          "SCN12-O03",
+          "SCN12-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN12-C01",
+        "action_type": "select_control",
+        "target_object_ids": [
+          "SCN12-O00",
+          "SCN12-O01",
+          "SCN12-O02",
+          "SCN12-O03",
+          "SCN12-O04"
+        ],
+        "emit_event": true
+      },
+      {
+        "control_id": "SCN12-C02",
+        "action_type": "compare_outcomes",
+        "target_object_ids": [
+          "SCN12-O00",
+          "SCN12-O01",
+          "SCN12-O02",
+          "SCN12-O03",
+          "SCN12-O04"
+        ],
+        "emit_event": true
+      }
+    ],
+    "allowed_event_shape": {
+      "probe_id": "string",
+      "control_id": "string",
+      "object_id": "string_optional",
+      "selected_value": "string_or_number",
+      "attempt": "integer",
+      "elapsed_ms": "integer_optional",
+      "hint_used": "boolean",
+      "learner_explanation": "string_optional"
+    },
+    "states": [
+      "presented",
+      "accepted",
+      "interacting",
+      "submitted",
+      "feedback",
+      "retry",
+      "completed",
+      "declined"
+    ],
+    "renderer_notes": "never show hidden learner truth to assessment models",
+    "accessibility": [
+      "keyboard equivalent for every control",
+      "spoken labels",
+      "reduced motion"
+    ],
+    "authoring_status": "illustrative_renderer_contract_not_complete_geometry_or_built_visual",
+    "answer_key_in_public_scene": false
+  }
+]

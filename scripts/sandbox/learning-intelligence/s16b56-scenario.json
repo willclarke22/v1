@@ -1,0 +1,25 @@
+{
+  "schema": "myway_s16b56_synthetic_journey_v1",
+  "source": "researcher_authored_synthetic_not_human",
+  "description": "Twelve bounded prompts across three sessions. They are starting conditions and learner goals, not answer keys. Learner=model generates responsive synthetic turns; learner=scripted is transport plumbing only.",
+  "sessions": [
+    {"id":"J1","name":"Carbon entering sugar","steps":[
+      {"id":"J1-1","learner":"I'm confused about how carbon gets into glucose during photosynthesis. Does sunlight become part of the sugar?","aim":"Express confusion about matter versus energy without declaring a fixed misconception.","offline_reply":"The carbon comes from CO2, whereas sunlight provides energy. Which part is still unclear?"},
+      {"id":"J1-2","learner":"Okay, I think carbon comes from CO2 and sunlight provides the energy. But where does the carbon go first?","aim":"Respond to the tutor's answer; attempt an explanation, or point out a missing step.","offline_reply":"Rubisco fixes CO2 onto RuBP in the Calvin cycle. That starts incorporating the carbon into organic molecules."},
+      {"id":"J1-3","learner":"I'm not sure I followed that. Please explain it more simply, without jumping ahead to ATP.","aim":"Push back if an explanation was dense, or request an alternative explanation grounded in what the tutor actually said.","offline_reply":"CO2 provides a carbon atom that attaches to an existing molecule. A sequence of later steps can use it to build sugars."},
+      {"id":"J1-4","learner":"Could you test me with one question rather than giving another explanation?","aim":"Request an understanding check; respond to previous tutor instead of following a predetermined conclusion.","offline_reply":"Sure: where do the carbon atoms in sugar come from?"}
+    ]},
+    {"id":"J2","name":"Return, progress, new difficulty","steps":[
+      {"id":"J2-1","learner":"I'm back. I remember mixing up sunlight and carbon in glucose. Can you help me check what I remember?","aim":"Return after days, possibly uncertain about earlier carbon source and earlier check.","offline_reply":"Of course. Where does the carbon in glucose come from, and what does sunlight contribute?"},
+      {"id":"J2-2","learner":"Carbon comes from CO2, light is energy. Is that enough, or am I skipping the important part?","aim":"Attempt a response to the question and seek feedback on incomplete reasoning.","offline_reply":"That is the essential distinction. If you want the mechanism, CO2 is fixed by Rubisco, and later reactions supply carbon for sugars."},
+      {"id":"J2-3","learner":"I have a separate question now: where does the oxygen gas released in photosynthesis come from?","aim":"Introduce a distinct but related oxygen-release mechanism without assuming it is the same root.","offline_reply":"The released oxygen gas comes from splitting water, not from CO2."},
+      {"id":"J2-4","learner":"Wait, so CO2 gives carbon to sugar but water supplies released oxygen? I think those are different steps.","aim":"Attempt to compare two mechanisms; correct the tutor if it confuses them.","offline_reply":"Yes, they are distinct processes. CO2 supplies carbon through fixation; oxygen gas is released from water during the light reactions."}
+    ]},
+    {"id":"J3","name":"Transfer, personalized style, optional diagram","steps":[
+      {"id":"J3-1","learner":"Now I'm studying mitochondria. How are proton gradients in mitochondria related to those in chloroplasts? Please keep it brief and explain the mechanism.","aim":"Explore cross-topic transfer and explicitly state a preference for concise mechanism-first teaching.","offline_reply":"Both use a proton gradient to drive ATP synthase. The energy sources and membrane compartments differ."},
+      {"id":"J3-2","learner":"Could you compare which side of the membrane accumulates protons in each organelle? A simple diagram could help.","aim":"Ask for a specific mechanistic visual only if useful after the tutor response.","offline_reply":"A comparison diagram could label the thylakoid lumen and mitochondrial intermembrane space; I have not rendered one."},
+      {"id":"J3-3","learner":"Before drawing anything, check this: protons move down the gradient through ATP synthase, but the compartments are different. Is that right?","aim":"Defer visual in favor of checking reasoning. If tutor erred, point out the error instead.","offline_reply":"That's right. Which compartment has the higher proton concentration in each organelle?"},
+      {"id":"J3-4","learner":"I might be mixing up the directions again. Could you ask me just one question about which compartment accumulates protons?","aim":"Request a focused check, not another unrelated explanation, and allow uncertainty.","offline_reply":"In a chloroplast, where do protons accumulate during the light reactions?"}
+    ]}
+  ]
+}

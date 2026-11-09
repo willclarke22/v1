@@ -1,0 +1,2292 @@
+[
+  {
+    "probe_id": "BIO01-P1",
+    "topic_id": "BIO01",
+    "type": "explain_reasoning",
+    "prompt": "Explain what supplies the carbon atoms in glucose and what role sunlight plays.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO01-P2",
+    "topic_id": "BIO01",
+    "type": "prediction",
+    "prompt": "A potted plant receives light and water but no available CO₂. Predict what happens to new sugar production and defend your reasoning.",
+    "response_mode": "short_response",
+    "scene_id": "SCN01",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO02-P1",
+    "topic_id": "BIO02",
+    "type": "explain_reasoning",
+    "prompt": "Explain what ATP and NADPH each contribute after light is absorbed.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO02-P2",
+    "topic_id": "BIO02",
+    "type": "sequence",
+    "prompt": "Arrange these events in order: electron transport, light absorption, ATP/NADPH use in carbon fixation, formation of a proton gradient.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN02",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "sequence",
+      "items": [
+        {
+          "value_id": "light",
+          "label": "light absorbed"
+        },
+        {
+          "value_id": "electrons",
+          "label": "electron transport"
+        },
+        {
+          "value_id": "gradient",
+          "label": "proton gradient builds"
+        },
+        {
+          "value_id": "carriers",
+          "label": "ATP/NADPH used during fixation"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO03-P1",
+    "topic_id": "BIO03",
+    "type": "explain_reasoning",
+    "prompt": "Explain why RuBP must be regenerated during the Calvin cycle.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO03-P2",
+    "topic_id": "BIO03",
+    "type": "prediction",
+    "prompt": "If a carbon-fixation enzyme is inhibited while light reactions continue briefly, predict the immediate effect on carbon incorporation.",
+    "response_mode": "short_response",
+    "scene_id": "SCN03",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO04-P1",
+    "topic_id": "BIO04",
+    "type": "explain_reasoning",
+    "prompt": "Explain where glycolysis occurs and how it produces some ATP without mitochondrial ATP synthase.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO04-P2",
+    "topic_id": "BIO04",
+    "type": "prediction",
+    "prompt": "With oxygen suddenly limited, predict whether glycolysis must stop immediately and justify.",
+    "response_mode": "short_response",
+    "scene_id": "SCN04",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO05-P1",
+    "topic_id": "BIO05",
+    "type": "explain_reasoning",
+    "prompt": "Explain how electrons moving through the chain contribute to a proton gradient.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO05-P2",
+    "topic_id": "BIO05",
+    "type": "prediction",
+    "prompt": "If electron transport is blocked upstream, predict what happens to proton pumping and ATP synthase output.",
+    "response_mode": "short_response",
+    "scene_id": "SCN05",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO06-P1",
+    "topic_id": "BIO06",
+    "type": "explain_reasoning",
+    "prompt": "Describe what happens when protons return through ATP synthase and why that differs from proton pumping.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "BIO06-P2",
+    "topic_id": "BIO06",
+    "type": "scene_select",
+    "prompt": "For a mitochondrion, select the compartment into which protons normally flow through ATP synthase during ATP production.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN05",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "matrix",
+          "label": "matrix"
+        },
+        {
+          "value_id": "intermembrane_space",
+          "label": "intermembrane space"
+        },
+        {
+          "value_id": "cytosol",
+          "label": "cytosol"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM01-P1",
+    "topic_id": "CHEM01",
+    "type": "explain_reasoning",
+    "prompt": "Track carbon atoms from reactant molecules to products without creating or destroying atoms.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM01-P2",
+    "topic_id": "CHEM01",
+    "type": "scene_select",
+    "prompt": "In a simple diagram of CO₂ converted into an organic product, mark which input provides its carbon atom.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN01",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "carbon_dioxide",
+          "label": "CO₂"
+        },
+        {
+          "value_id": "sunlight",
+          "label": "sunlight"
+        },
+        {
+          "value_id": "water",
+          "label": "H₂O"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM02-P1",
+    "topic_id": "CHEM02",
+    "type": "explain_reasoning",
+    "prompt": "Explain what must be included when checking mass conservation during a reaction that releases gas.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM02-P2",
+    "topic_id": "CHEM02",
+    "type": "prediction",
+    "prompt": "A closed vessel loses dissolved gas but not total matter. Predict the sealed system’s total mass after the reaction.",
+    "response_mode": "short_response",
+    "scene_id": "SCN01",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM03-P1",
+    "topic_id": "CHEM03",
+    "type": "explain_reasoning",
+    "prompt": "Explain why sunlight can power sugar synthesis without donating carbon atoms.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM03-P2",
+    "topic_id": "CHEM03",
+    "type": "prediction",
+    "prompt": "If a lamp shines blue instead of red light but CO₂ is unchanged, predict whether the light supplies new carbon atoms.",
+    "response_mode": "short_response",
+    "scene_id": "SCN01",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM04-P1",
+    "topic_id": "CHEM04",
+    "type": "explain_reasoning",
+    "prompt": "Explain oxidation and reduction using electron movement.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM04-P2",
+    "topic_id": "CHEM04",
+    "type": "scene_select",
+    "prompt": "In a pair of connected carriers, identify which is reduced when it accepts an electron.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN02",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "acceptor_reduced",
+          "label": "electron acceptor is reduced"
+        },
+        {
+          "value_id": "acceptor_oxidized",
+          "label": "electron acceptor is oxidized"
+        },
+        {
+          "value_id": "both_unaffected",
+          "label": "neither carrier changes redox state"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM05-P1",
+    "topic_id": "CHEM05",
+    "type": "explain_reasoning",
+    "prompt": "Explain the difference between lowering activation energy and changing the overall energy change of a reaction.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM05-P2",
+    "topic_id": "CHEM05",
+    "type": "prediction",
+    "prompt": "Predict what happens to reaction rate if an enzyme active site is blocked, with substrate concentration held constant.",
+    "response_mode": "short_response",
+    "scene_id": "SCN03",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM06-P1",
+    "topic_id": "CHEM06",
+    "type": "explain_reasoning",
+    "prompt": "Explain why electrical potential can matter when predicting ion movement across a membrane.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CHEM06-P2",
+    "topic_id": "CHEM06",
+    "type": "scene_select",
+    "prompt": "A positively charged ion is more concentrated outside a cell. Besides concentration, what must you know to predict the ion’s net movement through an available channel?",
+    "response_mode": "scene_action",
+    "scene_id": "SCN06",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "electrical_potential",
+          "label": "membrane voltage/electrical potential and access to a channel"
+        },
+        {
+          "value_id": "temperature_only",
+          "label": "only temperature"
+        },
+        {
+          "value_id": "volume_only",
+          "label": "only cell volume"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL01-P1",
+    "topic_id": "CELL01",
+    "type": "explain_reasoning",
+    "prompt": "Describe where protons accumulate during the light reactions and which membrane separates the compartments.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL01-P2",
+    "topic_id": "CELL01",
+    "type": "scene_select",
+    "prompt": "Mark where protons accumulate inside a chloroplast during light-driven ATP synthesis.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN05",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "lumen",
+          "label": "thylakoid lumen"
+        },
+        {
+          "value_id": "stroma",
+          "label": "chloroplast stroma"
+        },
+        {
+          "value_id": "cytosol",
+          "label": "cytosol"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL02-P1",
+    "topic_id": "CELL02",
+    "type": "explain_reasoning",
+    "prompt": "Identify matrix and intermembrane space and describe their roles in ATP synthesis.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL02-P2",
+    "topic_id": "CELL02",
+    "type": "scene_select",
+    "prompt": "Mark where electron transport pumps protons relative to the inner mitochondrial membrane.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN05",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "intermembrane_space",
+          "label": "intermembrane space"
+        },
+        {
+          "value_id": "matrix",
+          "label": "mitochondrial matrix"
+        },
+        {
+          "value_id": "cytosol",
+          "label": "cytosol"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL03-P1",
+    "topic_id": "CELL03",
+    "type": "explain_reasoning",
+    "prompt": "Explain why ion channels and pumps have different effects on movement.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL03-P2",
+    "topic_id": "CELL03",
+    "type": "prediction",
+    "prompt": "Choose a likely outcome when a selective channel closes while the electrochemical gradient remains.",
+    "response_mode": "short_response",
+    "scene_id": "SCN06",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL04-P1",
+    "topic_id": "CELL04",
+    "type": "explain_reasoning",
+    "prompt": "Explain osmosis in a semipermeable membrane example.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL04-P2",
+    "topic_id": "CELL04",
+    "type": "scene_select",
+    "prompt": "A cell is placed in a more concentrated solution; choose the direction of net water movement.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN07",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "out",
+          "label": "net out of cell"
+        },
+        {
+          "value_id": "in",
+          "label": "net into cell"
+        },
+        {
+          "value_id": "none",
+          "label": "no possible water movement"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL05-P1",
+    "topic_id": "CELL05",
+    "type": "explain_reasoning",
+    "prompt": "Describe what a negative-feedback response does after a variable rises above its set point.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL05-P2",
+    "topic_id": "CELL05",
+    "type": "prediction",
+    "prompt": "Predict what happens if a sensor cannot detect the variable but the actuator still works.",
+    "response_mode": "short_response",
+    "scene_id": "SCN10",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL06-P1",
+    "topic_id": "CELL06",
+    "type": "explain_reasoning",
+    "prompt": "Explain why fermentation can allow glycolysis to continue even without functioning aerobic electron transport.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "CELL06-P2",
+    "topic_id": "CELL06",
+    "type": "prediction",
+    "prompt": "Predict whether adding a fermentation pathway can support glycolysis when oxygen becomes scarce.",
+    "response_mode": "short_response",
+    "scene_id": "SCN04",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS01-P1",
+    "topic_id": "PHYS01",
+    "type": "explain_reasoning",
+    "prompt": "Explain the roles of ion gradients, permeability, and pumps in resting potential.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS01-P2",
+    "topic_id": "PHYS01",
+    "type": "scene_select",
+    "prompt": "Identify which change would tend to depolarize a resting neuron: opening many Na⁺ channels or opening more K⁺ leak channels.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN08",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "sodium",
+          "label": "more Na⁺ channels open"
+        },
+        {
+          "value_id": "potassium",
+          "label": "more K⁺ leak channels open"
+        },
+        {
+          "value_id": "both_same",
+          "label": "both must depolarize equally"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS02-P1",
+    "topic_id": "PHYS02",
+    "type": "explain_reasoning",
+    "prompt": "Explain the ion-channel sequence during depolarization and repolarization.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS02-P2",
+    "topic_id": "PHYS02",
+    "type": "sequence",
+    "prompt": "Put these phases in order: threshold, rapid depolarization, repolarization, return toward resting state.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN08",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "sequence",
+      "items": [
+        {
+          "value_id": "threshold",
+          "label": "threshold reached"
+        },
+        {
+          "value_id": "depolarization",
+          "label": "rapid depolarization"
+        },
+        {
+          "value_id": "repolarization",
+          "label": "repolarization"
+        },
+        {
+          "value_id": "rest",
+          "label": "return toward resting level"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS03-P1",
+    "topic_id": "PHYS03",
+    "type": "explain_reasoning",
+    "prompt": "Explain how an arriving action potential triggers chemical neurotransmitter release.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS03-P2",
+    "topic_id": "PHYS03",
+    "type": "prediction",
+    "prompt": "If presynaptic Ca²⁺ entry is blocked, predict what happens to vesicle fusion and release.",
+    "response_mode": "short_response",
+    "scene_id": "SCN08",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS04-P1",
+    "topic_id": "PHYS04",
+    "type": "explain_reasoning",
+    "prompt": "Explain one way ATP is needed in the cross-bridge cycle and one role in muscle relaxation.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS04-P2",
+    "topic_id": "PHYS04",
+    "type": "prediction",
+    "prompt": "If ATP rapidly depletes, predict whether myosin can continue detaching normally from actin.",
+    "response_mode": "short_response",
+    "scene_id": "SCN04",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS05-P1",
+    "topic_id": "PHYS05",
+    "type": "explain_reasoning",
+    "prompt": "Distinguish blood oxygen transport from mitochondrial oxygen consumption.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS05-P2",
+    "topic_id": "PHYS05",
+    "type": "prediction",
+    "prompt": "During exertion, predict how reduced blood flow to muscle affects local oxygen delivery even when saturation is unchanged.",
+    "response_mode": "short_response",
+    "scene_id": "SCN11",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS06-P1",
+    "topic_id": "PHYS06",
+    "type": "explain_reasoning",
+    "prompt": "Explain how a sodium gradient can indirectly drive reabsorption of another solute.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "PHYS06-P2",
+    "topic_id": "PHYS06",
+    "type": "prediction",
+    "prompt": "In a proximal tubule schematic, predict what happens to coupled glucose uptake if the basolateral Na⁺/K⁺ pump is blocked.",
+    "response_mode": "short_response",
+    "scene_id": "SCN09",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT01-P1",
+    "topic_id": "QUANT01",
+    "type": "explain_reasoning",
+    "prompt": "Explain when doubling a reactant could fail to double an observed rate.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT01-P2",
+    "topic_id": "QUANT01",
+    "type": "prediction",
+    "prompt": "In a simple limiting-input model, one input is limiting. You double a different, nonlimiting input while everything else stays fixed. Predict the immediate rate change.",
+    "response_mode": "short_response",
+    "scene_id": "SCN10",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT02-P1",
+    "topic_id": "QUANT02",
+    "type": "explain_reasoning",
+    "prompt": "Explain the difference between a rising value and a rising rate in a time-series graph.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT02-P2",
+    "topic_id": "QUANT02",
+    "type": "scene_select",
+    "prompt": "A chart shows (time, level): (0,2), (1,4), (2,9), (3,10). Which one-hour interval has the steepest increase?",
+    "response_mode": "scene_action",
+    "scene_id": "SCN10",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "t0_t1",
+          "label": "0→1"
+        },
+        {
+          "value_id": "t1_t2",
+          "label": "1→2"
+        },
+        {
+          "value_id": "t2_t3",
+          "label": "2→3"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT03-P1",
+    "topic_id": "QUANT03",
+    "type": "explain_reasoning",
+    "prompt": "Explain how a compartment can have high concentration while net inflow is zero.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "QUANT03-P2",
+    "topic_id": "QUANT03",
+    "type": "numeric",
+    "prompt": "If input is 8 units/minute and output is 5 units/minute, predict the change in a compartment after 2 minutes.",
+    "response_mode": "short_response",
+    "scene_id": "SCN06",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "numeric",
+      "units": "units",
+      "requires_explanation": true,
+      "allow_skip": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS01-P1",
+    "topic_id": "REAS01",
+    "type": "explain_reasoning",
+    "prompt": "Explain why an appropriate comparison is needed to infer whether an intervention caused improvement.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS01-P2",
+    "topic_id": "REAS01",
+    "type": "scene_select",
+    "prompt": "Choose the fairer test of whether an interactive scene improves understanding: (A) comparable learners receive verbal or interactive instruction and take the same new transfer probe; or (B) one learner gets a visual plus extra practice, while the comparison learner gets neither.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN12",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "A",
+          "label": "A: comparable groups, same transfer probe"
+        },
+        {
+          "value_id": "B",
+          "label": "B: one learner gets more practice and visual"
+        },
+        {
+          "value_id": "equal",
+          "label": "Both equally isolate the visual intervention"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS02-P1",
+    "topic_id": "REAS02",
+    "type": "explain_reasoning",
+    "prompt": "Explain how to test whether a mechanism learned in one organelle transfers to the other.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS02-P2",
+    "topic_id": "REAS02",
+    "type": "prediction",
+    "prompt": "After a mitochondrial example, predict what would happen if ATP synthase in a chloroplast could not pass H⁺.",
+    "response_mode": "short_response",
+    "scene_id": "SCN05",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "short_prediction",
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS03-P1",
+    "topic_id": "REAS03",
+    "type": "explain_reasoning",
+    "prompt": "Explain why a learner can answer correctly but still lack evidence of lasting mastery.",
+    "response_mode": "free_text",
+    "scene_id": null,
+    "assessment_targets": [
+      "mechanistic_explanation",
+      "evidence_of_understanding"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "free_text",
+      "minimum_information": [
+        "learner_reasoning",
+        "confidence_optional"
+      ],
+      "record_incorrect_reasoning": true,
+      "hint_policy": "no_immediate_answer_before_independent_transfer"
+    },
+    "scene_usage": "no_scene_required",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  },
+  {
+    "probe_id": "REAS03-P2",
+    "topic_id": "REAS03",
+    "type": "scene_select",
+    "prompt": "A learner answers correctly once after a hint but incorrectly twice without hints. Choose whether this demonstrates stable mastery, no knowledge at all, or insufficient evidence of mastery.",
+    "response_mode": "scene_action",
+    "scene_id": "SCN12",
+    "assessment_targets": [
+      "prediction_or_transfer",
+      "reasoning",
+      "confidence"
+    ],
+    "supports_diagnostic_inference": true,
+    "model_visible": true,
+    "scoring_visibility": "private_separate_file",
+    "response_contract": {
+      "kind": "single_choice_or_scene_action",
+      "options": [
+        {
+          "value_id": "mastered",
+          "label": "Stable mastery demonstrated"
+        },
+        {
+          "value_id": "none",
+          "label": "No knowledge at all"
+        },
+        {
+          "value_id": "insufficient",
+          "label": "Insufficient evidence of mastery"
+        }
+      ],
+      "requires_explanation": true,
+      "allow_skip": true,
+      "log_attempts": true
+    },
+    "scene_usage": "optional_scene_with_probe",
+    "probe_response_event_schema": [
+      "probe_id",
+      "learner_id",
+      "attempt",
+      "response",
+      "confidence_optional",
+      "explanation_optional",
+      "hint_used",
+      "declined",
+      "timestamp_or_turn_id"
+    ]
+  }
+]

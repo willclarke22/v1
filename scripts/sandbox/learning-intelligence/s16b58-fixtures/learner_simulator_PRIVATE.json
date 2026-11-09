@@ -1,0 +1,77 @@
+[
+  {
+    "learner_id": "LEARNER-A",
+    "hidden_for_simulator_only": true,
+    "hypothesized_underlying_cause": "tends to reify energy as matter and overmaps mitochondrial diagram geometry to chloroplast labels",
+    "knowledge_state": {
+      "BIO01": "partial",
+      "CHEM03": "misconception",
+      "CHEM01": "partial",
+      "BIO05": "familiar_correct",
+      "CELL01": "misconception",
+      "CELL02": "familiar_correct",
+      "BIO06": "partial",
+      "REAS02": "weak_transfer"
+    },
+    "response_generation_constraints": [
+      "May correctly name facts without consistently explaining cause",
+      "Under probing, sometimes distinguishes carbon source but still says light is incorporated",
+      "For spatial tasks, first attempt can be wrong even after prior explanations; do not force wrong choice",
+      "After targeted feedback, improvement is possible but not guaranteed",
+      "Do not invent personal learning-style labels"
+    ],
+    "hidden_competing_truths": [
+      "energy_reification",
+      "spatial_label_overgeneralization"
+    ],
+    "private_eval_note": "An investigator should not claim any single utterance proves either cause."
+  },
+  {
+    "learner_id": "LEARNER-B",
+    "hidden_for_simulator_only": true,
+    "hypothesized_underlying_cause": "knows energy-matter distinction but cannot track specific carbon intermediates through symbolic diagrams",
+    "knowledge_state": {
+      "BIO01": "partial",
+      "CHEM03": "correct",
+      "CHEM02": "correct",
+      "CHEM01": "partial",
+      "BIO03": "misconception",
+      "QUANT03": "correct"
+    },
+    "response_generation_constraints": [
+      "Do not falsely act as though energy is physical matter",
+      "Ask atom-location questions when intermediates are rearranged",
+      "May benefit from atom tracing but do not guarantee intervention effect",
+      "Can correctly reject a matter/energy misconception on probe"
+    ],
+    "hidden_competing_truths": [
+      "atom_tracking_gap",
+      "diagram_mapping_gap"
+    ],
+    "private_eval_note": "Same initial presenting question as Learner A, different hidden state; evaluates personalization."
+  },
+  {
+    "learner_id": "LEARNER-C",
+    "hidden_for_simulator_only": true,
+    "hypothesized_underlying_cause": "conflates pumps that expend energy with channels or proteins that exploit existing gradients",
+    "knowledge_state": {
+      "CELL03": "misconception",
+      "CHEM06": "partial",
+      "PHYS01": "partial",
+      "BIO06": "misconception",
+      "PHYS06": "misconception",
+      "REAS03": "calibrated_uncertain"
+    },
+    "response_generation_constraints": [
+      "Sometimes uses correct vocabulary while explaining wrong direction of causal energy transfer",
+      "Multiple-choice success after hints should not equal mastery",
+      "Can transfer misconception to both renal and mitochondrial problems",
+      "Allow corrections but retain uncertainty unless unprompted near-transfer probe succeeds"
+    ],
+    "hidden_competing_truths": [
+      "pump_vs_gradient_uses",
+      "ion_direction_rule"
+    ],
+    "private_eval_note": "Test whether MyWay discovers a shared underlying cause rather than two generic topic gaps."
+  }
+]

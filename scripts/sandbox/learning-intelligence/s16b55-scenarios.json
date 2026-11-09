@@ -1,0 +1,80 @@
+{
+  "schema": "myway_s16b55_contingent_scenarios_v1",
+  "privacy_class": "synthetic_example_only",
+  "source": "researcher_authored_no_real_learners",
+  "description": "Nine-turn, three-session contingent synthetic research fixture. A reviewer must assess realism. Branches are NOT a trained learner simulator.",
+  "sessions": [
+    {
+      "id": "S55-SESSION-1",
+      "label": "First conversation: sunlight versus carbon",
+      "steps": [
+        {
+          "id": "S55-01", "when": "opener",
+          "options": [{"key":"start", "learner":"I get that plants need sunlight, but I don't understand where the carbon atoms in glucose come from. Does the light turn into carbon?", "evidence_kind":"expressed_uncertainty", "assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Photosynthesis","root_problem":"Confuses the energy supplied by sunlight with the origin of carbon atoms in glucose","evidence_quote":"where the carbon atoms in glucose come from","uncertainty":"low"}}],
+          "offline_reply": "Sunlight supplies energy, not carbon atoms. The carbon in glucose comes from carbon dioxide. Want to try tracing the source of one carbon atom?"
+        },
+        {
+          "id": "S55-02", "when": "previous_reply_contains_question_or_try", "options": [
+            {"key":"asked_check","learner":"Let me try: carbon dioxide supplies carbon for glucose, while sunlight supplies energy. Is that right, or am I missing a step?","evidence_kind":"expressed_reasoning_not_tested","assessment":{"kind":"reported_progress","topic_label":"Photosynthesis","root_problem":null,"evidence_quote":"carbon dioxide supplies carbon for glucose, while sunlight supplies energy","uncertainty":"medium"}},
+            {"key":"no_check","learner":"I'm still stuck on how light can help make glucose if the light itself doesn't become part of the molecule.","evidence_kind":"expressed_uncertainty","assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Photosynthesis","root_problem":"Confuses the energy from light with the material building blocks of glucose","evidence_quote":"light itself doesn't become part of the molecule","uncertainty":"medium"}}
+          ],
+          "offline_reply": "That's the energy-versus-matter distinction. Carbon atoms come from CO2; light provides energy. We can check your understanding with an example."
+        },
+        {
+          "id": "S55-03", "when": "previous_reply_mentions_atp", "options": [
+            {"key":"atp_correction","learner":"You keep going back to ATP, but I'm asking where carbon comes from. Please answer that, not a different question.","evidence_kind":"tutor_correction","assessment":{"kind":"correction","topic_label":"Photosynthesis","root_problem":null,"evidence_quote":"I'm asking where carbon comes from","uncertainty":"low"}},
+            {"key":"requested_check","learner":"Could you check me with one question instead of giving another explanation? I want to see if I understand.","evidence_kind":"requested_assessment_not_mastery","assessment":{"kind":"question_or_followup","topic_label":"Photosynthesis","root_problem":null,"evidence_quote":null,"uncertainty":"low"}}
+          ],
+          "offline_reply": "Sure. Without looking back, where do the carbon atoms of glucose come from?"
+        }
+      ]
+    },
+    {
+      "id": "S55-SESSION-2",
+      "label": "Resumed conversation: same root, then distinct question",
+      "steps": [
+        {
+          "id":"S55-04", "when":"opener", "options":[{"key":"start","learner":"I'm back after a few days. Last time I mixed up sunlight with the carbon in glucose. Does the carbon actually come from CO2?","evidence_kind":"historical_difficulty_revisited","assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Photosynthesis","root_problem":"Confuses sunlight as the energy source with CO2 as the carbon source for glucose","evidence_quote":"mixed up sunlight with the carbon in glucose","uncertainty":"medium"}}],
+          "offline_reply":"Welcome back. Yes, CO2 is the carbon source. Rather than just repeat me, would you like a question to test that distinction?"
+        },
+        {
+          "id":"S55-05", "when":"previous_reply_contains_question_or_try", "options":[
+            {"key":"asked_check","learner":"Okay, here's my attempt: carbon dioxide provides the carbon in glucose, and sunlight powers the reactions. What should I add?","evidence_kind":"expressed_reasoning_not_independently_scored","assessment":{"kind":"reported_progress","topic_label":"Photosynthesis","root_problem":null,"evidence_quote":"carbon dioxide provides the carbon in glucose, and sunlight powers the reactions","uncertainty":"medium"}},
+            {"key":"no_check","learner":"I think I've got the carbon idea, but please test me rather than giving me the answer again.","evidence_kind":"reported_confidence_not_demonstrated","assessment":{"kind":"reported_progress","topic_label":"Photosynthesis","root_problem":null,"evidence_quote":"I think I've got the carbon idea","uncertainty":"medium"}}
+          ],
+          "offline_reply":"You've identified the carbon and energy sources. Let's keep an independent check separate from a claim of mastery."
+        },
+        {
+          "id":"S55-06", "when":"previous_reply_mentions_oxygen", "options":[
+            {"key":"oxygen_named","learner":"You mentioned oxygen. I have a separate question: does the oxygen gas released by a plant come from water or from CO2?","evidence_kind":"distinct_mechanism_question","assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Photosynthesis","root_problem":"Uncertain about the molecular source of oxygen gas released during photosynthesis","evidence_quote":"does the oxygen gas released by a plant come from water or from CO2","uncertainty":"low"}},
+            {"key":"oxygen_new","learner":"I understand the carbon part better. A separate question: where does the oxygen gas released during photosynthesis come from?","evidence_kind":"distinct_mechanism_question","assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Photosynthesis","root_problem":"Uncertain about the source of released oxygen gas during photosynthesis","evidence_quote":"where does the oxygen gas released during photosynthesis come from","uncertainty":"medium"}}
+          ],
+          "offline_reply":"The released O2 comes from water, rather than from the CO2 that supplies carbon to glucose. Those are distinct questions worth tracking separately."
+        }
+      ]
+    },
+    {
+      "id":"S55-SESSION-3", "label":"Related but distinct mechanisms and requested diagram",
+      "steps":[
+        {
+          "id":"S55-07", "when":"opener", "options":[{"key":"start","learner":"Now I'm studying mitochondria. Are proton gradients in mitochondria and chloroplasts the same mechanism, or am I mixing up two different processes?","evidence_kind":"cross_topic_comparison","assessment":{"kind":"new_or_continuing_difficulty","topic_label":"Cellular Respiration","root_problem":"Uncertain which aspects of proton gradients are shared or distinct between mitochondria and chloroplasts","evidence_quote":"Are proton gradients in mitochondria and chloroplasts the same mechanism","uncertainty":"medium"}}],
+          "offline_reply":"They share chemiosmosis, but the compartments and energy sources differ. A side-by-side diagram could make the directions easier to compare."
+        },
+        {
+          "id":"S55-08", "when":"previous_reply_mentions_diagram_or_visual", "options":[
+            {"key":"visual_offered","learner":"Can you draw a diagram comparing where protons accumulate in a chloroplast versus a mitochondrion? Please show the mechanism, not just pretty labels.","evidence_kind":"visual_request_specific_objective","assessment":{"kind":"question_or_followup","topic_label":"Cellular Respiration","root_problem":null,"evidence_quote":null,"uncertainty":"low"}},
+            {"key":"visual_not_offered","learner":"I'm still unsure if ATP synthase plays the same role in both places. Could you show me a diagram of the direction of proton flow?","evidence_kind":"visual_request_specific_objective","assessment":{"kind":"question_or_followup","topic_label":"Cellular Respiration","root_problem":null,"evidence_quote":null,"uncertainty":"medium"}}
+          ],
+          "offline_reply":"I can outline a mechanism-focused diagram proposal, but no image is rendered in this research simulation."
+        },
+        {
+          "id":"S55-09", "when":"previous_reply_mentions_diagram_or_visual", "options":[
+            {"key":"diagram_mentioned","learner":"Before a diagram, please check my reasoning: protons flow down their electrochemical gradient through ATP synthase, but the compartments differ. Is that accurate?","evidence_kind":"expressed_reasoning_not_tested","assessment":{"kind":"reported_progress","topic_label":"Cellular Respiration","root_problem":null,"evidence_quote":"protons flow down their electrochemical gradient through ATP synthase","uncertainty":"medium"}},
+            {"key":"diagram_not_mentioned","learner":"Can we test whether I understand the difference without treating mitochondria and chloroplasts as exactly the same root problem?","evidence_kind":"requested_assessment_not_mastery","assessment":{"kind":"question_or_followup","topic_label":"Cellular Respiration","root_problem":null,"evidence_quote":null,"uncertainty":"low"}}
+          ],
+          "offline_reply":"Yes. Explain which side of the membrane accumulates protons in each organelle, and why."
+        }
+      ]
+    }
+  ]
+}

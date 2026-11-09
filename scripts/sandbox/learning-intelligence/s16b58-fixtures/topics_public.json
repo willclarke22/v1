@@ -1,0 +1,332 @@
+[
+  {
+    "topic_id": "BIO01",
+    "title": "Photosynthesis: inputs, outputs and carbon source",
+    "cluster": "bioenergetics",
+    "essential_question": "Where does the matter in sugar come from?",
+    "probe_ids": [
+      "BIO01-P1",
+      "BIO01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "BIO02",
+    "title": "Photosynthesis: light reactions",
+    "cluster": "bioenergetics",
+    "essential_question": "How does light lead to ATP and NADPH?",
+    "probe_ids": [
+      "BIO02-P1",
+      "BIO02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "BIO03",
+    "title": "Calvin cycle and carbon fixation",
+    "cluster": "bioenergetics",
+    "essential_question": "How does CO₂ enter organic molecules?",
+    "probe_ids": [
+      "BIO03-P1",
+      "BIO03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "BIO04",
+    "title": "Glycolysis and initial glucose breakdown",
+    "cluster": "bioenergetics",
+    "essential_question": "How does glycolysis make ATP?",
+    "probe_ids": [
+      "BIO04-P1",
+      "BIO04-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "BIO05",
+    "title": "Mitochondrial electron transport",
+    "cluster": "bioenergetics",
+    "essential_question": "How do electron carriers build a proton gradient?",
+    "probe_ids": [
+      "BIO05-P1",
+      "BIO05-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "BIO06",
+    "title": "ATP synthase and chemiosmosis",
+    "cluster": "bioenergetics",
+    "essential_question": "How does a gradient power ATP synthesis?",
+    "probe_ids": [
+      "BIO06-P1",
+      "BIO06-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM01",
+    "title": "Atoms, molecules and atom tracking",
+    "cluster": "chemistry",
+    "essential_question": "How do atoms persist through reactions?",
+    "probe_ids": [
+      "CHEM01-P1",
+      "CHEM01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM02",
+    "title": "Conservation of mass",
+    "cluster": "chemistry",
+    "essential_question": "What is conserved in a reaction?",
+    "probe_ids": [
+      "CHEM02-P1",
+      "CHEM02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM03",
+    "title": "Energy versus matter",
+    "cluster": "chemistry",
+    "essential_question": "How is energy transfer different from atom transfer?",
+    "probe_ids": [
+      "CHEM03-P1",
+      "CHEM03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM04",
+    "title": "Oxidation-reduction and electron transfer",
+    "cluster": "chemistry",
+    "essential_question": "What does it mean to gain or lose electrons?",
+    "probe_ids": [
+      "CHEM04-P1",
+      "CHEM04-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM05",
+    "title": "Enzymes and reaction mechanisms",
+    "cluster": "chemistry",
+    "essential_question": "What do enzymes change?",
+    "probe_ids": [
+      "CHEM05-P1",
+      "CHEM05-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CHEM06",
+    "title": "Concentration and electrochemical gradients",
+    "cluster": "chemistry",
+    "essential_question": "What determines direction of net ion movement?",
+    "probe_ids": [
+      "CHEM06-P1",
+      "CHEM06-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL01",
+    "title": "Chloroplast and thylakoid structure",
+    "cluster": "cell_structure",
+    "essential_question": "Where are chloroplast proton gradients located?",
+    "probe_ids": [
+      "CELL01-P1",
+      "CELL01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL02",
+    "title": "Mitochondrial compartment structure",
+    "cluster": "cell_structure",
+    "essential_question": "Which mitochondrial compartments support chemiosmosis?",
+    "probe_ids": [
+      "CELL02-P1",
+      "CELL02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL03",
+    "title": "Membrane transport and selective permeability",
+    "cluster": "cell_structure",
+    "essential_question": "When do molecules need transport proteins?",
+    "probe_ids": [
+      "CELL03-P1",
+      "CELL03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL04",
+    "title": "Osmosis and water movement",
+    "cluster": "cell_structure",
+    "essential_question": "Why does water move across membranes?",
+    "probe_ids": [
+      "CELL04-P1",
+      "CELL04-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL05",
+    "title": "Feedback and cellular homeostasis",
+    "cluster": "cell_structure",
+    "essential_question": "How does negative feedback stabilize a variable?",
+    "probe_ids": [
+      "CELL05-P1",
+      "CELL05-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "CELL06",
+    "title": "Aerobic respiration versus fermentation",
+    "cluster": "cell_structure",
+    "essential_question": "How is NAD⁺ regenerated when oxygen is scarce?",
+    "probe_ids": [
+      "CELL06-P1",
+      "CELL06-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS01",
+    "title": "Neuronal resting membrane potential",
+    "cluster": "physiology",
+    "essential_question": "What maintains unequal ion distributions?",
+    "probe_ids": [
+      "PHYS01-P1",
+      "PHYS01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS02",
+    "title": "Action potentials and propagation",
+    "cluster": "physiology",
+    "essential_question": "Why does an action potential change direction in time?",
+    "probe_ids": [
+      "PHYS02-P1",
+      "PHYS02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS03",
+    "title": "Synaptic communication",
+    "cluster": "physiology",
+    "essential_question": "How does a signal cross a chemical synapse?",
+    "probe_ids": [
+      "PHYS03-P1",
+      "PHYS03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS04",
+    "title": "Muscle contraction and ATP use",
+    "cluster": "physiology",
+    "essential_question": "How does ATP support contraction and relaxation?",
+    "probe_ids": [
+      "PHYS04-P1",
+      "PHYS04-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS05",
+    "title": "Oxygen transport and cellular delivery",
+    "cluster": "physiology",
+    "essential_question": "What determines oxygen delivery to tissue?",
+    "probe_ids": [
+      "PHYS05-P1",
+      "PHYS05-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "PHYS06",
+    "title": "Renal ion transport and gradients",
+    "cluster": "physiology",
+    "essential_question": "How do kidneys reabsorb ions?",
+    "probe_ids": [
+      "PHYS06-P1",
+      "PHYS06-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "QUANT01",
+    "title": "Ratios and proportional reasoning",
+    "cluster": "quantitative_reasoning",
+    "essential_question": "How do proportional changes affect outcomes?",
+    "probe_ids": [
+      "QUANT01-P1",
+      "QUANT01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "QUANT02",
+    "title": "Graph interpretation and rates",
+    "cluster": "quantitative_reasoning",
+    "essential_question": "How do slope and level differ?",
+    "probe_ids": [
+      "QUANT02-P1",
+      "QUANT02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "QUANT03",
+    "title": "Mass balance and changing pools",
+    "cluster": "quantitative_reasoning",
+    "essential_question": "How does accumulation relate to input and output?",
+    "probe_ids": [
+      "QUANT03-P1",
+      "QUANT03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "REAS01",
+    "title": "Controlled comparisons and causal evidence",
+    "cluster": "scientific_reasoning",
+    "essential_question": "How can an experiment isolate an explanation?",
+    "probe_ids": [
+      "REAS01-P1",
+      "REAS01-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "REAS02",
+    "title": "Transfer of understanding across contexts",
+    "cluster": "scientific_reasoning",
+    "essential_question": "What shows that a mechanism is transferable?",
+    "probe_ids": [
+      "REAS02-P1",
+      "REAS02-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  },
+  {
+    "topic_id": "REAS03",
+    "title": "Confidence, uncertainty and evidence revision",
+    "cluster": "scientific_reasoning",
+    "essential_question": "How should beliefs update after conflicting evidence?",
+    "probe_ids": [
+      "REAS03-P1",
+      "REAS03-P2"
+    ],
+    "scope": "curriculum_content_candidate_not_learner_claim"
+  }
+]

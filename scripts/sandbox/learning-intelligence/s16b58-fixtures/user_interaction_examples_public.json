@@ -1,0 +1,195 @@
+[
+  {
+    "sequence_id": "SIM-A-PHOTO",
+    "learner_id": "LEARNER-A",
+    "research_purpose": "Test learner-specific energy-as-matter hypothesis, contradiction and later transfer; evidence not model ground truth",
+    "events": [
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "I know CO₂ has carbon, but what does the sunlight turn into? Is some of it inside the glucose?"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "CHEM03-P1",
+        "content": "I picture energy as stuff being added. I think light probably makes the glucose heavier somehow.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "low"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "Oh, so the light is power for building it, not extra atoms? I think I get the words, but it still feels like energy turns into the sugar."
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "I am back. Could you check if I really understood the difference between the source of carbon and the source of energy?"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "BIO01-P2",
+        "content": "I think there could still be some sugar because sunlight has energy, but maybe there is no carbon to build with.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "low"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "The carbon atoms need CO₂, then. But I want to test that with something other than a plant diagram."
+      }
+    ]
+  },
+  {
+    "sequence_id": "SIM-B-PHOTO",
+    "learner_id": "LEARNER-B",
+    "research_purpose": "Same surface question but different underlying mechanism; do not infer energy-as-matter root",
+    "events": [
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "Does sunlight become part of glucose? I know it is energy, but the cartoon never shows me where the carbon goes."
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "CHEM03-P1",
+        "content": "Light transfers energy. It cannot donate carbon atoms; carbon has to arrive in a molecule.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "high"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "I know the CO₂ enters the Calvin cycle, but when the molecules are rearranged I cannot tell which product has that carbon."
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "CHEM01-P2",
+        "content": "I would choose the carbon in CO₂. I am less sure which part of the product it ends up in.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "medium"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "Can you give me a different reaction to test whether I can follow atoms without the Calvin-cycle labels?"
+      }
+    ]
+  },
+  {
+    "sequence_id": "SIM-A-TRANSFER",
+    "learner_id": "LEARNER-A",
+    "research_purpose": "Partial success in familiar organelle but spatial transfer error in different organelle",
+    "events": [
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "I know protons pile up outside the mitochondrial matrix. Does the chloroplast have an equivalent outside?"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "CELL02-P2",
+        "content": "Protons are pumped from matrix into the intermembrane space.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "high"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "scene_action",
+        "probe_id": "CELL01-P2",
+        "response": {
+          "selected_value_id": "stroma"
+        },
+        "content": "I chose stroma because I thought it was the outer compartment in the diagram.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "medium"
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "Wait, the thylakoid lumen is inside the sacs? Could you help me map the compartments rather than repeat the names?"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "REAS02-P2",
+        "content": "If the ATP synthase could not pass protons in the chloroplast, I think it would not make ATP through that route. I am trying not to confuse that with the proton pump.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "medium"
+      }
+    ]
+  },
+  {
+    "sequence_id": "SIM-C-CROSS-SYSTEM",
+    "learner_id": "LEARNER-C",
+    "research_purpose": "Shared gradient-building versus gradient-using confusion across cell bio and kidney",
+    "events": [
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "ATP synthase pumps protons back to make the gradient, right? Or does it use the gradient? The direction seems flipped."
+      },
+      {
+        "session": "1",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "BIO06-P1",
+        "content": "I thought ATP synthase spends ATP to pump protons, but then how can it also make ATP?",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "low"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "I saw the same confusing thing with the kidney sodium-glucose transporter. Does that transporter create the sodium gradient?"
+      },
+      {
+        "session": "2",
+        "speaker": "learner",
+        "kind": "probe_response",
+        "probe_id": "PHYS06-P2",
+        "content": "I think glucose uptake drops if the pump stops, but I am not sure why it would affect a different protein.",
+        "attempt": 1,
+        "hint_used": false,
+        "confidence": "low"
+      },
+      {
+        "session": "3",
+        "speaker": "learner",
+        "kind": "natural_message",
+        "content": "Can you test me on a new transport system without showing me another example first? I want to see if the idea transferred."
+      }
+    ]
+  }
+]

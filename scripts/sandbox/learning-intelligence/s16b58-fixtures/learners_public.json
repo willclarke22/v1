@@ -1,0 +1,300 @@
+[
+  {
+    "learner_id": "LEARNER-A",
+    "public_alias": "Learner A",
+    "study_goal": "Understand how energy and matter move through photosynthesis and respiration",
+    "prior_sessions": [
+      {
+        "id": "A-H01",
+        "topic_id": "BIO01",
+        "turn": "A1",
+        "learner_quote": "I know the plant needs CO₂, but I keep picturing sunlight going into the glucose as a kind of ingredient.",
+        "evidence_type": "verbal_uncertainty"
+      },
+      {
+        "id": "A-H02",
+        "topic_id": "CHEM03",
+        "turn": "A2",
+        "learner_quote": "If something has more energy, does it have more stuff in it? I think that might be how sugar gets bigger.",
+        "evidence_type": "verbal_reasoning"
+      },
+      {
+        "id": "A-H03",
+        "topic_id": "CHEM01",
+        "turn": "A3",
+        "learner_quote": "The carbon atoms in new sugar have to come from something that has carbon atoms.",
+        "evidence_type": "correct_reasoning_in_familiar_context"
+      },
+      {
+        "id": "A-H04",
+        "topic_id": "BIO05",
+        "turn": "A4",
+        "learner_quote": "In mitochondria, the electron transport chain pumps protons out of the matrix into the intermembrane space.",
+        "evidence_type": "correct_explanation"
+      },
+      {
+        "id": "A-H05",
+        "topic_id": "CELL01",
+        "turn": "A5",
+        "learner_quote": "I thought the chloroplast stroma was where the extra protons pile up because the matrix is inside mitochondria.",
+        "evidence_type": "cross_context_error"
+      },
+      {
+        "id": "A-H06",
+        "topic_id": "REAS02",
+        "turn": "A6",
+        "learner_quote": "I know the mitochondria diagram, but the labels on the chloroplast version throw me off.",
+        "evidence_type": "transfer_uncertainty"
+      }
+    ],
+    "provisional_root_hypotheses": [
+      {
+        "root_id": "A-R1",
+        "presenting_difficulty": "Does sunlight become part of sugar?",
+        "underlying_cause_hypothesis": "May be treating transferred energy as physical matter incorporated into products",
+        "alternative_hypotheses": [
+          "Uncertain about specific atom sources despite knowing energy-matter distinction"
+        ],
+        "supporting_observation_ids": [
+          "A-H01",
+          "A-H02"
+        ],
+        "contradicting_observation_ids": [
+          "A-H03"
+        ],
+        "status": "open_competing_hypotheses"
+      },
+      {
+        "root_id": "A-R2",
+        "presenting_difficulty": "Confuses chloroplast proton compartments",
+        "underlying_cause_hypothesis": "May overgeneralize the mitochondrial spatial representation to chloroplasts",
+        "alternative_hypotheses": [
+          "Unfamiliar with chloroplast vocabulary rather than transfer failure"
+        ],
+        "supporting_observation_ids": [
+          "A-H04",
+          "A-H05",
+          "A-H06"
+        ],
+        "contradicting_observation_ids": [],
+        "status": "provisional"
+      }
+    ],
+    "learner_specific_relationship_hypotheses": [
+      {
+        "relationship_id": "A-LR1",
+        "from_topic_id": "BIO05",
+        "to_topic_id": "CELL01",
+        "kind": "possible_transfer_asymmetry",
+        "claim": "Correctly described proton pumping in mitochondria, but mapped it incorrectly in chloroplasts",
+        "observation_ids": [
+          "A-H04",
+          "A-H05"
+        ],
+        "status": "provisional",
+        "not_a_curriculum_edge": true
+      }
+    ],
+    "stated_preferences": [],
+    "inferred_teaching_hypotheses": []
+  },
+  {
+    "learner_id": "LEARNER-B",
+    "public_alias": "Learner B",
+    "study_goal": "Explain the role of carbon dioxide and trace atoms through photosynthesis",
+    "prior_sessions": [
+      {
+        "id": "B-H01",
+        "topic_id": "CHEM03",
+        "turn": "B1",
+        "learner_quote": "Light is energy, not matter. It does not provide carbon atoms.",
+        "evidence_type": "correct_explanation"
+      },
+      {
+        "id": "B-H02",
+        "topic_id": "CHEM02",
+        "turn": "B2",
+        "learner_quote": "If I count all the atoms in a closed chemical reaction, I should find the same elements before and after.",
+        "evidence_type": "correct_explanation"
+      },
+      {
+        "id": "B-H03",
+        "topic_id": "BIO01",
+        "turn": "B3",
+        "learner_quote": "Does sunlight become part of sugar? The diagrams never show me which molecule brings the carbon in.",
+        "evidence_type": "verbal_uncertainty"
+      },
+      {
+        "id": "B-H04",
+        "topic_id": "CHEM01",
+        "turn": "B4",
+        "learner_quote": "I know CO₂ contains carbon, but I cannot work out where that atom appears in the glucose drawing.",
+        "evidence_type": "incomplete_atom_tracing"
+      },
+      {
+        "id": "B-H05",
+        "topic_id": "BIO03",
+        "turn": "B5",
+        "learner_quote": "I can tell you Rubisco fixes CO₂, but I lose track of it when the carbon compounds rearrange.",
+        "evidence_type": "mechanistic_gap"
+      },
+      {
+        "id": "B-H06",
+        "topic_id": "QUANT03",
+        "turn": "B6",
+        "learner_quote": "If 8 units go in and 5 leave every minute, I think the pool grows by three each minute.",
+        "evidence_type": "correct_quantitative_reasoning"
+      }
+    ],
+    "provisional_root_hypotheses": [
+      {
+        "root_id": "B-R1",
+        "presenting_difficulty": "Does sunlight become part of sugar?",
+        "underlying_cause_hypothesis": "May lack an atom-tracking model of carbon fixation and rearrangement",
+        "alternative_hypotheses": [
+          "May be confused about energy and matter"
+        ],
+        "supporting_observation_ids": [
+          "B-H03",
+          "B-H04",
+          "B-H05"
+        ],
+        "contradicting_observation_ids": [
+          "B-H01",
+          "B-H02"
+        ],
+        "status": "provisional"
+      },
+      {
+        "root_id": "B-R2",
+        "presenting_difficulty": "Cannot track carbon atoms through the Calvin cycle",
+        "underlying_cause_hypothesis": "May lose track of atom conservation across intermediate rearrangements",
+        "alternative_hypotheses": [
+          "May only be unfamiliar with diagram labels"
+        ],
+        "supporting_observation_ids": [
+          "B-H04",
+          "B-H05"
+        ],
+        "contradicting_observation_ids": [],
+        "status": "provisional"
+      }
+    ],
+    "learner_specific_relationship_hypotheses": [
+      {
+        "relationship_id": "B-LR1",
+        "from_topic_id": "CHEM02",
+        "to_topic_id": "BIO03",
+        "kind": "known_principle_not_yet_applied",
+        "claim": "States conservation correctly, but does not yet apply it when tracing rearranged carbon compounds",
+        "observation_ids": [
+          "B-H02",
+          "B-H05"
+        ],
+        "status": "provisional",
+        "not_a_curriculum_edge": true
+      }
+    ],
+    "stated_preferences": [],
+    "inferred_teaching_hypotheses": []
+  },
+  {
+    "learner_id": "LEARNER-C",
+    "public_alias": "Learner C",
+    "study_goal": "Transfer ion-gradient reasoning to neurons, mitochondria and kidney transport",
+    "prior_sessions": [
+      {
+        "id": "C-H01",
+        "topic_id": "CELL03",
+        "turn": "C1",
+        "learner_quote": "I think a channel and a pump are almost the same because both let ions go through.",
+        "evidence_type": "mechanism_conflation"
+      },
+      {
+        "id": "C-H02",
+        "topic_id": "CHEM06",
+        "turn": "C2",
+        "learner_quote": "Particles move down their concentration gradient, so protons must be pumped down the gradient by ATP synthase.",
+        "evidence_type": "incorrect_reasoning"
+      },
+      {
+        "id": "C-H03",
+        "topic_id": "PHYS01",
+        "turn": "C3",
+        "learner_quote": "Opening sodium channels tends to depolarize the membrane.",
+        "evidence_type": "correct_reasoning"
+      },
+      {
+        "id": "C-H04",
+        "topic_id": "BIO06",
+        "turn": "C4",
+        "learner_quote": "I keep mixing up the pump that builds the proton gradient with ATP synthase that uses it.",
+        "evidence_type": "recurring_mechanism_gap"
+      },
+      {
+        "id": "C-H05",
+        "topic_id": "PHYS06",
+        "turn": "C5",
+        "learner_quote": "I thought the sodium-glucose cotransporter makes the Na⁺ gradient itself.",
+        "evidence_type": "cross_context_error"
+      },
+      {
+        "id": "C-H06",
+        "topic_id": "REAS03",
+        "turn": "C6",
+        "learner_quote": "I got the multiple choice right after the hint, but I am not sure I could explain it without the options.",
+        "evidence_type": "calibrated_uncertainty"
+      }
+    ],
+    "provisional_root_hypotheses": [
+      {
+        "root_id": "C-R1",
+        "presenting_difficulty": "Confuses active proton pumping with downhill H⁺ flow",
+        "underlying_cause_hypothesis": "May not distinguish energy-input transport from gradient-driven transport",
+        "alternative_hypotheses": [
+          "May misunderstand electrochemical versus concentration gradients"
+        ],
+        "supporting_observation_ids": [
+          "C-H01",
+          "C-H02",
+          "C-H04"
+        ],
+        "contradicting_observation_ids": [
+          "C-H03"
+        ],
+        "status": "provisional"
+      },
+      {
+        "root_id": "C-R2",
+        "presenting_difficulty": "Confuses cotransporters with gradient-generating pumps",
+        "underlying_cause_hypothesis": "May apply the same pump/channel confusion to renal sodium-glucose transport",
+        "alternative_hypotheses": [
+          "May simply not know the kidney-specific transporters"
+        ],
+        "supporting_observation_ids": [
+          "C-H01",
+          "C-H05"
+        ],
+        "contradicting_observation_ids": [],
+        "status": "open_competing_hypotheses"
+      }
+    ],
+    "learner_specific_relationship_hypotheses": [
+      {
+        "relationship_id": "C-LR1",
+        "from_topic_id": "BIO06",
+        "to_topic_id": "PHYS06",
+        "kind": "possible_shared_underlying_difficulty",
+        "claim": "May conflate gradient-building transport with gradient-using transport in both bioenergetics and kidney physiology",
+        "observation_ids": [
+          "C-H04",
+          "C-H05"
+        ],
+        "status": "provisional",
+        "not_a_curriculum_edge": true
+      }
+    ],
+    "stated_preferences": [],
+    "inferred_teaching_hypotheses": []
+  }
+]

@@ -1,0 +1,310 @@
+[
+  {
+    "edge_id": "ED01",
+    "from_topic_id": "CHEM01",
+    "to_topic_id": "CHEM02",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED02",
+    "from_topic_id": "CHEM01",
+    "to_topic_id": "BIO01",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED03",
+    "from_topic_id": "CHEM02",
+    "to_topic_id": "BIO01",
+    "relation_type": "supports_explanation",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED04",
+    "from_topic_id": "CHEM03",
+    "to_topic_id": "BIO01",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED05",
+    "from_topic_id": "CHEM03",
+    "to_topic_id": "BIO02",
+    "relation_type": "supports_explanation",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED06",
+    "from_topic_id": "CHEM04",
+    "to_topic_id": "BIO02",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED07",
+    "from_topic_id": "CHEM04",
+    "to_topic_id": "BIO05",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED08",
+    "from_topic_id": "CHEM05",
+    "to_topic_id": "BIO03",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED09",
+    "from_topic_id": "CHEM05",
+    "to_topic_id": "CELL05",
+    "relation_type": "supports_explanation",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED10",
+    "from_topic_id": "CHEM06",
+    "to_topic_id": "BIO06",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED11",
+    "from_topic_id": "BIO01",
+    "to_topic_id": "BIO03",
+    "relation_type": "contains_subprocess",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED12",
+    "from_topic_id": "BIO02",
+    "to_topic_id": "BIO03",
+    "relation_type": "feeds_process",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED13",
+    "from_topic_id": "BIO02",
+    "to_topic_id": "CELL01",
+    "relation_type": "located_in",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED14",
+    "from_topic_id": "BIO03",
+    "to_topic_id": "CELL01",
+    "relation_type": "located_in",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED15",
+    "from_topic_id": "BIO04",
+    "to_topic_id": "BIO05",
+    "relation_type": "provides_electron_carriers",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED16",
+    "from_topic_id": "BIO05",
+    "to_topic_id": "BIO06",
+    "relation_type": "provides_gradient",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED17",
+    "from_topic_id": "CELL02",
+    "to_topic_id": "BIO05",
+    "relation_type": "located_in",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED18",
+    "from_topic_id": "CELL01",
+    "to_topic_id": "BIO06",
+    "relation_type": "shared_mechanism_in_context",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED19",
+    "from_topic_id": "CELL02",
+    "to_topic_id": "BIO06",
+    "relation_type": "shared_mechanism_in_context",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED20",
+    "from_topic_id": "CELL01",
+    "to_topic_id": "CELL02",
+    "relation_type": "analogous_compartments",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED21",
+    "from_topic_id": "CHEM06",
+    "to_topic_id": "CELL03",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED22",
+    "from_topic_id": "CHEM06",
+    "to_topic_id": "CELL04",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED23",
+    "from_topic_id": "CELL03",
+    "to_topic_id": "PHYS01",
+    "relation_type": "underpins",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED24",
+    "from_topic_id": "CELL03",
+    "to_topic_id": "PHYS06",
+    "relation_type": "underpins",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED25",
+    "from_topic_id": "PHYS01",
+    "to_topic_id": "PHYS02",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED26",
+    "from_topic_id": "PHYS02",
+    "to_topic_id": "PHYS03",
+    "relation_type": "enables",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED27",
+    "from_topic_id": "BIO06",
+    "to_topic_id": "PHYS04",
+    "relation_type": "ATP_used_by",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED28",
+    "from_topic_id": "BIO05",
+    "to_topic_id": "PHYS05",
+    "relation_type": "oxygen_final_acceptor",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED29",
+    "from_topic_id": "CELL06",
+    "to_topic_id": "BIO04",
+    "relation_type": "supports_pathway",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED30",
+    "from_topic_id": "CELL06",
+    "to_topic_id": "BIO05",
+    "relation_type": "contrasts_oxygen_dependency",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED31",
+    "from_topic_id": "CHEM06",
+    "to_topic_id": "PHYS06",
+    "relation_type": "underpins",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED32",
+    "from_topic_id": "QUANT01",
+    "to_topic_id": "QUANT02",
+    "relation_type": "prerequisite",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED33",
+    "from_topic_id": "QUANT02",
+    "to_topic_id": "CELL05",
+    "relation_type": "helps_interpret",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED34",
+    "from_topic_id": "QUANT03",
+    "to_topic_id": "CHEM06",
+    "relation_type": "quantifies_flux",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED35",
+    "from_topic_id": "QUANT03",
+    "to_topic_id": "PHYS06",
+    "relation_type": "quantifies_flux",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED36",
+    "from_topic_id": "REAS01",
+    "to_topic_id": "REAS03",
+    "relation_type": "supports_interpretation",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED37",
+    "from_topic_id": "REAS02",
+    "to_topic_id": "BIO06",
+    "relation_type": "transfers_mechanism",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED38",
+    "from_topic_id": "REAS02",
+    "to_topic_id": "CELL01",
+    "relation_type": "transfers_mechanism",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED39",
+    "from_topic_id": "REAS03",
+    "to_topic_id": "REAS02",
+    "relation_type": "helps_evaluate",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED40",
+    "from_topic_id": "BIO02",
+    "to_topic_id": "BIO05",
+    "relation_type": "analogous_electron_transport",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED41",
+    "from_topic_id": "BIO06",
+    "to_topic_id": "PHYS01",
+    "relation_type": "analogous_electrochemical_gradient",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED42",
+    "from_topic_id": "QUANT01",
+    "to_topic_id": "BIO03",
+    "relation_type": "quantitative_constraint",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED43",
+    "from_topic_id": "QUANT02",
+    "to_topic_id": "PHYS02",
+    "relation_type": "helps_interpret",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  },
+  {
+    "edge_id": "ED44",
+    "from_topic_id": "PHYS05",
+    "to_topic_id": "PHYS04",
+    "relation_type": "supports_metabolic_demand",
+    "status": "curriculum_reference_only_not_learner_evidence"
+  }
+]

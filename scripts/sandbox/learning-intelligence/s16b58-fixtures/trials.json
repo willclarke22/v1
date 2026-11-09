@@ -1,0 +1,164 @@
+[
+  {
+    "trial_id": "T01",
+    "learner_id": "LEARNER-A",
+    "condition": "history_available",
+    "first_learner_message": "I understand that plants use CO₂, but why do I keep thinking sunlight gets built into glucose?",
+    "target_observation": "Distinguish energy-as-matter conception from missing photosynthesis vocabulary",
+    "suggested_probe_sequence": [
+      "CHEM03-P1",
+      "BIO01-P2",
+      "CHEM01-P1"
+    ],
+    "later_unprompted_transfer_probe": "CHEM02-P1",
+    "expected_evaluation": "competing_root_hypotheses_not_forced_answer"
+  },
+  {
+    "trial_id": "T02",
+    "learner_id": "LEARNER-B",
+    "condition": "history_available",
+    "first_learner_message": "Does sunlight become part of the sugar? I know light is energy, but I can’t trace the carbon after CO₂ enters.",
+    "target_observation": "Same superficial question as learner A; should not infer energy-matter confusion",
+    "suggested_probe_sequence": [
+      "CHEM03-P1",
+      "CHEM01-P2",
+      "BIO03-P1"
+    ],
+    "later_unprompted_transfer_probe": "BIO03-P2",
+    "expected_evaluation": "atom_tracking_issue_if_supported"
+  },
+  {
+    "trial_id": "T03",
+    "learner_id": "LEARNER-A",
+    "condition": "history_available",
+    "first_learner_message": "I can follow the proton movement in mitochondria, but the chloroplast picture confuses me.",
+    "target_observation": "Observe within-person asymmetry and whether it is vocabulary versus transfer",
+    "suggested_probe_sequence": [
+      "CELL02-P2",
+      "CELL01-P2",
+      "REAS02-P1"
+    ],
+    "later_unprompted_transfer_probe": "BIO06-P2",
+    "expected_evaluation": "possibly_different_performance_by_context"
+  },
+  {
+    "trial_id": "T04",
+    "learner_id": "LEARNER-C",
+    "condition": "history_available",
+    "first_learner_message": "If ATP synthase moves H⁺, why is it different from the pump that makes the gradient?",
+    "target_observation": "Propose learner-specific root about direction and energetic roles of transporters",
+    "suggested_probe_sequence": [
+      "BIO06-P1",
+      "CELL03-P1",
+      "PHYS06-P2"
+    ],
+    "later_unprompted_transfer_probe": "REAS02-P2",
+    "expected_evaluation": "check_for_generalization_across_contexts"
+  },
+  {
+    "trial_id": "T05",
+    "learner_id": "LEARNER-A",
+    "condition": "history_without_prior_root_hypotheses",
+    "first_learner_message": "Does sunlight get built into glucose?",
+    "target_observation": "Compare root discovery from raw observations only against seeded root history",
+    "suggested_probe_sequence": [
+      "BIO01-P1",
+      "CHEM03-P2"
+    ],
+    "later_unprompted_transfer_probe": "CHEM01-P1",
+    "expected_evaluation": "fewer_unjustified_early_claims"
+  },
+  {
+    "trial_id": "T06",
+    "learner_id": "LEARNER-B",
+    "condition": "history_without_prior_root_hypotheses",
+    "first_learner_message": "Does sunlight get built into glucose?",
+    "target_observation": "Same exact text as T05, different learner model and prior evidence",
+    "suggested_probe_sequence": [
+      "BIO01-P1",
+      "CHEM03-P2"
+    ],
+    "later_unprompted_transfer_probe": "CHEM01-P2",
+    "expected_evaluation": "do_not_collapse_both_into_same_cause"
+  },
+  {
+    "trial_id": "T07",
+    "learner_id": "LEARNER-C",
+    "condition": "history_available",
+    "first_learner_message": "I got the gradient question right, but I only guessed. Could you test me a different way?",
+    "target_observation": "Correct response with low confidence and weak independent explanation",
+    "suggested_probe_sequence": [
+      "BIO06-P2",
+      "CHEM06-P1",
+      "PHYS06-P1"
+    ],
+    "later_unprompted_transfer_probe": "CELL03-P2",
+    "expected_evaluation": "no_mastery_claim_from_cued_success"
+  },
+  {
+    "trial_id": "T08",
+    "learner_id": "LEARNER-A",
+    "condition": "history_available",
+    "first_learner_message": "Could you show a diagram? If it is too busy, I’d rather explain it in words.",
+    "target_observation": "Acceptance versus refusal and immediate delivery instruction, not stable preference",
+    "suggested_probe_sequence": [
+      "CELL01-P2",
+      "CELL02-P1"
+    ],
+    "later_unprompted_transfer_probe": "REAS02-P2",
+    "expected_evaluation": "do_not_infer_global_visual_preference"
+  },
+  {
+    "trial_id": "T09",
+    "learner_id": "LEARNER-B",
+    "condition": "history_available",
+    "first_learner_message": "The enzyme steps make sense verbally, but I lose the carbon atoms when they change shapes.",
+    "target_observation": "Compare diagram tracing versus verbal explanation and later independent transfer",
+    "suggested_probe_sequence": [
+      "BIO03-P1",
+      "CHEM01-P2",
+      "BIO03-P2"
+    ],
+    "later_unprompted_transfer_probe": "CHEM02-P1",
+    "expected_evaluation": "intervention_effect_remains_hypothesis"
+  },
+  {
+    "trial_id": "T10",
+    "learner_id": "LEARNER-C",
+    "condition": "history_available",
+    "first_learner_message": "Would the sodium glucose cotransporter still work if its sodium gradient disappeared?",
+    "target_observation": "Check causal understanding in different context without leaking prior probe answer",
+    "suggested_probe_sequence": [
+      "PHYS06-P2",
+      "CHEM06-P1"
+    ],
+    "later_unprompted_transfer_probe": "BIO06-P1",
+    "expected_evaluation": "cross_topic_root_cause_transfer_possible"
+  },
+  {
+    "trial_id": "T11",
+    "learner_id": "LEARNER-A",
+    "condition": "history_available_control_verbal_only",
+    "first_learner_message": "I keep thinking sunlight is a part of glucose. Can you explain with a simple example?",
+    "target_observation": "Verbal condition as comparator for visual treatment; independent held-out probe",
+    "suggested_probe_sequence": [
+      "CHEM03-P1",
+      "BIO01-P2"
+    ],
+    "later_unprompted_transfer_probe": "CHEM01-P1",
+    "expected_evaluation": "compare_only_across_similar_baselines"
+  },
+  {
+    "trial_id": "T12",
+    "learner_id": "LEARNER-A",
+    "condition": "history_available_visual_optional",
+    "first_learner_message": "I keep thinking sunlight is a part of glucose. Can you explain with a simple example?",
+    "target_observation": "Same prompt and learner baseline as T11, optional visual condition",
+    "suggested_probe_sequence": [
+      "CHEM03-P1",
+      "BIO01-P2"
+    ],
+    "later_unprompted_transfer_probe": "CHEM01-P1",
+    "expected_evaluation": "comparison_not_causal_proof"
+  }
+]

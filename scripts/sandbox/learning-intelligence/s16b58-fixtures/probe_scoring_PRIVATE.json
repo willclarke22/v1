@@ -1,0 +1,627 @@
+[
+  {
+    "probe_id": "BIO01-P1",
+    "expected_evidence": "Carbon atoms in glucose originate from CO₂; light supplies energy to drive reactions, not carbon atoms.",
+    "known_misconception_to_check": "Confuses sunlight with a material ingredient of glucose",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Sunlight is not a source of carbon atoms.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO01-P2",
+    "expected_evidence": "With no available CO₂, net new carbon fixation into sugar stops even with light and water.",
+    "known_misconception_to_check": "Confuses sunlight with a material ingredient of glucose",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Sunlight is not a source of carbon atoms.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO02-P1",
+    "expected_evidence": "Light capture drives electron transport, a thylakoid proton gradient and ATP/NADPH production; ATP supplies energy, NADPH reducing equivalents to the Calvin cycle.",
+    "known_misconception_to_check": "Assumes sunlight directly creates sugar without intermediate carriers",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Carriers are produced during light reactions; ATP synthase uses the gradient.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO02-P2",
+    "expected_evidence": "Light absorption → electron transport → proton gradient formation → ATP/NADPH use in carbon fixation.",
+    "known_misconception_to_check": "Assumes sunlight directly creates sugar without intermediate carriers",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Carriers are produced during light reactions; ATP synthase uses the gradient.",
+    "correct_sequence_value_ids": [
+      "light",
+      "electrons",
+      "gradient",
+      "carriers"
+    ],
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO03-P1",
+    "expected_evidence": "CO₂ is fixed to an acceptor (RuBP); only some G3P is exported while the remainder regenerates RuBP to sustain fixation.",
+    "known_misconception_to_check": "Assumes all G3P leaves the cycle to become glucose",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not equate continued light absorption with continued carbon fixation.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO03-P2",
+    "expected_evidence": "Blocking carbon-fixation enzyme immediately reduces new incorporation of inorganic carbon.",
+    "known_misconception_to_check": "Assumes all G3P leaves the cycle to become glucose",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not equate continued light absorption with continued carbon fixation.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO04-P1",
+    "expected_evidence": "Glycolysis happens in cytosol and generates a small ATP yield through substrate-level phosphorylation; it does not directly require mitochondrial ATP synthase.",
+    "known_misconception_to_check": "Confuses ATP produced directly in glycolysis with ATP made by ATP synthase",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Continuation depends on recycling NAD⁺, not oxygen alone.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO04-P2",
+    "expected_evidence": "It can continue without oxygen if NAD⁺ is regenerated through fermentation or another route.",
+    "known_misconception_to_check": "Confuses ATP produced directly in glycolysis with ATP made by ATP synthase",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Continuation depends on recycling NAD⁺, not oxygen alone.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO05-P1",
+    "expected_evidence": "Electron transfer through mitochondrial complexes supports proton pumping across the inner membrane; ATP synthase uses the resulting electrochemical gradient.",
+    "known_misconception_to_check": "Assumes electrons themselves cross ATP synthase to create ATP",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not confuse pumping protons with electrons physically traversing ATP synthase.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO05-P2",
+    "expected_evidence": "Block upstream electron transport → proton pumping decreases/stops; gradient later dissipates; oxidative ATP synthesis decreases.",
+    "known_misconception_to_check": "Assumes electrons themselves cross ATP synthase to create ATP",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not confuse pumping protons with electrons physically traversing ATP synthase.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO06-P1",
+    "expected_evidence": "Proton pumping builds a gradient; downhill H⁺ return through ATP synthase couples to ATP formation.",
+    "known_misconception_to_check": "Confuses proton pumping with passive return through ATP synthase",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "ATP synthase allows energy-releasing return, distinct from gradient-building pumps.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "BIO06-P2",
+    "expected_evidence": "H⁺ normally moves from mitochondrial intermembrane space into matrix through ATP synthase.",
+    "known_misconception_to_check": "Confuses proton pumping with passive return through ATP synthase",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "ATP synthase allows energy-releasing return, distinct from gradient-building pumps.",
+    "correct_choice_value_id": "matrix",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM01-P1",
+    "expected_evidence": "Carbon atoms are conserved and traced from carbon-bearing reactants into products; energy is not a new carbon source.",
+    "known_misconception_to_check": "Thinks chemical conversion turns energy directly into new atoms",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Tracking atoms requires both input identity and product mapping.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM01-P2",
+    "expected_evidence": "CO₂ is the supplied carbon-bearing molecule in the simplified diagram.",
+    "known_misconception_to_check": "Thinks chemical conversion turns energy directly into new atoms",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Tracking atoms requires both input identity and product mapping.",
+    "correct_choice_value_id": "carbon_dioxide",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM02-P1",
+    "expected_evidence": "A closed system retains its total mass even as matter changes phase or escapes a liquid into its headspace.",
+    "known_misconception_to_check": "Believes gas release means mass was destroyed",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not mistake mass lost from one phase for mass lost from the system.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM02-P2",
+    "expected_evidence": "Total mass of sealed vessel and all its contents stays constant.",
+    "known_misconception_to_check": "Believes gas release means mass was destroyed",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not mistake mass lost from one phase for mass lost from the system.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM03-P1",
+    "expected_evidence": "Energy can be transferred or transformed while atoms are conserved separately; light does not carry carbon atoms into glucose.",
+    "known_misconception_to_check": "Talks about energy as if it were a physical atom-containing substance",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not infer matter transfer from energy transfer.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM03-P2",
+    "expected_evidence": "Changing light wavelength alone does not introduce new carbon atoms.",
+    "known_misconception_to_check": "Talks about energy as if it were a physical atom-containing substance",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not infer matter transfer from energy transfer.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM04-P1",
+    "expected_evidence": "Oxidation is electron loss; reduction is electron gain; they occur together.",
+    "known_misconception_to_check": "Treats oxidation as necessarily involving oxygen gas",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not define oxidation exclusively as oxygen-gas addition.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM04-P2",
+    "expected_evidence": "Electron acceptor is reduced.",
+    "known_misconception_to_check": "Treats oxidation as necessarily involving oxygen gas",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not define oxidation exclusively as oxygen-gas addition.",
+    "correct_choice_value_id": "acceptor_reduced",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM05-P1",
+    "expected_evidence": "Enzymes lower activation-energy barriers and change rate but do not change reaction overall ΔG or product energy difference.",
+    "known_misconception_to_check": "Equates lowering activation energy with adding energy to products",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Rate and thermodynamic favorability are distinct.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM05-P2",
+    "expected_evidence": "Blocking an active site generally reduces enzyme-catalyzed reaction rate, other factors equal.",
+    "known_misconception_to_check": "Equates lowering activation energy with adding energy to products",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Rate and thermodynamic favorability are distinct.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM06-P1",
+    "expected_evidence": "Ion net movement depends on the combined chemical and electrical driving forces, with membrane permeability or transport.",
+    "known_misconception_to_check": "Assumes concentration alone determines ion motion even with charge differences",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Electrochemical potential matters for charged species.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CHEM06-P2",
+    "expected_evidence": "Need membrane potential / electrical gradient and permeability/transport context in addition to concentration.",
+    "known_misconception_to_check": "Assumes concentration alone determines ion motion even with charge differences",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Electrochemical potential matters for charged species.",
+    "correct_choice_value_id": "electrical_potential",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL01-P1",
+    "expected_evidence": "Light-driven proton accumulation occurs in the thylakoid lumen across the thylakoid membrane; ATP synthase returns protons to the stroma.",
+    "known_misconception_to_check": "Treats stroma and thylakoid lumen as interchangeable",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Stroma is not the accumulation compartment.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL01-P2",
+    "expected_evidence": "Mark the thylakoid lumen as proton-rich during light reactions.",
+    "known_misconception_to_check": "Treats stroma and thylakoid lumen as interchangeable",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Stroma is not the accumulation compartment.",
+    "correct_choice_value_id": "lumen",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL02-P1",
+    "expected_evidence": "ETC pumps protons from matrix to intermembrane space; ATP synthase permits return to matrix.",
+    "known_misconception_to_check": "Mistakes matrix for intermembrane space in proton accumulation",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Proton pump versus ATP synthase return direction must be distinguished.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL02-P2",
+    "expected_evidence": "Mark proton pumping toward mitochondrial intermembrane space.",
+    "known_misconception_to_check": "Mistakes matrix for intermembrane space in proton accumulation",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Proton pump versus ATP synthase return direction must be distinguished.",
+    "correct_choice_value_id": "intermembrane_space",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL03-P1",
+    "expected_evidence": "Channels permit selective passive transport down electrochemical gradient; pumps use coupling/energy to move against gradient.",
+    "known_misconception_to_check": "Assumes charged ions cross lipid bilayers freely",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Other channels or transport routes may still allow residual movement.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL03-P2",
+    "expected_evidence": "Closing a channel generally reduces flux through that channel while gradient remains.",
+    "known_misconception_to_check": "Assumes charged ions cross lipid bilayers freely",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Other channels or transport routes may still allow residual movement.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL04-P1",
+    "expected_evidence": "Water moves according to water potential/osmotic gradient through a semipermeable membrane.",
+    "known_misconception_to_check": "Thinks water always moves toward higher water concentration rather than considering solutes",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Assume membrane passes water but not external solute.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL04-P2",
+    "expected_evidence": "Water moves out of a cell placed in a more concentrated impermeant-solute external solution.",
+    "known_misconception_to_check": "Thinks water always moves toward higher water concentration rather than considering solutes",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Assume membrane passes water but not external solute.",
+    "correct_choice_value_id": "out",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL05-P1",
+    "expected_evidence": "Negative feedback counteracts deviation from set point through sensor-controller-effector pathway.",
+    "known_misconception_to_check": "Confuses positive with negative feedback loops",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Response depends on other feedback loops; avoid absolute claims.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL05-P2",
+    "expected_evidence": "If sensor cannot detect the change, effective corrective feedback is impaired; variable may deviate further.",
+    "known_misconception_to_check": "Confuses positive with negative feedback loops",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Response depends on other feedback loops; avoid absolute claims.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL06-P1",
+    "expected_evidence": "Fermentation regenerates NAD⁺ to sustain glycolysis in absence of sufficient aerobic electron transport; glycolysis supplies the ATP, not fermentation itself directly.",
+    "known_misconception_to_check": "Assumes fermentation produces most cellular ATP",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not claim fermentation makes the majority of ATP.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "CELL06-P2",
+    "expected_evidence": "With suitable fermentation and substrate, glycolysis can continue under low oxygen by regenerating NAD⁺.",
+    "known_misconception_to_check": "Assumes fermentation produces most cellular ATP",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not claim fermentation makes the majority of ATP.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS01-P1",
+    "expected_evidence": "Resting membrane potential depends on ionic gradients, selective permeability (notably K⁺), and pumps sustaining gradients over time.",
+    "known_misconception_to_check": "Confuses ion pumps with rapid voltage changes through channels",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Distinguish rapid channels from Na+/K+ ATPase maintenance.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS01-P2",
+    "expected_evidence": "Opening additional Na⁺ channels tends to depolarize a resting neuron.",
+    "known_misconception_to_check": "Confuses ion pumps with rapid voltage changes through channels",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Distinguish rapid channels from Na+/K+ ATPase maintenance.",
+    "correct_choice_value_id": "sodium",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS02-P1",
+    "expected_evidence": "Voltage-gated Na+ channel activation yields rapid depolarization, Na+ inactivation and K+ conductance contribute to repolarization.",
+    "known_misconception_to_check": "Believes depolarization is driven by active pumping of Na⁺",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Rapid depolarization not performed by active Na+ pumping.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS02-P2",
+    "expected_evidence": "Threshold → rapid depolarization → repolarization → return toward rest.",
+    "known_misconception_to_check": "Believes depolarization is driven by active pumping of Na⁺",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Rapid depolarization not performed by active Na+ pumping.",
+    "correct_sequence_value_ids": [
+      "threshold",
+      "depolarization",
+      "repolarization",
+      "rest"
+    ],
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS03-P1",
+    "expected_evidence": "Presynaptic depolarization opens voltage-gated Ca2+ channels; Ca2+ influx triggers vesicle fusion and neurotransmitter release.",
+    "known_misconception_to_check": "Believes neurotransmitters are carried electrically across the synaptic cleft",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Not electrical conduction of transmitter across cleft.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS03-P2",
+    "expected_evidence": "Block presynaptic Ca²⁺ entry → reduced vesicle fusion and transmitter release.",
+    "known_misconception_to_check": "Believes neurotransmitters are carried electrically across the synaptic cleft",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Not electrical conduction of transmitter across cleft.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS04-P1",
+    "expected_evidence": "ATP is involved in myosin detachment/crossbridge cycling and Ca2+ pumping into SR for relaxation.",
+    "known_misconception_to_check": "Thinks ATP only powers contraction and is unnecessary for relaxation",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "ATP is required for relaxation as well as contraction.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS04-P2",
+    "expected_evidence": "Severe ATP depletion impairs myosin-actin detachment and can cause rigidity.",
+    "known_misconception_to_check": "Thinks ATP only powers contraction and is unnecessary for relaxation",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "ATP is required for relaxation as well as contraction.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS05-P1",
+    "expected_evidence": "Blood transports O₂; perfusion and arterial oxygen content determine delivery while mitochondria consume it as terminal electron acceptor.",
+    "known_misconception_to_check": "Confuses oxygen carried in blood with oxygen used as the final electron acceptor",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Arterial oxygen content and flow jointly matter.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS05-P2",
+    "expected_evidence": "Reduced blood flow reduces oxygen delivery to muscle even when hemoglobin saturation unchanged.",
+    "known_misconception_to_check": "Confuses oxygen carried in blood with oxygen used as the final electron acceptor",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Arterial oxygen content and flow jointly matter.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS06-P1",
+    "expected_evidence": "Basolateral Na+/K+ ATPase maintains Na+ electrochemical gradient, enabling apical Na+-solute symport such as glucose cotransport.",
+    "known_misconception_to_check": "Assumes every solute moves passively down its concentration gradient",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Avoid claiming cotransporter itself builds entire sodium gradient.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "PHYS06-P2",
+    "expected_evidence": "Inhibiting pump gradually collapses Na+ gradient and impairs coupled glucose uptake.",
+    "known_misconception_to_check": "Assumes every solute moves passively down its concentration gradient",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Avoid claiming cotransporter itself builds entire sodium gradient.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT01-P1",
+    "expected_evidence": "Rates may be limited by an unchanged reactant/step; proportionality requires a justified model and nonlimiting conditions.",
+    "known_misconception_to_check": "Treats a doubled input as always causing a doubled output",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not automatically double outcome.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT01-P2",
+    "expected_evidence": "Doubling a nonlimiting input does not necessarily increase rate; under the stated limiting-input model rate remains unchanged.",
+    "known_misconception_to_check": "Treats a doubled input as always causing a doubled output",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not automatically double outcome.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT02-P1",
+    "expected_evidence": "Slope is Δoutput/Δtime, not absolute value on graph.",
+    "known_misconception_to_check": "Interprets a graph’s height as its rate of change",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Compare 2,5,1 units per hour.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT02-P2",
+    "expected_evidence": "For (t,y)=(0,2),(1,4),(2,9),(3,10), steepest one-hour interval is t=1 to t=2.",
+    "known_misconception_to_check": "Interprets a graph’s height as its rate of change",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Compare 2,5,1 units per hour.",
+    "correct_choice_value_id": "t1_t2",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT03-P1",
+    "expected_evidence": "Pool-change rate is input minus output; pool size alone does not tell direction or size of flux.",
+    "known_misconception_to_check": "Assumes a large pool implies a large ongoing inflow",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Sign and units matter.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "QUANT03-P2",
+    "expected_evidence": "Net +3 units/minute for 2 minutes = +6 units.",
+    "known_misconception_to_check": "Assumes a large pool implies a large ongoing inflow",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Sign and units matter.",
+    "numeric_answer": 6,
+    "numeric_unit": "units",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS01-P1",
+    "expected_evidence": "Causal inference requires comparable groups/conditions, clear intervention differences and matched outcomes, ideally randomization/controlled confounders.",
+    "known_misconception_to_check": "Attributes an outcome to an intervention despite other variables changing",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Still do not claim one small synthetic test proves causality.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS01-P2",
+    "expected_evidence": "Setup A (similar baseline and same outcome probe with assigned verbal vs interactive teaching) is better than setup B with uncontrolled extra practice.",
+    "known_misconception_to_check": "Attributes an outcome to an intervention despite other variables changing",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Still do not claim one small synthetic test proves causality.",
+    "correct_choice_value_id": "A",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS02-P1",
+    "expected_evidence": "Transfer evidence requires applying mechanism to novel context without copying prior answer; terms alone are insufficient.",
+    "known_misconception_to_check": "Assumes similar vocabulary guarantees understanding of an analogous mechanism",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Distinguish ATP synthase from ETC proton pumping; note other pathways possible.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS02-P2",
+    "expected_evidence": "If H+ cannot pass chloroplast ATP synthase, photophosphorylation via that synthase is impaired despite potential gradient.",
+    "known_misconception_to_check": "Assumes similar vocabulary guarantees understanding of an analogous mechanism",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Distinguish ATP synthase from ETC proton pumping; note other pathways possible.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS03-P1",
+    "expected_evidence": "Correctness, confidence and independence of response are separate; revise belief from repeated evidence including contradictions.",
+    "known_misconception_to_check": "Conflates confidence with actual correctness",
+    "rubric": "0 unsupported/incorrect; 1 partially correct or prompted; 2 mechanistic explanation with relevant evidence; uncertainty separately",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not infer stable teaching preference from single visual success.",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  },
+  {
+    "probe_id": "REAS03-P2",
+    "expected_evidence": "One cued correct answer with two independent errors means mastery is not established; current difficulty may persist.",
+    "known_misconception_to_check": "Conflates confidence with actual correctness",
+    "rubric": "0 incorrect; 1 partly correct or prompted; 2 correct with independent reasoning; do not infer learning gain from score alone",
+    "do_not_use_as_root_label": true,
+    "diagnostic_distinction": "Do not infer stable teaching preference from single visual success.",
+    "correct_choice_value_id": "insufficient",
+    "independent_response_required_for_stronger_claim": true,
+    "root_inference_instruction": "Score observed performance only. Root-cause inference requires the learner’s reasoning and historical evidence, including alternatives and possible contradictions."
+  }
+]
