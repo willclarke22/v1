@@ -1,0 +1,414 @@
+{
+  "schema": "myway_s62a_public_visits_v1",
+  "stimuli_not_verified_learner_ground_truth": true,
+  "visits": [
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V1",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X12",
+      "visit_index": 1,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V1-OPEN",
+        "topic_id": "X12",
+        "text": "I keep getting mixed up when a line gets less steep. Does that mean the amount itself is dropping?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V2",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X17",
+      "visit_index": 2,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V2-OPEN",
+        "topic_id": "X17",
+        "text": "If a lake is still getting water but the flow slows down, I feel like it should start emptying. Is that right?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V3",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X19",
+      "visit_index": 3,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V3-OPEN",
+        "topic_id": "X19",
+        "text": "When people say inflation fell this month, did prices actually go down? I think I may be mixing two things.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V4",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X21",
+      "visit_index": 4,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V4-OPEN",
+        "topic_id": "X21",
+        "text": "I tried a compound interest example. The percent gain gets smaller, so does my balance eventually shrink?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V5",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X16",
+      "visit_index": 5,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V5-OPEN",
+        "topic_id": "X16",
+        "text": "This graph shows temperatures rising more slowly later on. Does that mean it got cooler overall?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-ELLI-V6",
+      "learner_id": "ELLI",
+      "focus_topic_id": "X10",
+      "visit_index": 6,
+      "latest_observation": {
+        "id": "ELLI-S62-ELLI-V6-OPEN",
+        "topic_id": "X10",
+        "text": "Can you give me a fresh problem with rates and totals? I want to see whether I can work it out without hints.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V1",
+      "learner_id": "MICA",
+      "focus_topic_id": "X03",
+      "visit_index": 1,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V1-OPEN",
+        "topic_id": "X03",
+        "text": "I can follow a food label, but calories and how the body uses energy still feel fuzzy.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V2",
+      "learner_id": "MICA",
+      "focus_topic_id": "X08",
+      "visit_index": 2,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V2-OPEN",
+        "topic_id": "X08",
+        "text": "I don\u2019t really get why two things can be the same temperature but transfer different amounts of heat.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V3",
+      "learner_id": "MICA",
+      "focus_topic_id": "X22",
+      "visit_index": 3,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V3-OPEN",
+        "topic_id": "X22",
+        "text": "If someone says \"some people passed,\" does that mean everyone else failed? I think I might be assuming too much.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V4",
+      "learner_id": "MICA",
+      "focus_topic_id": "X23",
+      "visit_index": 4,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V4-OPEN",
+        "topic_id": "X23",
+        "text": "When someone says \"it\u2019s chilly in here,\" are they always asking me to shut the window?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V5",
+      "learner_id": "MICA",
+      "focus_topic_id": "X05",
+      "visit_index": 5,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V5-OPEN",
+        "topic_id": "X05",
+        "text": "I honestly can\u2019t tell if voltage and current are basically the same thing.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-MICA-V6",
+      "learner_id": "MICA",
+      "focus_topic_id": "X11",
+      "visit_index": 6,
+      "latest_observation": {
+        "id": "MICA-S62-MICA-V6-OPEN",
+        "topic_id": "X11",
+        "text": "I saw a news headline about a rare illness test. Why does a positive result sometimes not mean you probably have it?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V1",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X07",
+      "visit_index": 1,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V1-OPEN",
+        "topic_id": "X07",
+        "text": "When something burns, is some of the stuff actually turning into energy, or am I saying that wrong?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V2",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X03",
+      "visit_index": 2,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V2-OPEN",
+        "topic_id": "X03",
+        "text": "Does your body literally turn food into energy, like matter disappearing?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V3",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X08",
+      "visit_index": 3,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V3-OPEN",
+        "topic_id": "X08",
+        "text": "I\u2019m starting to think energy isn\u2019t the same thing as material. Can you check if that idea holds for heating something?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V4",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X17",
+      "visit_index": 4,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V4-OPEN",
+        "topic_id": "X17",
+        "text": "I think I finally got the energy versus stuff distinction, but I have a new question about water flow.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V5",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X12",
+      "visit_index": 5,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V5-OPEN",
+        "topic_id": "X12",
+        "text": "Could you test me on a graph so I can tell if I\u2019m actually getting it?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-RUNE-V6",
+      "learner_id": "RUNE",
+      "focus_topic_id": "X09",
+      "visit_index": 6,
+      "latest_observation": {
+        "id": "RUNE-S62-RUNE-V6-OPEN",
+        "topic_id": "X09",
+        "text": "Here\u2019s something new: if I dilute a solution, what exactly changed and what stayed the same?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V1",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X11",
+      "visit_index": 1,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V1-OPEN",
+        "topic_id": "X11",
+        "text": "I guessed that a 90% accurate test means a positive result gives me a 90% chance. Is that how it works?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V2",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X24",
+      "visit_index": 2,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V2-OPEN",
+        "topic_id": "X24",
+        "text": "How do I tell if a convincing-sounding argument actually has good evidence behind it?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V3",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X27",
+      "visit_index": 3,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V3-OPEN",
+        "topic_id": "X27",
+        "text": "I saw a chart of population changes and I\u2019m not sure whether the bars tell the whole story.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V4",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X21",
+      "visit_index": 4,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V4-OPEN",
+        "topic_id": "X21",
+        "text": "I think I can calculate a percent increase, but I\u2019m not sure I understand compounding.",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V5",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X16",
+      "visit_index": 5,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V5-OPEN",
+        "topic_id": "X16",
+        "text": "I\u2019m confused when people use one hot day to argue about climate. Is that a fair point?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    },
+    {
+      "research_only": true,
+      "no_assumed_mastery": true,
+      "case_id": "S62-TAVI-V6",
+      "learner_id": "TAVI",
+      "focus_topic_id": "X23",
+      "visit_index": 6,
+      "latest_observation": {
+        "id": "TAVI-S62-TAVI-V6-OPEN",
+        "topic_id": "X23",
+        "text": "Can you test whether I\u2019m just guessing what people mean, or actually using context?",
+        "source": "S62_CURATOR_AUTHORED_STIMULUS_NOT_MODEL_L",
+        "evidence_type": "raw_utterance",
+        "task_conditions": "unscored_initial_utterance"
+      },
+      "historical_observations": []
+    }
+  ]
+}

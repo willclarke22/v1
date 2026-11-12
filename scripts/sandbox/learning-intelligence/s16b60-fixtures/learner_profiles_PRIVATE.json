@@ -1,0 +1,42 @@
+[
+  {
+    "learner_id": "SAGE",
+    "researcher_hypothesis_not_ground_truth": "Repeated stock/rate confusions with a contradiction: correctly explains a simple reservoir once",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "MIRA",
+    "researcher_hypothesis_not_ground_truth": "Conditional probability difficulties, with different cause for immunology vocabulary",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "ELI",
+    "researcher_hypothesis_not_ground_truth": "Correct programming state but occasional physics/thermodynamics error due to diagrams",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "NOOR",
+    "researcher_hypothesis_not_ground_truth": "Context-dependent feedback reasoning; no proven common mechanism",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "RIVER",
+    "researcher_hypothesis_not_ground_truth": "History/argument reasoning; differentiates chronology from evidence inconsistently",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "KAI",
+    "researcher_hypothesis_not_ground_truth": "Prefers short explanations explicitly, but no established visual learning advantage",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "AVA",
+    "researcher_hypothesis_not_ground_truth": "Challenges a tutor task with an invalid premise; student critique must not be graded as deficit",
+    "not_available_to_models": true
+  },
+  {
+    "learner_id": "FINN",
+    "researcher_hypothesis_not_ground_truth": "Similar words in unrelated mistakes; negative control against false learner relation",
+    "not_available_to_models": true
+  }
+]

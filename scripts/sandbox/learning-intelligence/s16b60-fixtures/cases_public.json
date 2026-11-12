@@ -1,0 +1,4637 @@
+[
+  {
+    "case_id": "C01",
+    "learner_id": "ELI",
+    "focus_topic_id": "X01",
+    "scenario_kind": "cross_domain_negative_control",
+    "latest_observation": {
+      "id": "C01-NOW",
+      "topic_id": "X01",
+      "text": "Could you check if I understand diffusion versus pumping substances through a membrane?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C01-H1",
+        "topic_id": "X13",
+        "text": "I can track the value of a variable after each assignment; it is the latest state, not the sum of every previous value.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C01-H2",
+        "topic_id": "X08",
+        "text": "If two blocks are at the same temperature, I think a larger one cannot hold more thermal energy.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C01-H3",
+        "topic_id": "X05",
+        "text": "I can describe current as a rate of charge flow, but I keep mixing battery voltage with charge stored.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C01-H4",
+        "topic_id": "X13",
+        "text": "The counter starts at five and becomes seven after the second instruction, not twelve.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C01-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "ELI-history",
+        "topic_id": "X01",
+        "text": "Particles moving down a concentration gradient need not consume ATP, but pumping against it may.",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C01-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C01-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C02",
+    "learner_id": "MIRA",
+    "focus_topic_id": "X02",
+    "scenario_kind": "mixed_cause_negative_control",
+    "latest_observation": {
+      "id": "C02-NOW",
+      "topic_id": "X02",
+      "text": "Can you test whether I am mixing up the frequency of a condition with what a positive result means?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C02-H1",
+        "topic_id": "X11",
+        "text": "If a test is 90 percent accurate, a positive means there is a 90 percent chance that I have it.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C02-H2",
+        "topic_id": "X02",
+        "text": "In a population where the condition is rare, I still say most positives must have the condition.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C02-H3",
+        "topic_id": "X02",
+        "text": "I understand immune memory means a later exposure can provoke a faster response, but I forgot which antibody cells are involved.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "contrast",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C02-H4",
+        "topic_id": "X11",
+        "text": "When the base rate is one in ten thousand, I am unsure how many false positives would appear.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C02-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C02-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C03",
+    "learner_id": "SAGE",
+    "focus_topic_id": "X03",
+    "scenario_kind": "cross_domain_candidate",
+    "latest_observation": {
+      "id": "C03-NOW",
+      "topic_id": "X03",
+      "text": "I hear calories called energy. How can I distinguish energy from the material that makes up food?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C03-H1",
+        "topic_id": "X12",
+        "text": "When the line is steeper, I think the total amount must already be higher even at the same moment.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C03-H2",
+        "topic_id": "X17",
+        "text": "If rain is heavier today, I assume the reservoir must hold more water than one that filled for months.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C03-H3",
+        "topic_id": "X19",
+        "text": "Inflation is falling, so I think grocery prices have gone back to what they were last year.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C03-H4",
+        "topic_id": "X17",
+        "text": "I know one reservoir can have more water despite a slower inflow if it started fuller.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C03-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "SAGE-history",
+        "topic_id": "X03",
+        "text": "I can identify glucose as a molecule and food energy as a property of chemical changes, but I still conflate ingredients.",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C03-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C03-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C03-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible difficulty distinguishing accumulated quantity from rate",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C03-H1",
+          "C03-H2"
+        ],
+        "counter_ids": [
+          "C03-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C04",
+    "learner_id": "RIVER",
+    "focus_topic_id": "X04",
+    "scenario_kind": "causal_reasoning_candidate",
+    "latest_observation": {
+      "id": "C04-NOW",
+      "topic_id": "X04",
+      "text": "Ask me to predict motion when the net force changes rather than tell me the answer.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C04-H1",
+        "topic_id": "X25",
+        "text": "Because two events happened in order, I initially treated the first as the cause of the second.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C04-H2",
+        "topic_id": "X24",
+        "text": "When I write an argument I sometimes use a timeline rather than evidence for why something happened.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C04-H3",
+        "topic_id": "X04",
+        "text": "I predicted an object would keep accelerating because a force acted on it earlier, even after the force stopped.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C04-H4",
+        "topic_id": "X24",
+        "text": "I can also distinguish evidence of causation from mere sequence in the example of a misleading advertisement.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C04-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C04-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C04-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible over-reliance on chronological order when inferring causes",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C04-H1",
+          "C04-H2"
+        ],
+        "counter_ids": [
+          "C04-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C05",
+    "learner_id": "FINN",
+    "focus_topic_id": "X05",
+    "scenario_kind": "lexical_false_merge",
+    "latest_observation": {
+      "id": "C05-NOW",
+      "topic_id": "X05",
+      "text": "Could we test what current and voltage predict in a circuit instead of defining the words again?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C05-H1",
+        "topic_id": "X23",
+        "text": "I cannot tell whether “they” refers to the teacher or the student when both are named.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C05-H2",
+        "topic_id": "X05",
+        "text": "I use the word current when I actually mean electrical potential difference; I am missing their definitions.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C05-H3",
+        "topic_id": "X26",
+        "text": "I called the new policy a current rule because it is in force today, not because it relates to electricity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C05-H4",
+        "topic_id": "X23",
+        "text": "I can resolve the pronoun after the second sentence supplies the antecedent.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C05-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C05-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C06",
+    "learner_id": "NOOR",
+    "focus_topic_id": "X06",
+    "scenario_kind": "similar_terms_uncertain",
+    "latest_observation": {
+      "id": "C06-NOW",
+      "topic_id": "X06",
+      "text": "Could you give me a feedback system I have not seen and ask for a prediction?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C06-H1",
+        "topic_id": "X06",
+        "text": "I can describe how a thermostat responds when the room drops below target temperature.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C06-H2",
+        "topic_id": "X18",
+        "text": "If warming increases water vapour, then the feedback must always be the only cause of warming.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C06-H3",
+        "topic_id": "X06",
+        "text": "I can predict that a delayed correction may overshoot a target.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C06-H4",
+        "topic_id": "X18",
+        "text": "I know the initial forcing and a feedback are not identical words, but I do not know which effects to isolate.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C06-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C06-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C07",
+    "learner_id": "AVA",
+    "focus_topic_id": "X07",
+    "scenario_kind": "valid_tutor_challenge",
+    "latest_observation": {
+      "id": "C07-NOW",
+      "topic_id": "X07",
+      "text": "Please give me a reaction where I track atoms instead of showing a memorized diagram.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C07-H1",
+        "topic_id": "X09",
+        "text": "If the instructions say we can double the concentration without changing solute or volume, that premise seems impossible.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C07-H2",
+        "topic_id": "X10",
+        "text": "Concentration is amount divided by volume, so those quantities have to change for the ratio to double.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C07-H3",
+        "topic_id": "X07",
+        "text": "I cannot accept that atoms vanish in a closed chemical reaction; we must account for them.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C07-H4",
+        "topic_id": "X09",
+        "text": "I would like the question corrected before you grade my answer.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "explicit_request",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C07-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C07-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C08",
+    "learner_id": "ELI",
+    "focus_topic_id": "X08",
+    "scenario_kind": "cross_domain_negative_control",
+    "latest_observation": {
+      "id": "C08-NOW",
+      "topic_id": "X08",
+      "text": "I am not sure whether objects at equal temperatures have equal thermal energy. Can you test that?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C08-H1",
+        "topic_id": "X13",
+        "text": "I can track the value of a variable after each assignment; it is the latest state, not the sum of every previous value.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C08-H2",
+        "topic_id": "X08",
+        "text": "If two blocks are at the same temperature, I think a larger one cannot hold more thermal energy.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C08-H3",
+        "topic_id": "X05",
+        "text": "I can describe current as a rate of charge flow, but I keep mixing battery voltage with charge stored.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C08-H4",
+        "topic_id": "X13",
+        "text": "The counter starts at five and becomes seven after the second instruction, not twelve.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C08-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C08-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C09",
+    "learner_id": "AVA",
+    "focus_topic_id": "X09",
+    "scenario_kind": "valid_tutor_challenge",
+    "latest_observation": {
+      "id": "C09-NOW",
+      "topic_id": "X09",
+      "text": "The probe says concentration doubles without changing amount or volume. Does that task make scientific sense?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C09-H1",
+        "topic_id": "X09",
+        "text": "If the instructions say we can double the concentration without changing solute or volume, that premise seems impossible.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C09-H2",
+        "topic_id": "X10",
+        "text": "Concentration is amount divided by volume, so those quantities have to change for the ratio to double.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C09-H3",
+        "topic_id": "X07",
+        "text": "I cannot accept that atoms vanish in a closed chemical reaction; we must account for them.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C09-H4",
+        "topic_id": "X09",
+        "text": "I would like the question corrected before you grade my answer.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "explicit_request",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C09-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C09-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C10",
+    "learner_id": "AVA",
+    "focus_topic_id": "X10",
+    "scenario_kind": "valid_tutor_challenge",
+    "latest_observation": {
+      "id": "C10-NOW",
+      "topic_id": "X10",
+      "text": "Can you check my reasoning about what must change for a ratio to double?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C10-H1",
+        "topic_id": "X09",
+        "text": "If the instructions say we can double the concentration without changing solute or volume, that premise seems impossible.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C10-H2",
+        "topic_id": "X10",
+        "text": "Concentration is amount divided by volume, so those quantities have to change for the ratio to double.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C10-H3",
+        "topic_id": "X07",
+        "text": "I cannot accept that atoms vanish in a closed chemical reaction; we must account for them.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "challenge",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C10-H4",
+        "topic_id": "X09",
+        "text": "I would like the question corrected before you grade my answer.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "explicit_request",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "AVA-history"
+      },
+      {
+        "id": "C10-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      },
+      {
+        "id": "C10-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "AVA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C11",
+    "learner_id": "MIRA",
+    "focus_topic_id": "X11",
+    "scenario_kind": "mixed_cause_negative_control",
+    "latest_observation": {
+      "id": "C11-NOW",
+      "topic_id": "X11",
+      "text": "Could you ask one conditional probability question before giving away the calculation?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C11-H1",
+        "topic_id": "X11",
+        "text": "If a test is 90 percent accurate, a positive means there is a 90 percent chance that I have it.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C11-H2",
+        "topic_id": "X02",
+        "text": "In a population where the condition is rare, I still say most positives must have the condition.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C11-H3",
+        "topic_id": "X02",
+        "text": "I understand immune memory means a later exposure can provoke a faster response, but I forgot which antibody cells are involved.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "contrast",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C11-H4",
+        "topic_id": "X11",
+        "text": "When the base rate is one in ten thousand, I am unsure how many false positives would appear.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C11-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C11-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C12",
+    "learner_id": "SAGE",
+    "focus_topic_id": "X12",
+    "scenario_kind": "cross_domain_candidate",
+    "latest_observation": {
+      "id": "C12-NOW",
+      "topic_id": "X12",
+      "text": "Can you test whether I can distinguish a graph slope from total accumulated amount?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C12-H1",
+        "topic_id": "X12",
+        "text": "When the line is steeper, I think the total amount must already be higher even at the same moment.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C12-H2",
+        "topic_id": "X17",
+        "text": "If rain is heavier today, I assume the reservoir must hold more water than one that filled for months.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C12-H3",
+        "topic_id": "X19",
+        "text": "Inflation is falling, so I think grocery prices have gone back to what they were last year.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C12-H4",
+        "topic_id": "X17",
+        "text": "I know one reservoir can have more water despite a slower inflow if it started fuller.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C12-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C12-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C12-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible difficulty distinguishing accumulated quantity from rate",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C12-H1",
+          "C12-H2"
+        ],
+        "counter_ids": [
+          "C12-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C13",
+    "learner_id": "ELI",
+    "focus_topic_id": "X13",
+    "scenario_kind": "cross_domain_negative_control",
+    "latest_observation": {
+      "id": "C13-NOW",
+      "topic_id": "X13",
+      "text": "What would this variable equal after two updates? Please test my prediction first.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C13-H1",
+        "topic_id": "X13",
+        "text": "I can track the value of a variable after each assignment; it is the latest state, not the sum of every previous value.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C13-H2",
+        "topic_id": "X08",
+        "text": "If two blocks are at the same temperature, I think a larger one cannot hold more thermal energy.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C13-H3",
+        "topic_id": "X05",
+        "text": "I can describe current as a rate of charge flow, but I keep mixing battery voltage with charge stored.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C13-H4",
+        "topic_id": "X13",
+        "text": "The counter starts at five and becomes seven after the second instruction, not twelve.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "ELI-history"
+      },
+      {
+        "id": "C13-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      },
+      {
+        "id": "C13-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "ELI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C14",
+    "learner_id": "NOOR",
+    "focus_topic_id": "X14",
+    "scenario_kind": "similar_terms_uncertain",
+    "latest_observation": {
+      "id": "C14-NOW",
+      "topic_id": "X14",
+      "text": "I think an algorithm that finishes with fewer steps always produces a better answer. What am I missing?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C14-H1",
+        "topic_id": "X06",
+        "text": "I can describe how a thermostat responds when the room drops below target temperature.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C14-H2",
+        "topic_id": "X18",
+        "text": "If warming increases water vapour, then the feedback must always be the only cause of warming.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C14-H3",
+        "topic_id": "X06",
+        "text": "I can predict that a delayed correction may overshoot a target.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C14-H4",
+        "topic_id": "X18",
+        "text": "I know the initial forcing and a feedback are not identical words, but I do not know which effects to isolate.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C14-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "NOOR-history",
+        "topic_id": "X14",
+        "text": "I sometimes call the fastest algorithm the best without specifying what it trades away.",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C14-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C14-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C15",
+    "learner_id": "KAI",
+    "focus_topic_id": "X15",
+    "scenario_kind": "strategy_confounded",
+    "latest_observation": {
+      "id": "C15-NOW",
+      "topic_id": "X15",
+      "text": "If I accidentally use the test dataset while tuning a model, does the validation result still mean what I think?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C15-H1",
+        "topic_id": "X29",
+        "text": "The first perspective drawing made scale easier to see.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "reported_success",
+        "task_conditions": "after_diagram",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C15-H2",
+        "topic_id": "X29",
+        "text": "I also solved the similar question correctly after the tutor simply repeated it with numbers.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "after_repetition",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C15-H3",
+        "topic_id": "X28",
+        "text": "I can clap four quarter notes while holding the same pulse.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C15-H4",
+        "topic_id": "X30",
+        "text": "A visual analogy helps in this metaphor but I know the map is not the territory.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C15-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "KAI-history",
+        "topic_id": "X15",
+        "text": "I got a much higher score after looking at evaluation data repeatedly, but did not check if I leaked answers.",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C15-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C15-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C16",
+    "learner_id": "NOOR",
+    "focus_topic_id": "X16",
+    "scenario_kind": "similar_terms_uncertain",
+    "latest_observation": {
+      "id": "C16-NOW",
+      "topic_id": "X16",
+      "text": "Can you test whether I understand a short cold spell against a long-term warming trend?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C16-H1",
+        "topic_id": "X06",
+        "text": "I can describe how a thermostat responds when the room drops below target temperature.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C16-H2",
+        "topic_id": "X18",
+        "text": "If warming increases water vapour, then the feedback must always be the only cause of warming.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C16-H3",
+        "topic_id": "X06",
+        "text": "I can predict that a delayed correction may overshoot a target.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C16-H4",
+        "topic_id": "X18",
+        "text": "I know the initial forcing and a feedback are not identical words, but I do not know which effects to isolate.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C16-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "NOOR-history",
+        "topic_id": "X16",
+        "text": "A cold morning seems to disprove a decades-long trend, although I know a weather sample is shorter.",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C16-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C16-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C17",
+    "learner_id": "SAGE",
+    "focus_topic_id": "X17",
+    "scenario_kind": "cross_domain_candidate",
+    "latest_observation": {
+      "id": "C17-NOW",
+      "topic_id": "X17",
+      "text": "I want a reservoir question where inflow changes, so I can see whether I still mix rate and total.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C17-H1",
+        "topic_id": "X12",
+        "text": "When the line is steeper, I think the total amount must already be higher even at the same moment.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C17-H2",
+        "topic_id": "X17",
+        "text": "If rain is heavier today, I assume the reservoir must hold more water than one that filled for months.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C17-H3",
+        "topic_id": "X19",
+        "text": "Inflation is falling, so I think grocery prices have gone back to what they were last year.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C17-H4",
+        "topic_id": "X17",
+        "text": "I know one reservoir can have more water despite a slower inflow if it started fuller.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C17-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C17-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C17-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible difficulty distinguishing accumulated quantity from rate",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C17-H1",
+          "C17-H2"
+        ],
+        "counter_ids": [
+          "C17-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C18",
+    "learner_id": "NOOR",
+    "focus_topic_id": "X18",
+    "scenario_kind": "similar_terms_uncertain",
+    "latest_observation": {
+      "id": "C18-NOW",
+      "topic_id": "X18",
+      "text": "How can we separate a climate forcing from a feedback that responds to it?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C18-H1",
+        "topic_id": "X06",
+        "text": "I can describe how a thermostat responds when the room drops below target temperature.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C18-H2",
+        "topic_id": "X18",
+        "text": "If warming increases water vapour, then the feedback must always be the only cause of warming.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C18-H3",
+        "topic_id": "X06",
+        "text": "I can predict that a delayed correction may overshoot a target.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C18-H4",
+        "topic_id": "X18",
+        "text": "I know the initial forcing and a feedback are not identical words, but I do not know which effects to isolate.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "NOOR-history"
+      },
+      {
+        "id": "C18-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      },
+      {
+        "id": "C18-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "NOOR-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C19",
+    "learner_id": "SAGE",
+    "focus_topic_id": "X19",
+    "scenario_kind": "cross_domain_candidate",
+    "latest_observation": {
+      "id": "C19-NOW",
+      "topic_id": "X19",
+      "text": "If the inflation rate falls, will prices necessarily fall? Can you test my explanation?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C19-H1",
+        "topic_id": "X12",
+        "text": "When the line is steeper, I think the total amount must already be higher even at the same moment.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C19-H2",
+        "topic_id": "X17",
+        "text": "If rain is heavier today, I assume the reservoir must hold more water than one that filled for months.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C19-H3",
+        "topic_id": "X19",
+        "text": "Inflation is falling, so I think grocery prices have gone back to what they were last year.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C19-H4",
+        "topic_id": "X17",
+        "text": "I know one reservoir can have more water despite a slower inflow if it started fuller.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C19-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C19-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C19-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible difficulty distinguishing accumulated quantity from rate",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C19-H1",
+          "C19-H2"
+        ],
+        "counter_ids": [
+          "C19-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C20",
+    "learner_id": "RIVER",
+    "focus_topic_id": "X20",
+    "scenario_kind": "causal_reasoning_candidate",
+    "latest_observation": {
+      "id": "C20-NOW",
+      "topic_id": "X20",
+      "text": "What would I give up if I choose one benefit over another? Ask before explaining.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C20-H1",
+        "topic_id": "X25",
+        "text": "Because two events happened in order, I initially treated the first as the cause of the second.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C20-H2",
+        "topic_id": "X24",
+        "text": "When I write an argument I sometimes use a timeline rather than evidence for why something happened.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C20-H3",
+        "topic_id": "X04",
+        "text": "I predicted an object would keep accelerating because a force acted on it earlier, even after the force stopped.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C20-H4",
+        "topic_id": "X24",
+        "text": "I can also distinguish evidence of causation from mere sequence in the example of a misleading advertisement.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C20-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "RIVER-history",
+        "topic_id": "X20",
+        "text": "I choose the project with the highest headline gain but forget what alternative I could have done.",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C20-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C20-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C20-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible over-reliance on chronological order when inferring causes",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C20-H1",
+          "C20-H2"
+        ],
+        "counter_ids": [
+          "C20-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C21",
+    "learner_id": "SAGE",
+    "focus_topic_id": "X21",
+    "scenario_kind": "cross_domain_candidate",
+    "latest_observation": {
+      "id": "C21-NOW",
+      "topic_id": "X21",
+      "text": "I can find simple interest but I wonder why compounding changes the shape of the graph.",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C21-H1",
+        "topic_id": "X12",
+        "text": "When the line is steeper, I think the total amount must already be higher even at the same moment.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C21-H2",
+        "topic_id": "X17",
+        "text": "If rain is heavier today, I assume the reservoir must hold more water than one that filled for months.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C21-H3",
+        "topic_id": "X19",
+        "text": "Inflation is falling, so I think grocery prices have gone back to what they were last year.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C21-H4",
+        "topic_id": "X17",
+        "text": "I know one reservoir can have more water despite a slower inflow if it started fuller.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "SAGE-history"
+      },
+      {
+        "id": "C21-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "SAGE-history",
+        "topic_id": "X21",
+        "text": "I can calculate equal yearly additions but I forget each earlier gain can earn another gain.",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C21-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      },
+      {
+        "id": "C21-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "SAGE-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C21-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible difficulty distinguishing accumulated quantity from rate",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C21-H1",
+          "C21-H2"
+        ],
+        "counter_ids": [
+          "C21-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C22",
+    "learner_id": "FINN",
+    "focus_topic_id": "X22",
+    "scenario_kind": "lexical_false_merge",
+    "latest_observation": {
+      "id": "C22-NOW",
+      "topic_id": "X22",
+      "text": "Do the words “some people passed” logically imply that others failed?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C22-H1",
+        "topic_id": "X23",
+        "text": "I cannot tell whether “they” refers to the teacher or the student when both are named.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C22-H2",
+        "topic_id": "X05",
+        "text": "I use the word current when I actually mean electrical potential difference; I am missing their definitions.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C22-H3",
+        "topic_id": "X26",
+        "text": "I called the new policy a current rule because it is in force today, not because it relates to electricity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C22-H4",
+        "topic_id": "X23",
+        "text": "I can resolve the pronoun after the second sentence supplies the antecedent.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C22-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "FINN-history",
+        "topic_id": "X22",
+        "text": "When someone says some students passed, I assume they mean not all even though they did not say it.",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C22-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C22-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C23",
+    "learner_id": "FINN",
+    "focus_topic_id": "X23",
+    "scenario_kind": "lexical_false_merge",
+    "latest_observation": {
+      "id": "C23-NOW",
+      "topic_id": "X23",
+      "text": "When someone says “Alex told Jordan they won,” how do we figure out who “they” means?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C23-H1",
+        "topic_id": "X23",
+        "text": "I cannot tell whether “they” refers to the teacher or the student when both are named.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C23-H2",
+        "topic_id": "X05",
+        "text": "I use the word current when I actually mean electrical potential difference; I am missing their definitions.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C23-H3",
+        "topic_id": "X26",
+        "text": "I called the new policy a current rule because it is in force today, not because it relates to electricity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C23-H4",
+        "topic_id": "X23",
+        "text": "I can resolve the pronoun after the second sentence supplies the antecedent.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C23-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C23-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C24",
+    "learner_id": "RIVER",
+    "focus_topic_id": "X24",
+    "scenario_kind": "causal_reasoning_candidate",
+    "latest_observation": {
+      "id": "C24-NOW",
+      "topic_id": "X24",
+      "text": "Can you show me how to distinguish sequence of events from evidence supporting a causal claim?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C24-H1",
+        "topic_id": "X25",
+        "text": "Because two events happened in order, I initially treated the first as the cause of the second.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C24-H2",
+        "topic_id": "X24",
+        "text": "When I write an argument I sometimes use a timeline rather than evidence for why something happened.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C24-H3",
+        "topic_id": "X04",
+        "text": "I predicted an object would keep accelerating because a force acted on it earlier, even after the force stopped.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C24-H4",
+        "topic_id": "X24",
+        "text": "I can also distinguish evidence of causation from mere sequence in the example of a misleading advertisement.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C24-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C24-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C24-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible over-reliance on chronological order when inferring causes",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C24-H1",
+          "C24-H2"
+        ],
+        "counter_ids": [
+          "C24-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C25",
+    "learner_id": "RIVER",
+    "focus_topic_id": "X25",
+    "scenario_kind": "causal_reasoning_candidate",
+    "latest_observation": {
+      "id": "C25-NOW",
+      "topic_id": "X25",
+      "text": "Can you test when historical chronology supports a cause rather than assuming it?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C25-H1",
+        "topic_id": "X25",
+        "text": "Because two events happened in order, I initially treated the first as the cause of the second.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C25-H2",
+        "topic_id": "X24",
+        "text": "When I write an argument I sometimes use a timeline rather than evidence for why something happened.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C25-H3",
+        "topic_id": "X04",
+        "text": "I predicted an object would keep accelerating because a force acted on it earlier, even after the force stopped.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C25-H4",
+        "topic_id": "X24",
+        "text": "I can also distinguish evidence of causation from mere sequence in the example of a misleading advertisement.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "RIVER-history"
+      },
+      {
+        "id": "C25-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      },
+      {
+        "id": "C25-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "RIVER-additional-history"
+      }
+    ],
+    "provisional_roots": [
+      {
+        "id": "C25-R1",
+        "presenting_difficulty": "Investigating possible recurring conceptual confusion",
+        "claim": "Possible over-reliance on chronological order when inferring causes",
+        "status": "provisional_unverified",
+        "support_ids": [
+          "C25-H1",
+          "C25-H2"
+        ],
+        "counter_ids": [
+          "C25-H4"
+        ]
+      }
+    ],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C26",
+    "learner_id": "FINN",
+    "focus_topic_id": "X26",
+    "scenario_kind": "lexical_false_merge",
+    "latest_observation": {
+      "id": "C26-NOW",
+      "topic_id": "X26",
+      "text": "Why can a policy have consequences that were not the lawmakers’ intention?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C26-H1",
+        "topic_id": "X23",
+        "text": "I cannot tell whether “they” refers to the teacher or the student when both are named.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C26-H2",
+        "topic_id": "X05",
+        "text": "I use the word current when I actually mean electrical potential difference; I am missing their definitions.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C26-H3",
+        "topic_id": "X26",
+        "text": "I called the new policy a current rule because it is in force today, not because it relates to electricity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C26-H4",
+        "topic_id": "X23",
+        "text": "I can resolve the pronoun after the second sentence supplies the antecedent.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "FINN-history"
+      },
+      {
+        "id": "C26-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      },
+      {
+        "id": "C26-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "FINN-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C27",
+    "learner_id": "MIRA",
+    "focus_topic_id": "X27",
+    "scenario_kind": "mixed_cause_negative_control",
+    "latest_observation": {
+      "id": "C27-NOW",
+      "topic_id": "X27",
+      "text": "How can changing survey methods make a demographic trend look different?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C27-H1",
+        "topic_id": "X11",
+        "text": "If a test is 90 percent accurate, a positive means there is a 90 percent chance that I have it.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C27-H2",
+        "topic_id": "X02",
+        "text": "In a population where the condition is rare, I still say most positives must have the condition.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C27-H3",
+        "topic_id": "X02",
+        "text": "I understand immune memory means a later exposure can provoke a faster response, but I forgot which antibody cells are involved.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "contrast",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C27-H4",
+        "topic_id": "X11",
+        "text": "When the base rate is one in ten thousand, I am unsure how many false positives would appear.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "uncertain_reasoning",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "MIRA-history"
+      },
+      {
+        "id": "C27-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "MIRA-history",
+        "topic_id": "X27",
+        "text": "I compared two years before realizing the surveys sampled different age groups.",
+        "evidence_type": "self_correction",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C27-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      },
+      {
+        "id": "C27-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "MIRA-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C28",
+    "learner_id": "KAI",
+    "focus_topic_id": "X28",
+    "scenario_kind": "strategy_confounded",
+    "latest_observation": {
+      "id": "C28-NOW",
+      "topic_id": "X28",
+      "text": "Can you check whether changing tempo alters beat duration without changing how many beats are written?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C28-H1",
+        "topic_id": "X29",
+        "text": "The first perspective drawing made scale easier to see.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "reported_success",
+        "task_conditions": "after_diagram",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C28-H2",
+        "topic_id": "X29",
+        "text": "I also solved the similar question correctly after the tutor simply repeated it with numbers.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "after_repetition",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C28-H3",
+        "topic_id": "X28",
+        "text": "I can clap four quarter notes while holding the same pulse.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C28-H4",
+        "topic_id": "X30",
+        "text": "A visual analogy helps in this metaphor but I know the map is not the territory.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C28-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "KAI-history",
+        "topic_id": "X28",
+        "text": "If I double the tempo, I think a quarter note gets shorter but stays a quarter note of the written measure.",
+        "evidence_type": "prediction",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C28-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C28-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C29",
+    "learner_id": "KAI",
+    "focus_topic_id": "X29",
+    "scenario_kind": "strategy_confounded",
+    "latest_observation": {
+      "id": "C29-NOW",
+      "topic_id": "X29",
+      "text": "I solved a diagram after looking at it, but I also solved one after a repeat explanation. What helped?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C29-H1",
+        "topic_id": "X29",
+        "text": "The first perspective drawing made scale easier to see.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "reported_success",
+        "task_conditions": "after_diagram",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C29-H2",
+        "topic_id": "X29",
+        "text": "I also solved the similar question correctly after the tutor simply repeated it with numbers.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "after_repetition",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C29-H3",
+        "topic_id": "X28",
+        "text": "I can clap four quarter notes while holding the same pulse.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C29-H4",
+        "topic_id": "X30",
+        "text": "A visual analogy helps in this metaphor but I know the map is not the territory.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C29-H5",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H6",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H7",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H8",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H9",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H10",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H11",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H12",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H13",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C29-H14",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  },
+  {
+    "case_id": "C30",
+    "learner_id": "KAI",
+    "focus_topic_id": "X30",
+    "scenario_kind": "strategy_confounded",
+    "latest_observation": {
+      "id": "C30-NOW",
+      "topic_id": "X30",
+      "text": "Can you help me see where a metaphor is useful and where it breaks down?",
+      "source": "synthetic_current_utterance",
+      "evidence_type": "question_or_probe_request",
+      "task_conditions": "no_answer_yet"
+    },
+    "historical_observations": [
+      {
+        "id": "C30-H1",
+        "topic_id": "X29",
+        "text": "The first perspective drawing made scale easier to see.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "reported_success",
+        "task_conditions": "after_diagram",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C30-H2",
+        "topic_id": "X29",
+        "text": "I also solved the similar question correctly after the tutor simply repeated it with numbers.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "after_repetition",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C30-H3",
+        "topic_id": "X28",
+        "text": "I can clap four quarter notes while holding the same pulse.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "correct_explanation",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C30-H4",
+        "topic_id": "X30",
+        "text": "A visual analogy helps in this metaphor but I know the map is not the territory.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "self_report",
+        "task_conditions": "independent_before_feedback",
+        "session_id": "KAI-history"
+      },
+      {
+        "id": "C30-H5",
+        "source": "synthetic_curator_authored",
+        "session_id": "KAI-history",
+        "topic_id": "X30",
+        "text": "The computer memory metaphor helped, but I should not assume brains store a single file in one spot.",
+        "evidence_type": "self_correction",
+        "task_conditions": "independent_before_feedback"
+      },
+      {
+        "id": "C30-H6",
+        "topic_id": "X01",
+        "text": "I can explain why an ion moves through an open channel down its gradient.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H7",
+        "topic_id": "X04",
+        "text": "I predicted which direction a cart would accelerate after a push.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H8",
+        "topic_id": "X07",
+        "text": "I balanced a simple reaction by counting atoms on each side.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H9",
+        "topic_id": "X10",
+        "text": "I solved a recipe ratio after checking the units.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H10",
+        "topic_id": "X14",
+        "text": "I compared two search methods using how their running time grows.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H11",
+        "topic_id": "X16",
+        "text": "I compared today’s temperature with a ten-year average.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H12",
+        "topic_id": "X20",
+        "text": "I named one option I gave up when choosing another activity.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H13",
+        "topic_id": "X22",
+        "text": "I asked whether a speaker meant the literal sentence or an implication.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H14",
+        "topic_id": "X27",
+        "text": "I checked whether two statistics used the same population.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      },
+      {
+        "id": "C30-H15",
+        "topic_id": "X28",
+        "text": "I kept the beat count fixed while changing tempo.",
+        "source": "synthetic_curator_authored",
+        "evidence_type": "independent_context_report",
+        "task_conditions": "prior_independent_session",
+        "session_id": "KAI-additional-history"
+      }
+    ],
+    "provisional_roots": [],
+    "learner_relationships": [],
+    "explicit_instructions": [],
+    "research_only": true,
+    "no_assumed_mastery": true
+  }
+]

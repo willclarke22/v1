@@ -1,0 +1,801 @@
+[
+  {
+    "case_id": "C01",
+    "curator_review_focus": "Correct code-state reasoning challenges broad state-transition generalization; consider domain representation confound.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C01-H1",
+      "C01-H2",
+      "C01-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C01-H1",
+      "C01-H4",
+      "C01-H5"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C02",
+    "curator_review_focus": "Probe base-rate reasoning separately from immune-memory vocabulary; do not merge simply because both involve medicine.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C02-H1",
+      "C02-H2",
+      "C02-H3"
+    ],
+    "contradiction_or_control_ids": [],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C03",
+    "curator_review_focus": "Seek evidence for/against stock-versus-rate interpretation; examine explicit counterexample; do not force cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C03-H1",
+      "C03-H2",
+      "C03-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C03-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C04",
+    "curator_review_focus": "Potential overuse of chronology in argument/history with physics error possibly different cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C04-H1",
+      "C04-H2",
+      "C04-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C04-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C05",
+    "curator_review_focus": "A word such as current can occur in unrelated concepts; language and electrical errors likely distinct.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C05-H1",
+      "C05-H2",
+      "C05-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C05-H3",
+      "C05-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C06",
+    "curator_review_focus": "Feedback in engineering/climate has some structural analogy, but learner-specific transfer remains unclear.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C06-H1",
+      "C06-H2",
+      "C06-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C06-H1",
+      "C06-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_or_probe",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C07",
+    "curator_review_focus": "Learner may be scientifically correct in identifying an impossible premise; do not grade as misconception.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C07-H1",
+      "C07-H2",
+      "C07-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C07-H1",
+      "C07-H2",
+      "C07-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_grade_as_error",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C08",
+    "curator_review_focus": "Correct code-state reasoning challenges broad state-transition generalization; consider domain representation confound.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C08-H1",
+      "C08-H2",
+      "C08-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C08-H1",
+      "C08-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C09",
+    "curator_review_focus": "Learner may be scientifically correct in identifying an impossible premise; do not grade as misconception.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C09-H1",
+      "C09-H2",
+      "C09-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C09-H1",
+      "C09-H2",
+      "C09-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_grade_as_error",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C10",
+    "curator_review_focus": "Learner may be scientifically correct in identifying an impossible premise; do not grade as misconception.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C10-H1",
+      "C10-H2",
+      "C10-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C10-H1",
+      "C10-H2",
+      "C10-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_grade_as_error",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C11",
+    "curator_review_focus": "Probe base-rate reasoning separately from immune-memory vocabulary; do not merge simply because both involve medicine.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C11-H1",
+      "C11-H2",
+      "C11-H3"
+    ],
+    "contradiction_or_control_ids": [],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C12",
+    "curator_review_focus": "Seek evidence for/against stock-versus-rate interpretation; examine explicit counterexample; do not force cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C12-H1",
+      "C12-H2",
+      "C12-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C12-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C13",
+    "curator_review_focus": "Correct code-state reasoning challenges broad state-transition generalization; consider domain representation confound.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C13-H1",
+      "C13-H2",
+      "C13-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C13-H1",
+      "C13-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C14",
+    "curator_review_focus": "Feedback in engineering/climate has some structural analogy, but learner-specific transfer remains unclear.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C14-H1",
+      "C14-H2",
+      "C14-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C14-H1",
+      "C14-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_or_probe",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C15",
+    "curator_review_focus": "Diagram response and repetition response confounded; no fixed visual learning style.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C15-H1",
+      "C15-H2",
+      "C15-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C15-H2",
+      "C15-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_on_learning_style",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C16",
+    "curator_review_focus": "Feedback in engineering/climate has some structural analogy, but learner-specific transfer remains unclear.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C16-H1",
+      "C16-H2",
+      "C16-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C16-H1",
+      "C16-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_or_probe",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C17",
+    "curator_review_focus": "Seek evidence for/against stock-versus-rate interpretation; examine explicit counterexample; do not force cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C17-H1",
+      "C17-H2",
+      "C17-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C17-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C18",
+    "curator_review_focus": "Feedback in engineering/climate has some structural analogy, but learner-specific transfer remains unclear.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C18-H1",
+      "C18-H2",
+      "C18-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C18-H1",
+      "C18-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_or_probe",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C19",
+    "curator_review_focus": "Seek evidence for/against stock-versus-rate interpretation; examine explicit counterexample; do not force cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C19-H1",
+      "C19-H2",
+      "C19-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C19-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C20",
+    "curator_review_focus": "Potential overuse of chronology in argument/history with physics error possibly different cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C20-H1",
+      "C20-H2",
+      "C20-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C20-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C21",
+    "curator_review_focus": "Seek evidence for/against stock-versus-rate interpretation; examine explicit counterexample; do not force cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C21-H1",
+      "C21-H2",
+      "C21-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C21-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C22",
+    "curator_review_focus": "A word such as current can occur in unrelated concepts; language and electrical errors likely distinct.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C22-H1",
+      "C22-H2",
+      "C22-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C22-H3",
+      "C22-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C23",
+    "curator_review_focus": "A word such as current can occur in unrelated concepts; language and electrical errors likely distinct.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C23-H1",
+      "C23-H2",
+      "C23-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C23-H3",
+      "C23-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C24",
+    "curator_review_focus": "Potential overuse of chronology in argument/history with physics error possibly different cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C24-H1",
+      "C24-H2",
+      "C24-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C24-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C25",
+    "curator_review_focus": "Potential overuse of chronology in argument/history with physics error possibly different cause.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C25-H1",
+      "C25-H2",
+      "C25-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C25-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "investigate",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C26",
+    "curator_review_focus": "A word such as current can occur in unrelated concepts; language and electrical errors likely distinct.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C26-H1",
+      "C26-H2",
+      "C26-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C26-H3",
+      "C26-H4"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C27",
+    "curator_review_focus": "Probe base-rate reasoning separately from immune-memory vocabulary; do not merge simply because both involve medicine.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C27-H1",
+      "C27-H2",
+      "C27-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C27-H5"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "do_not_force",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C28",
+    "curator_review_focus": "Diagram response and repetition response confounded; no fixed visual learning style.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C28-H1",
+      "C28-H2",
+      "C28-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C28-H2",
+      "C28-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_on_learning_style",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C29",
+    "curator_review_focus": "Diagram response and repetition response confounded; no fixed visual learning style.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C29-H1",
+      "C29-H2",
+      "C29-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C29-H2",
+      "C29-H3"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_on_learning_style",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  },
+  {
+    "case_id": "C30",
+    "curator_review_focus": "Diagram response and repetition response confounded; no fixed visual learning style.",
+    "required_safety_checks": [
+      "provisional_not_mastery",
+      "observation_id_fidelity",
+      "distinguish_evidence_from_inference"
+    ],
+    "candidate_cross_domain_evidence_ids": [
+      "C30-H1",
+      "C30-H2",
+      "C30-H3"
+    ],
+    "contradiction_or_control_ids": [
+      "C30-H2",
+      "C30-H3",
+      "C30-H5"
+    ],
+    "interpretation_is_fallible": true,
+    "automatic_semantic_correctness_scoring": false,
+    "suggested_relationship_stance": "abstain_on_learning_style",
+    "manual_review_questions": [
+      "Is the proposed underlying mechanism specific to this learner?",
+      "Which actual observations support or contradict the claim?",
+      "Would a discriminating probe be scientifically valid?",
+      "Did B directly respond to the learner request without revealing a probe answer?"
+    ]
+  }
+]

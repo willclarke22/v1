@@ -1,0 +1,67 @@
+[
+  {
+    "from_topic_id": "X12",
+    "to_topic_id": "X17",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X12",
+    "to_topic_id": "X19",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X11",
+    "to_topic_id": "X02",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X06",
+    "to_topic_id": "X18",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X13",
+    "to_topic_id": "X08",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X07",
+    "to_topic_id": "X03",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X10",
+    "to_topic_id": "X09",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X16",
+    "to_topic_id": "X18",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X22",
+    "to_topic_id": "X23",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X24",
+    "to_topic_id": "X25",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X21",
+    "to_topic_id": "X28",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X29",
+    "to_topic_id": "X30",
+    "type": "curriculum_reference_only"
+  },
+  {
+    "from_topic_id": "X04",
+    "to_topic_id": "X05",
+    "type": "curriculum_reference_only"
+  }
+]

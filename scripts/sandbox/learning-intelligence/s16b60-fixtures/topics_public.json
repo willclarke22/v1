@@ -1,0 +1,152 @@
+[
+  {
+    "topic_id": "X01",
+    "cluster": "Life & health",
+    "title": "Cell membranes, diffusion, and selective transport"
+  },
+  {
+    "topic_id": "X02",
+    "cluster": "Life & health",
+    "title": "Vaccines, immunity, and immune memory"
+  },
+  {
+    "topic_id": "X03",
+    "cluster": "Life & health",
+    "title": "Nutrition, metabolism, and energy balance"
+  },
+  {
+    "topic_id": "X04",
+    "cluster": "Physics & engineering",
+    "title": "Force, acceleration, and motion models"
+  },
+  {
+    "topic_id": "X05",
+    "cluster": "Physics & engineering",
+    "title": "Electric circuits, current, and voltage"
+  },
+  {
+    "topic_id": "X06",
+    "cluster": "Physics & engineering",
+    "title": "Feedback systems and stability"
+  },
+  {
+    "topic_id": "X07",
+    "cluster": "Chemistry & materials",
+    "title": "Conservation of matter in reactions"
+  },
+  {
+    "topic_id": "X08",
+    "cluster": "Chemistry & materials",
+    "title": "Heat, temperature, and energy transfer"
+  },
+  {
+    "topic_id": "X09",
+    "cluster": "Chemistry & materials",
+    "title": "Chemical concentration and dilution"
+  },
+  {
+    "topic_id": "X10",
+    "cluster": "Mathematics & statistics",
+    "title": "Proportions, ratios, and unit reasoning"
+  },
+  {
+    "topic_id": "X11",
+    "cluster": "Mathematics & statistics",
+    "title": "Probability, base rates, and conditional risk"
+  },
+  {
+    "topic_id": "X12",
+    "cluster": "Mathematics & statistics",
+    "title": "Graphs: stock, rate, and cumulative change"
+  },
+  {
+    "topic_id": "X13",
+    "cluster": "Computing & data",
+    "title": "Variables, state, and program execution"
+  },
+  {
+    "topic_id": "X14",
+    "cluster": "Computing & data",
+    "title": "Algorithms, complexity, and tradeoffs"
+  },
+  {
+    "topic_id": "X15",
+    "cluster": "Computing & data",
+    "title": "Machine learning: training, prediction, leakage"
+  },
+  {
+    "topic_id": "X16",
+    "cluster": "Earth & climate",
+    "title": "Weather versus climate; variability and trend"
+  },
+  {
+    "topic_id": "X17",
+    "cluster": "Earth & climate",
+    "title": "The water cycle and reservoirs"
+  },
+  {
+    "topic_id": "X18",
+    "cluster": "Earth & climate",
+    "title": "Climate forcing, feedback, and uncertainty"
+  },
+  {
+    "topic_id": "X19",
+    "cluster": "Economics & finance",
+    "title": "Inflation, price levels, and purchasing power"
+  },
+  {
+    "topic_id": "X20",
+    "cluster": "Economics & finance",
+    "title": "Opportunity cost and incentives"
+  },
+  {
+    "topic_id": "X21",
+    "cluster": "Economics & finance",
+    "title": "Compounding interest and exponential growth"
+  },
+  {
+    "topic_id": "X22",
+    "cluster": "Language & communication",
+    "title": "Inference, implication, and literal meaning"
+  },
+  {
+    "topic_id": "X23",
+    "cluster": "Language & communication",
+    "title": "Ambiguity, pragmatic context, and speaker intent"
+  },
+  {
+    "topic_id": "X24",
+    "cluster": "Language & communication",
+    "title": "Argument structure and evidence quality"
+  },
+  {
+    "topic_id": "X25",
+    "cluster": "History & civic reasoning",
+    "title": "Historical causes versus chronology"
+  },
+  {
+    "topic_id": "X26",
+    "cluster": "History & civic reasoning",
+    "title": "Institutions, rules, and unintended effects"
+  },
+  {
+    "topic_id": "X27",
+    "cluster": "History & civic reasoning",
+    "title": "Interpreting demographic trends and sources"
+  },
+  {
+    "topic_id": "X28",
+    "cluster": "Arts & music",
+    "title": "Rhythm, fractions, and tempo"
+  },
+  {
+    "topic_id": "X29",
+    "cluster": "Arts & music",
+    "title": "Perspective, scale, and spatial representation"
+  },
+  {
+    "topic_id": "X30",
+    "cluster": "Arts & music",
+    "title": "Metaphor, analogy, and limits of representation"
+  }
+]
