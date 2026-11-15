@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+/** Contract and integration tests: zero real model API, embeddings, DB, renderer, audio calls. */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {A_SCHEMA,B_SCHEMA,L_SCHEMA,A_PROMPT,B_PROMPT,verifyA,applyA} from './s62b-core.mjs';
+import {compileExperience,publicStage,executePhase,replay,assertReplay,evidenceFromAttempt} from './s62b-experience.mjs';
+import {initialState,EPISODES,routeAuthoredEpisode} from './s62b-scenario.mjs';
+import {retrieve} from './s62b-retrieval.mjs';
+import {parseArgs,run} from './s62b-journey.mjs';
+const st=initialState();assert.equal(st.topics.length,5);assert.equal(EPISODES.length,20);assert.equal(new Set(EPISODES.map(x=>x.topic_id)).size,13);
+for(const x of EPISODES)routeAuthoredEpisode(st,x);assert.equal(st.topics.length,13);assert.equal(st.topics.filter(x=>x.status==='new_from_authored_opening').length,8);
+assert.ok(!B_PROMPT.includes('set_value')&&!B_PROMPT.includes('MyWay')&&!B_PROMPT.includes('event handler'));
+for(const x of [A_SCHEMA,B_SCHEMA,L_SCHEMA])assert.equal(x.additionalProperties,false);
+const q={id:'E-TEST',topic_id:'T01',text:'I think the total fell when the positive slope slowed',conditions:{mode:'question'}};st.observations.push(q);
+const pkt=await retrieve(st,q,{method:'lexical',cap:7});assert.equal(pkt.allowed_evidence_ids.includes(q.id),true);assert.equal(pkt.allowed_evidence_ids.length<=7,true);assert.equal(pkt.memory_candidates.some(x=>x.id==='NORA-R-001'),true);
+const a={observed:{kind:'question',evidence_ids:['E-TEST'],demonstrated:'The learner expressed uncertainty',untested_or_incorrect:'No independent solution was attempted',conditions:'question'},interpretation:{hypotheses:[],uncertainty:'high',more_history_needed:null},memory_decisions:[{action:'weaken',record_type:'root',target_id:'NORA-R-001',claim:'Rate-versus-level difficulty may be reduced in the tested context',topics:['T01'],possible_instances:[],evidence:[{id:'E-TEST',role:'context'}],rationale:'Synthetic testing only; not an educational claim',uncertainty:'high'}],learner_brief_for_B:{current_understanding:'Unclear',remaining_uncertainty:'Further testing',relevant_history:'One related question',possible_shared_root:null,teaching_response_evidence:''}};
+assert.throws(()=>verifyA({...a,memory_decisions:[{...a.memory_decisions[0],target_id:'NORA-R-999'}]},pkt,st),/typed memory target/);
+assert.throws(()=>verifyA({...a,memory_decisions:[{...a.memory_decisions[0],record_type:'understanding'}]},pkt,st),/typed memory target/);
+assert.throws(()=>verifyA({...a,memory_decisions:[{...a.memory_decisions[0],evidence:[{id:'E-NO',role:'supports_current'}]}]},pkt,st),/invalid cited evidence/);
+const before=JSON.stringify(st.records[0]),ok=verifyA(a,pkt,st),actions=applyA(st,ok,'E-TEST');assert.equal(actions.length,1);assert.equal(st.records[0].status,'challenged');assert.equal(st.records[0].evidence.context.includes('E-TEST'),true);assert.notEqual(JSON.stringify(st.records[0]),before);
+const createShare={...a,memory_decisions:[{action:'create',record_type:'shared_root',target_id:null,claim:'Possible shared cause',topics:['T01','T02'],possible_instances:['NORA-R-001','NORA-R-002'],evidence:[{id:'E-TEST',role:'context'}],rationale:'Mock',uncertainty:'high'}]};
+assert.throws(()=>verifyA({...createShare,memory_decisions:[{...createShare.memory_decisions[0],topics:['T01']}]},pkt,st),/shared root/);
+assert.throws(()=>verifyA(createShare,pkt,st),/existing shared root/);
+const creative={teacher_response:'Imagine a reservoir and predict what happens.',experience_proposal:{modality:'2d',setting:'Reservoir valves',learner_task:'Predict changing water level',possible_actions:['adjust valves'],private_assessment_intent:'Rate versus total'}};
+const translated={status:'compiled',reason:'symbolic',stages:[
+ {instruction:'Predict from words only',visible_scene:'The river is slowing. No numbers shown.',controls:[{id:'prediction',kind:'select',label:'Predict',choices:['rise','fall','unknown'],min:0,max:0}],feedback_on_submit:'Now you can see the numbers.',hint_text:'Think about what else affects the level.',reveal_next_on_submit:true},
+ {instruction:'Now compare inflow and outflow',visible_scene:'Inflow 6, outflow 2',controls:[{id:'inflow',kind:'slider',label:'Inflow',choices:[],min:0,max:10},{id:'outflow',kind:'slider',label:'Outflow',choices:[],min:0,max:10}],feedback_on_submit:'Done',hint_text:'Compare the two numbers.',reveal_next_on_submit:false}],assessment:{kind:'balance',control_a:'inflow',control_b:'outflow',expected_choice:'',explanation:'The rates can be compared'}};
+const plan=compileExperience(creative,translated),phase0=publicStage(plan,0);
+assert.equal(JSON.stringify(phase0).includes('Inflow 6'),false);assert.equal(JSON.stringify(phase0).includes('Think about'),false);assert.equal(JSON.stringify(phase0).includes('balance'),false);
+const hint=executePhase(plan,0,{learner_utterance:'Can I have a hint?',selected_actions:[],request_hint:true,declines:false});assert.equal(hint.result.status,'hint_requested');assert.equal(hint.events.at(-1).type,'hint_delivered');
+const publicHint=publicStage(plan,0,{hint:hint.hint});assert.equal(publicHint.hint_revealed,hint.hint);
+const first=executePhase(plan,0,{learner_utterance:'I think it falls',selected_actions:[{control:'prediction',operation:'select',value:'fall'}],request_hint:false,declines:false},hint.events);
+const second=executePhase(plan,1,{learner_utterance:'It rises',selected_actions:[{control:'inflow',operation:'set_value',value:'6'},{control:'outflow',operation:'set_value',value:'2'}],request_hint:false,declines:false},[...hint.events,...first.events]);
+assert.equal(second.result.objective_check.net_difference,4);
+assert.throws(()=>executePhase(plan,0,{selected_actions:[{control:'inflow',operation:'set_value',value:'6'}],request_hint:false,declines:false}),/not in learner-visible/);
+assert.throws(()=>executePhase(plan,0,{selected_actions:[{control:'prediction',operation:'select',value:'always'}],request_hint:false,declines:false}),/not available/);
+const scripted=[{phase:0,response:{learner_utterance:'Can I have a hint?',selected_actions:[],request_hint:true,declines:false}},{phase:0,response:{learner_utterance:'I think it falls',selected_actions:[{control:'prediction',operation:'select',value:'fall'}],request_hint:false,declines:false}},{phase:1,response:{learner_utterance:'It rises',selected_actions:[{control:'inflow',operation:'set_value',value:'6'},{control:'outflow',operation:'set_value',value:'2'}],request_hint:false,declines:false}}];
+assertReplay(plan,scripted,{events:[...hint.events,...first.events,...second.events],completed:[hint,first,second]});
+const all=[hint,first,second],attempt=evidenceFromAttempt(plan,all,{learner_id:'NORA',topic_id:'T02',observation_id:'E-ATT'});
+assert.equal(attempt.task_conditions.assistance,true);assert.equal(attempt.task_conditions.objective_checks.at(-1).net_difference,4);
+assert.equal(attempt.actual_activity.events.some(e=>e.type==='hint_delivered'),true);
+assert.equal(JSON.stringify(attempt).includes('Misunderstanding'),false);
+assert.equal(plan.status,'symbolic_simulation_not_rendered');
+const reject=compileExperience({...creative,experience_proposal:{...creative.experience_proposal,modality:'audio'}},{status:'unsupported',reason:'No real audio playback',stages:[],assessment:{kind:'unverified',control_a:'',control_b:'',expected_choice:'',explanation:''}});assert.equal(reject.status,'rejected');
+assert.equal(compileExperience(creative,{...translated,stages:[{...translated.stages[0],reveal_next_on_submit:false},translated.stages[1]]}).status,'rejected');
+const id='SELFTEST_'+process.pid;
+const o=parseArgs(['--mode','offline','--episodes','4','--run-id',id]);
+const rr=await run(o);assert.equal(rr.trace.complete,true,JSON.stringify(rr.trace.failure));assert.equal(rr.trace.summary.episodes,4);assert.equal(rr.trace.summary.new_topics,1);assert.equal(rr.trace.summary.unexecuted_experiences,1);assert.equal(rr.trace.summary.db_writes,0);
+assert.equal(rr.trace.timeline[0].phases[0].view.modality,'symbolic_actions_only');
+assert.equal(rr.trace.timeline[2].execution.status,'rejected');
+assert.equal(rr.trace.timeline.filter(e=>e.event_replay_verified).length,3);
+assert.equal(rr.trace.request_log.every(r=>r.request.store===false),true);
+assert.equal(rr.trace.request_log.every(r=>!JSON.stringify(r.request).includes('OPENAI_API_KEY')),true);
+assert.equal(fs.existsSync(path.join(rr.dir,'TURN_INSPECTOR.html')),true);
+fs.rmSync(rr.dir,{recursive:true,force:true});
+console.log('S62B SELFTEST PASS | 5→13 topics, typed root provenance, phase gates, hinted actions, replay, unsupported audio, full A-B-X-L-A mock loop; zero API/DB');

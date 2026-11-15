@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+/** Offline deterministic self-tests; NO provider calls or DB interaction. */
+import assert from 'node:assert/strict';
+import {DEFAULT_CASE_IDS,NO_UPDATE,CANDIDATE_DELTA,parseOptions,selectCases,buildRequest,makeJobs,analyzeResponse,reviewMarkdown} from './s62a-fix1a-compare.mjs';
+import {scriptedMock} from './s16b59-lean-core.mjs';
+import fs from 'node:fs';
+const s62a=fs.readFileSync(new URL('./s62a-journey.mjs',import.meta.url),'utf8');
+assert(s62a.includes('const NO_UPDATE_EXPERIMENT='+JSON.stringify(NO_UPDATE).replaceAll('\\n','\\n')+';')||s62a.includes(`const NO_UPDATE_EXPERIMENT='${NO_UPDATE}';`),'Control prompt drifted from existing S62A no-update');
+assert(DEFAULT_CASE_IDS.length===6&&new Set(DEFAULT_CASE_IDS).size===6);
+const obs={id:'TEST-V1-T1',text:'This example is right, but I need to see another to check.',topic_id:'X1',source:'synthetic_selftest'};
+const input={research_only:true,role:'A',learner_message:obs.text,latest_observation_id:obs.id,topic_id:'X1',context:{role:'A',observations:[obs],roots:[{id:'R1',claim:'Historical hypothesis',support_ids:[],counter_ids:[]}],relationships:[],topics:[{id:'X1',title:'Test'}]},allowed_observation_ids:[obs.id],recent_dialogue:[],probe_conditions:{accepted:null},memory_policy:'provisional only'};
+const item={case_id:'TEST-123abcd-STEP1',input,original_model_a:scriptedMock('A'),source:{learner:'TEST',step:1}};
+const c=buildRequest(item,'gpt-4.1-mini','control'),v=buildRequest(item,'gpt-4.1-mini','candidate');
+assert.deepEqual(c.messages[1],v.messages[1]);
+assert.deepEqual(c.response_format,v.response_format);
+assert.equal(c.max_tokens,v.max_tokens);
+assert(c.messages[0].content.endsWith(NO_UPDATE));
+assert(v.messages[0].content.includes(CANDIDATE_DELTA));
+assert.equal(c.store,false);assert.equal(v.store,false);
+const jobs=makeJobs([item], 'gpt-4.1-mini');assert.equal(jobs.length,2);
+assert(new Set(jobs.map(x=>x.arm)).size===2);
+assert(jobs.every(j=>j.estimatedUsd>0&&j.request.messages[1].content===jobs[0].request.messages[1].content));
+const a=scriptedMock('A');a.observed_understanding=[{claim:'Demonstrated a partial skill',observation_ids:[obs.id]}];a.possible_underlying_causes=[{claim:'Possible old issue',support_ids:[],counter_ids:[obs.id],alternatives:['More practice needed'],uncertainty:'high'}];a.root_actions=[{existing_id:'R1',action:'refine',reason:'Maybe improved',observation_ids:[obs.id]}];
+const res=analyzeResponse(item,a);assert.equal(res.action_counterevidence_overlaps.length,1);assert.equal(res.structural_validation.filter(x=>!x.accepted).length,0);
+const b={case_id:item.case_id,source:item.source,learner_message:item.input.learner_message,probe_conditions:item.input.probe_conditions,arms:{control:{assessment:scriptedMock('A')},candidate:{assessment:a}}};
+const md=reviewMarkdown({cases:[b]});assert(md.includes('Response A')&&md.includes('Response B')&&md.includes('Independent review'));
+assert.throws(()=>parseOptions(['--frozen','file','--run','--budget-usd','0.5']),/allow-spend/);
+assert.throws(()=>parseOptions(['--frozen','file','--run','--allow-spend','--budget-usd','3']),/allow-spend/);
+assert.throws(()=>selectCases({cases:[item]},['MISSING-123abcd-STEP1']),/Unknown frozen/);
+console.log('S62A-FIX1A SELFTEST PASS | exact S62A no-update control, same frozen evidence, prompt delta isolation, evidence-polarity warning, blinded worksheet, paid opt-in and no model/DB calls');
