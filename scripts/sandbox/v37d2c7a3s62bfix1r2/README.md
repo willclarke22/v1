@@ -1,0 +1,3 @@
+# S62B-FIX1R2 | Research-only model-contract and experience boundary
+
+Adds new files, leaves S62B, FIX1, and R1 sources unchanged. Model A assessment is validated independently of proposed memory updates; invalid memory edits are logged and withheld. Model B authors the experience freely. Model X translates to a replaceable symbolic prototype and receives at most one bounded correction call if the implementation fails validation. The experience contract separates intent, implementation, and actual delivery. Report discloses full-loop count, invalid memory edits, and translation retries. No production integration, rendering, audio playback, or DB writes. Fictional learner, scripted openings, and no scientific efficacy claims. See package README.
