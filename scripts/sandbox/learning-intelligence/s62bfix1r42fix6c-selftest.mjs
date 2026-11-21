@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+import assert from 'node:assert/strict';
+import {CASES,VARIANTS,sha,bytes,prepareJobs,objectiveReview,reviewResponse} from './s62bfix1r42fix6c-core.mjs';
+const make=(id)=>{
+ const round=Number(id.slice(1,3)),currentId=`ATLAS-${String(round).padStart(3,'0')}-OUT`;
+ const current={id:currentId,topic_id:'T1',text:'I submitted an attempt'};
+ const base={stage:'post',current,activity_actual_evidence:{executed_events:[{type:'action',control:'scale_factor',value:'2'},{type:'action',control:'predicted_area_factor',value:'4'},{type:'action',control:'predicted_volume_factor',value:'8'}]},memory_candidates:[],recent_dialogue:[{learner:'hello'}],available_topics:[{id:'T1'}],observations:[current],allowed_evidence_ids:[currentId]};
+ const hist={id:`ATLAS-001-IN`,topic_id:'T1',text:'previous evidence'};
+ const other={id:`ATLAS-002-IN`,topic_id:'T1',text:'different earlier evidence'};
+ const system='Do not invent learner evidence';
+ const makeControl=(name,input)=>({name,input,input_sha256:sha(input),input_bytes:bytes(input),request:{model:'gpt-4.1-mini',store:false,max_tokens:2400,response_format:{type:'json_schema',json_schema:{strict:true,name:'fixture',schema:{type:'object'}}},messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(input)}]}});
+ const mk=(extras)=>({...structuredClone(base),observations:[current,...extras],allowed_evidence_ids:[currentId,...extras.map(e=>e.id)]});
+ const controls={original:makeControl('original',mk([])),selective_evidence:makeControl('selective_evidence',mk([hist])),full_history:makeControl('full_history',mk([hist,other]))};
+ return {case_id:id,stage:'post',round,current_id:currentId,topic_id:'T1',controls,baseline_source_request_sha256:sha(controls.original.request),system_prompt_sha256:sha(system)};
+};
+const cases=Object.fromEntries(CASES.map(id=>[id,make(id)]));
+const work=prepareJobs(cases);
+assert.equal(work.jobs.length,6);assert.deepEqual(work.jobs.map(j=>j.variant),[...VARIANTS,...VARIANTS]);
+assert.equal(work.system_prompt_sha256,sha('Do not invent learner evidence'));
+const corrupt=structuredClone(cases);
+corrupt.R15_bonly.controls.original.request.messages[0].content+=' changed';
+assert.throws(()=>prepareJobs(corrupt),/baseline request changed/);
+const future=structuredClone(cases);
+future.R15_bonly.controls.full_history.input.observations[2].id='ATLAS-099-OUT';
+future.R15_bonly.controls.full_history.input.allowed_evidence_ids[2]='ATLAS-099-OUT';
+future.R15_bonly.controls.full_history.input_sha256=sha(future.R15_bonly.controls.full_history.input);
+future.R15_bonly.controls.full_history.input_bytes=bytes(future.R15_bonly.controls.full_history.input);
+future.R15_bonly.controls.full_history.request.messages[1].content=JSON.stringify(future.R15_bonly.controls.full_history.input);
+assert.throws(()=>prepareJobs(future),/future evidence ID/);
+const modelOut={observed:{evidence_ids:['ATLAS-017-OUT','FUTURE'],demonstrated:'correct geometry',untested_or_incorrect:'other conditions',conditions:'unverified'},interpretation:{hypotheses:[],uncertainty:'medium'},memory_decisions:[],learner_brief_for_B:{current_understanding:'provisional'}};
+const rev=reviewResponse(work.jobs[3],JSON.stringify(modelOut));
+assert.equal(rev.current_cited,true);assert.deepEqual(rev.unsupported_observed_citations,['FUTURE']);assert.equal(rev.valid_structure,true);
+assert.equal(reviewResponse(work.jobs[3],'not JSON').valid_json,false);
+const check=objectiveReview(cases.R17_bonly);assert.equal(check.objective_checks[0].matches,true);
+console.log('FIX6C SELFTEST PASS | six immutable requests, matched prompts, no future evidence, source hash/condition guards, independent review; no model/DB calls');

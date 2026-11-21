@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {reconcileXCoverage} from './s62bfix1r47-x-coverage.mjs';
+const b={beats:Array.from({length:6},(_,i)=>({id:'b'+String(i+1).padStart(2,'0'),narration:'This is explanatory narration number '+(i+1)+'.'}))};
+const moment=beat=>({beat_id:beat.id,scene_description:'A coherent illustration of the concept continuing from the earlier scene.',transition_from_previous:'Continuing',cues:[{anchor_id:'a00',on_screen_change:'Objects move across the scene in sequence'}],accuracy_boundaries:'Metaphorical only',possible_interaction:'None'});
+const x={visual_concept:'Continuous laboratory',continuity_plan:'Consistent environment',moments:b.beats.map(moment),implementation_status:'textual_storyboard_only',limitations:'Not rendered'};
+let n=0;const test=(desc,fn)=>{fn();console.log('PASS',++n,desc)};
+test('complete X unchanged',()=>{const r=reconcileXCoverage(x,b);assert.equal(r.report.status,'complete');assert.equal(r.output.moments.length,6)});
+test('one missing middle beat filled but not attributed to X',()=>{const r=reconcileXCoverage({...x,moments:x.moments.filter(z=>z.beat_id!=='b04')},b);assert.deepEqual(r.report.missing_beat_ids,['b04']);assert.match(r.output.moments[3].scene_description,/VISUAL GAP/);assert.equal(r.report.placeholder_source,'host_generated_not_model_x');assert.equal(r.output.moments[0].scene_description,x.moments[0].scene_description)});
+test('missing final two beats fills in order',()=>{const r=reconcileXCoverage({...x,moments:x.moments.slice(0,4)},b);assert.deepEqual(r.report.missing_beat_ids,['b05','b06'])});
+test('missing first beat gets explicit empty-panel placeholder',()=>{const r=reconcileXCoverage({...x,moments:x.moments.slice(1)},b);assert.match(r.output.moments[0].scene_description,/neutral empty storyboard panel/) });
+test('all beats present but out of order are aligned by ID',()=>{const r=reconcileXCoverage({...x,moments:x.moments.toReversed()},b);assert.equal(r.report.status,'reordered_by_exact_beat_id');assert.equal(r.output.moments[0].beat_id,'b01')});
+test('duplicate beat refused',()=>assert.throws(()=>reconcileXCoverage({...x,moments:[...x.moments,x.moments[0]]},b),/duplicate/));
+test('unknown beat refused',()=>assert.throws(()=>reconcileXCoverage({...x,moments:[...x.moments,{...moment(b.beats[0]),beat_id:'b10'}]},b),/unknown/));
+test('large missing span refused',()=>assert.throws(()=>reconcileXCoverage({...x,moments:x.moments.slice(0,2)},b),/too large/));
+test('no model scene refused',()=>assert.throws(()=>reconcileXCoverage({...x,moments:[]},b),/too large/));
+test('bad anchor in authored beat refused',()=>assert.throws(()=>reconcileXCoverage({...x,moments:[{...x.moments[0],cues:[{anchor_id:'bogus',on_screen_change:'This is a false cue'}]},...x.moments.slice(2)]},b),/unknown anchor/));
+console.log('PASS coverage checks',n);

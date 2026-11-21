@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>MyWay · GoldLoop Sandbox</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header class="topbar"><div class="brand"><span class="brand-sigil">m<span>·</span></span><span><strong>MyWay</strong><small>GoldLoop · isolated research studio</small></span></div><div class="right-head"><span class="chip" id="embedBadge">MiniLM: check connection</span><span class="chip soft">LOCAL ONLY</span></div></header>
+<div class="layout">
+  <aside class="rail">
+    <div class="rail-content">
+      <p class="eyebrow">LEARNER SESSION</p>
+      <div class="field"><label for="sessionSelect">Resume a session</label><select id="sessionSelect"><option value="goldpilot01">goldpilot01 · fresh</option></select></div>
+      <div class="field"><label for="sessionInput">Session identifier</label><input id="sessionInput" value="goldpilot01" maxlength="40" spellcheck="false"></div>
+      <button class="ghost-button full" id="newSession">+ Begin fresh session</button>
+      <div class="info-card"><p class="eyebrow">MEMORY STATE</p><div class="stat"><span>Completed turns</span><strong id="turnCount">0</strong></div><div class="stat"><span>Topics</span><strong id="topicCount">0</strong></div><div class="stat"><span>Observations</span><strong id="obsCount">0</strong></div><div class="stat"><span>Memory records</span><strong id="memoryCount">0</strong></div><p id="historyNote" class="muted tiny">A new session starts with no prior learner history. Evidence accumulates after completed turns.</p></div>
+      <button class="ghost-button full" id="exportButton" type="button">↓ Download session ZIP for review</button>
+      <p class="muted tiny">Includes full A/B/X prompts, outputs, retrieval and memory records. May contain private learner messages; inspect before sharing. Free and read-only.</p>
+      <button class="ghost-button full" id="preflightButton">Check real MiniLM (free)</button>
+      <div class="line"></div>
+      <p class="eyebrow">RETRIEVAL AUDIT <span class="subtle">· FREE</span></p>
+      <label for="retrievalQuery" class="muted tiny">See which past observations MiniLM selects without changing history.</label>
+      <textarea id="retrievalQuery" placeholder="Enter a question or possible follow-up…" rows="3" maxlength="4000"></textarea>
+      <button class="ghost-button full" id="retrievalButton">Inspect retrieved evidence</button>
+      <div id="retrievalResults" class="mini-results"></div>
+    </div>
+    <div class="rail-foot"><span class="live-dot"></span> No production, Vercel, Supabase or legacy visual integration.</div>
+  </aside>
+  <main class="main">
+    <section class="hero"><div class="hero-label"><span class="pulse-icon">✧</span> RESEARCH MODE · HUMAN LEARNER</div><h1>Learning should feel <em>different.</em></h1><p>Talk naturally. Model A assesses the evidence, Model B teaches, and Model X designs a scene for each spoken beat. This is an <strong>actual API-backed research session</strong>, with a textual storyboard instead of rendered animation.</p></section>
+    <div class="banner" id="pendingBanner" hidden><strong>Manual review required:</strong> This session has an incomplete paid turn. Do not submit another turn until its pending trace is inspected.</div>
+    <div id="turns" class="turns"><div class="empty-view"><div class="orbit">◎</div><h2>A fresh learner, a fresh question.</h2><p>There is no invented history. Ask about anything, switch topics freely, and let the evidence build over multiple turns.</p></div></div>
+    <section class="composer" aria-label="Learner message"><div class="composer-head"><label for="message">YOUR NEXT QUESTION</label><span id="charCount">0 / 4000</span></div><textarea id="message" placeholder="What have you been curious about, confused by, or trying to understand?" rows="4" maxlength="4000"></textarea><div class="settings">
+      <details><summary>Model selection and paid-call settings</summary><div class="settings-grid"><label>Model A <select id="modelA"><option>gpt-4.1-mini</option><option>gpt-4.1</option></select></label><label>Model B <select id="modelB"><option>gpt-4.1-mini</option><option>gpt-4.1</option></select></label><label>Model X <select id="modelX"><option>gpt-4.1-mini</option><option>gpt-4.1</option></select></label><label>Per-turn software admission budget (USD)<input id="budget" type="number" min="0.01" max="10" step="0.05" value="0.50"></label></div><p class="muted tiny">Models only: GPT-4.1 mini / GPT-4.1. GPT-6 API has not been validated here. Budget is a local pre-call check, not a provider billing cap. Four API calls are normally expected; A may make a fifth.</p></details>
+    </div><div class="composer-actions"><label class="consent"><input type="checkbox" id="authorize"> I authorize this turn's paid model calls.</label><button id="sendButton" class="primary" disabled>Run A → B → X <span>↗</span></button></div><div id="busyNotice" class="muted small"></div><div id="errorNotice" class="error" role="alert" hidden></div></section>
+  </main>
+  <aside class="inspector"><div class="inspector-head"><p class="eyebrow">ARCHITECTURE INSPECTOR</p><span>Evidence, not guesses</span></div><div id="inspectorBody" class="inspector-body"><div class="inspector-empty"><div class="orbit small-orbit">◌</div><p>Choose a completed turn to inspect its topic routing, retrieved evidence, Model A assessment, memory changes and API usage.</p></div></div><div class="inspector-foot">A valid schema is not proof of educational quality. Review the learner's experience and the underlying evidence together.</div></aside>
+</div>
+<script src="/client.js" defer></script>
+</body></html>
