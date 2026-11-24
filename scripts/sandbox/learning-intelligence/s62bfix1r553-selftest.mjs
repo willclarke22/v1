@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {fileURLToPath} from 'node:url';
+import {A_R553_PROMPT,B_R553_COMMON,B_ONLY_R553_PROMPT,B_TEACH_R553_PROMPT,X_R553_PROMPT,C_R553_PROMPT} from './s62bfix1r553-prompts.mjs';
+import {auditGeneratedScripts,frameDocument} from './s62bfix1r553-creative-core.mjs';
+const HERE=path.dirname(fileURLToPath(import.meta.url));let n=0;function ok(v,m){if(!v)throw Error('R553: '+m);n++}
+const prompts=[A_R553_PROMPT,B_ONLY_R553_PROMPT,B_TEACH_R553_PROMPT,X_R553_PROMPT,C_R553_PROMPT];
+ok(prompts.every(p=>p.length>300&&p.length<4500),'Concise role prompts');
+ok(new Set(prompts).size===5,'Different roles');
+ok(!/Spanish|spotlight|pronoun/i.test(prompts.join(' ')),'No seeded Spanish pedagogy');
+ok(B_ONLY_R553_PROMPT.includes('ONE MODEL CALL')&&!B_TEACH_R553_PROMPT.includes('HTML/CSS/JS'),'Authentic one-call B-only');
+ok(X_R553_PROMPT.includes('HOST alone controls')&&X_R553_PROMPT.includes('EDUCATIONAL FIDELITY'),'X ownership and fidelity');
+ok(C_R553_PROMPT.includes('optional feedback investigator'),'C stays optional');
+const r=fs.readFileSync(path.join(HERE,'s62bfix1r553-goldloop-run.mjs'),'utf8');
+ok(r.includes('A_R553_PROMPT,A_SCHEMA')&&r.includes('B_ONLY_R553_PROMPT,B_ONLY_R552_SCHEMA'),'A and B-only prompts active');
+ok(r.includes('B_TEACH_R553_PROMPT,B_TEACH_SCHEMA')&&r.includes('X_R553_PROMPT,X_R552_SCHEMA'),'B+X uses revised prompts');
+ok(r.includes('B_authoritative_narration:bDesign.narration'),'B exact narration passed to X');
+ok(r.includes("call('B_ONLY'")&&r.includes("call('B_DESIGN'")&&r.includes("call('X_IMPLEMENT'"),'Dual variant calls preserved');
+const web=fs.readFileSync(path.join(HERE,'s62bfix1r553-goldloop-web.mjs'),'utf8');
+ok(web.includes('s62bfix1r553-goldloop-run.mjs')&&web.includes('s62bfix1r553-creative-core.mjs'),'New web versions wired');
+ok(web.includes('goldpilot01_clean07'),'clean07 preferred without reset');
+ok(web.includes('s62bfix1r553-research-plan.mjs'),'Optional C prompt wired');
+ok(web.includes('auto-dual-authorize')&&web.includes('dual-creative-attempt'),'Spend protection and evidence persistence retained');
+const s='<style>.scene{display:none!important}</style><section class="scene" data-myway-moment="0">Hello</section><section class="scene" data-myway-moment="1">World</section>';
+const doc=frameDocument(s,'a'.repeat(32));
+ok(doc.includes("setProperty('display','block','important')"),'Host overrides generated CSS hide');
+ok(doc.includes('visible_sections')&&doc.includes('matching_sections'),'Host reports actually visible scenes');
+ok(doc.includes("myway_r552_cue_v1"),'Backwards-compatible host cue protocol');
+const script=[...doc.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]).find(x=>x.includes('visible_sections'));
+ok(!!script,'Host control script present');new vm.Script(script);n++;
+const broken='<section data-myway-moment="0">Works visually</section><script>if ( {</script>';
+ok(auditGeneratedScripts(broken).parse_error_count===1,'Syntax errors are detected');
+const brokenDoc=frameDocument(broken,'b'.repeat(32));
+ok(brokenDoc.includes('disabled')&&!brokenDoc.includes('if ( {'),'Broken generated script removed with warning');
+const client=fs.readFileSync(path.join(HERE,'s62bfix1r553-goldloop-client.js'),'utf8');
+ok(client.includes('visualWarning')&&client.includes('visible_sections'),'Learner sees missing visual warnings');
+const C=fs.readFileSync(path.join(HERE,'s62bfix1r553-research-plan.mjs'),'utf8');
+ok(C.includes('C_PROMPT=C_R553_PROMPT'),'C prompt active in legacy optional call');
+console.log(`R5.5.3 offline static self-test: ${n} PASS, 0 paid calls`);
