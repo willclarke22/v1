@@ -1,0 +1,14 @@
+{
+  "predict": {
+    "url": "/audio/predict.wav",
+    "duration": 6.504172335600907
+  },
+  "explore": {
+    "url": "/audio/explore.wav",
+    "duration": 6.991746031746032
+  },
+  "observe": {
+    "url": "/audio/observe.wav",
+    "duration": 5.981179138321996
+  }
+}
