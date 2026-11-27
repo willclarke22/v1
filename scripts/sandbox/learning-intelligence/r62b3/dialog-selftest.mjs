@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';import vm from 'node:vm';
+const src=fs.readFileSync(new URL('./player.js',import.meta.url),'utf8');
+assert(!/\b(?:confirm|prompt|alert)\(/.test(src));
+const els=Object.fromEntries(['labConsent','labConsentInput','labConsentCancel','labConsentAccept','labConsentTitle','labConsentText','labConsentInputLabel'].map(id=>[id,{value:'',focus(){},setCustomValidity(v){this.invalid=v},reportValidity(){},click(){this.onclick?.()}}]));
+const d=els.labConsent;Object.assign(d,{open:false,addEventListener(k,cb){this.cb=cb},removeEventListener(){this.cb=null},showModal(){this.open=true},close(){this.open=false;const fn=this.cb;this.cb=null;fn?.()}});
+const ask=vm.runInNewContext(src.split('// BEGIN LAB_DIALOG')[1].split('// END LAB_DIALOG')[0]+'\nlabDialog',{document:{getElementById:id=>els[id]}});
+let p=ask('Consent');assert(d.open);els.labConsentAccept.click();assert.equal(await p,true);console.log('PASS explicit dialog confirmation');
+p=ask('Paid consent');els.labConsentCancel.click();assert.equal(await p,false);console.log('PASS cancel denies authorization');
+p=ask('Paid consent');d.close();assert.equal(await p,false);console.log('PASS closing dialog denies authorization');
+p=ask('Journey',{input:true});els.labConsentInput.value='bad id';els.labConsentAccept.click();assert(d.open);els.labConsentInput.value='real02';els.labConsentAccept.click();assert.equal(await p,'real02');console.log('PASS invalid journey rejected, valid accepted');
